@@ -1,0 +1,26 @@
+{
+  "name": "diary-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ionic/vue": "^8.7.6",
+    "@ionic/vue-router": "^8.7.6",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "ionicons": "^7.4.0",
+    "lucide-vue-next": "^0.468.0",
+    "pinia": "^2.3.1",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5",
+    "vue-tsc": "^2.2.8"
+  }
+}
