@@ -9,7 +9,7 @@ import { createDiaryPaperEnterAnimation, createTabSlideAnimation } from './anima
 const route = useRoute()
 const ionRouter = useIonRouter()
 const store = useDiaryStore()
-store.ensureLoaded()
+void store.ensureLoaded().catch(() => undefined)
 
 const nav = [
   { path: '/timeline', label: '星球', icon: planetOutline },

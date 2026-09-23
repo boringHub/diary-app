@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">拾光笺</string>
+    <string name="title_activity_main">拾光笺</string>
+    <string name="package_name">xyz.shiguangjian.app</string>
+    <string name="custom_url_scheme">xyz.shiguangjian.app</string>
+</resources>

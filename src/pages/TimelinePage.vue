@@ -13,7 +13,7 @@ type ClusterItem = { diary: Diary; color: string; x: number; y: number }
 
 const ionRouter = useIonRouter()
 const store = useDiaryStore()
-store.ensureLoaded()
+const storeReady = store.ensureLoaded().catch(() => undefined)
 const canvas = ref<HTMLCanvasElement | null>(null)
 const searchInput = ref<HTMLInputElement | null>(null)
 const searchDate = ref('')
@@ -192,6 +192,7 @@ function setFocusForDiary(diary: Diary) {
 }
 
 async function playNewDiaryArrival() {
+  await storeReady
   const diaryId = sessionStorage.getItem('shiguangjian.newDiaryArrival')
   if (!diaryId) return
   sessionStorage.removeItem('shiguangjian.newDiaryArrival')
@@ -295,6 +296,7 @@ function onResize() { resizeCanvas() }
 
 watch(() => store.diaries, async () => { await nextTick(); createStars(); resizeCanvas(); if (!selectedDiaryId.value && store.diaries[0]) randomFocus() }, { deep: true })
 onIonViewDidEnter(async () => {
+  await storeReady
   await nextTick()
   resizeCanvas()
   draw(performance.now())
@@ -302,6 +304,7 @@ onIonViewDidEnter(async () => {
   else if (!selectedDiaryId.value && store.diaries.length) randomFocus()
 })
 onMounted(async () => {
+  await storeReady
   await nextTick()
   createStars()
   resizeCanvas()

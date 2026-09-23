@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute } from 'vue-router'
-import { alertController, IonContent, IonIcon, IonPage, useIonRouter } from '@ionic/vue'
+import { alertController, IonContent, IonIcon, IonPage, toastController, useIonRouter } from '@ionic/vue'
 import { chevronBack } from 'ionicons/icons'
 import { useDiaryStore } from '../stores/diaryStore'
 import { createDiaryToStarAnimation, createEditorSaveAnimation } from '../animations'
@@ -10,7 +10,7 @@ import type { Mood } from '../types/diary'
 const route = useRoute()
 const ionRouter = useIonRouter()
 const store = useDiaryStore()
-store.ensureLoaded()
+void store.ensureLoaded().catch(() => undefined)
 
 const existing = computed(() => route.params.id ? store.get(String(route.params.id)) : undefined)
 const title = ref('')
@@ -21,7 +21,8 @@ const moods: Mood[] = ['calm', 'happy', 'sad', 'tired', 'excited']
 const labels: Record<Mood, string> = { calm: '平静', happy: '开心', sad: '低落', tired: '疲惫', excited: '期待' }
 const isDirty = computed(() => title.value !== (existing.value?.title ?? '') || body.value !== (existing.value?.body ?? '') || mood.value !== (existing.value?.mood ?? 'calm'))
 
-watch(() => route.params.id, () => {
+watch([() => route.params.id, () => store.loaded], () => {
+  if (route.params.id && !store.loaded) return
   title.value = existing.value?.title ?? ''
   body.value = existing.value?.body ?? ''
   mood.value = existing.value?.mood ?? 'calm'
@@ -62,16 +63,21 @@ onBeforeRouteLeave(async () => {
   return shouldLeave
 })
 
-function save() {
-  if (!body.value.trim() || !isDirty.value) return
-  allowLeave.value = true
+async function save() {
+  if (!body.value.trim() || !isDirty.value || store.saving) return
   const isEditing = Boolean(existing.value)
-  const item = store.save({ id: existing.value?.id, title: title.value.trim(), body: body.value.trim(), mood: mood.value })
-  if (isEditing) ionRouter.navigate(`/diary/${item.id}`, 'none', 'replace', createEditorSaveAnimation)
-  else {
-    sessionStorage.setItem('shiguangjian.newDiaryArrival', item.id)
-    if (ionRouter.canGoBack()) ionRouter.navigate('/timeline', 'back', 'pop', createDiaryToStarAnimation)
-    else ionRouter.navigate('/timeline', 'none', 'replace', createDiaryToStarAnimation)
+  try {
+    const item = await store.save({ id: existing.value?.id, title: title.value.trim(), body: body.value.trim(), mood: mood.value })
+    allowLeave.value = true
+    if (isEditing) ionRouter.navigate(`/diary/${item.id}`, 'none', 'replace', createEditorSaveAnimation)
+    else {
+      sessionStorage.setItem('shiguangjian.newDiaryArrival', item.id)
+      if (ionRouter.canGoBack()) ionRouter.navigate('/timeline', 'back', 'pop', createDiaryToStarAnimation)
+      else ionRouter.navigate('/timeline', 'none', 'replace', createDiaryToStarAnimation)
+    }
+  } catch {
+    const toast = await toastController.create({ message: '保存失败，请稍后重试', duration: 2000, position: 'top' })
+    await toast.present()
   }
 }
 </script>
@@ -84,7 +90,7 @@ function save() {
         <header class="subbar page-subbar">
           <button class="icon-button" aria-label="返回" @click="cancel"><IonIcon :icon="chevronBack" /></button>
           <div class="page-title"><span class="page-title-kicker">{{ existing ? '回到这颗星' : '写下一颗新星' }}</span><strong>{{ existing ? '编辑日记' : '新建日记' }}</strong></div>
-          <button class="save-button" :disabled="!body.trim() || !isDirty" @click="save">保存</button>
+          <button class="save-button" :disabled="!body.trim() || !isDirty || store.saving" @click="save">{{ store.saving ? '保存中' : '保存' }}</button>
         </header>
         <div class="editor-paper">
           <div class="editor-paper-top"><span class="paper-mark"></span><span>一段正在成形的记忆</span><span class="paper-date">{{ new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' }).format(Date.now()) }}</span></div>
