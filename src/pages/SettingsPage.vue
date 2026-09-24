@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { alertController, IonContent, IonIcon, IonPage, IonSpinner, toastController } from '@ionic/vue'
-import { checkmarkCircleOutline, chevronForward, cloudDownloadOutline, colorPaletteOutline, mailOutline, shieldCheckmarkOutline } from 'ionicons/icons'
+import { checkmarkCircleOutline, chevronForward, cloudDownloadOutline, closeOutline, colorPaletteOutline, mailOutline, shieldCheckmarkOutline, sparklesOutline } from 'ionicons/icons'
 import { diaryRepository } from '../repositories/diaryRepository'
 import { settingsRepository } from '../repositories/settingsRepository'
 import {
   checkForUpdate,
+  formatReleaseNoteLines,
   getCurrentVersion,
   installUpdate,
   type AppVersionInfo,
@@ -16,6 +17,7 @@ const settings = ref(settingsRepository.get())
 const currentVersion = ref<AppVersionInfo>({ versionName: '...' })
 const checkingUpdate = ref(false)
 const installingUpdate = ref(false)
+const pendingUpdate = ref<AvailableUpdate | null>(null)
 
 onMounted(async () => {
   try {
@@ -69,14 +71,8 @@ function errorMessage(error: unknown) {
   return '操作失败，请稍后重试'
 }
 
-function escapeHtml(value: string) {
-  return value.replace(/[&<>"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[character] ?? character)
-}
-
-function updateMessage(update: AvailableUpdate) {
-  const safety = `安装包 ${readableSize(update.apkSize)}。更新采用覆盖安装，会保留本机日记和设置；请勿先卸载应用。`
-  const notes = update.releaseNotes.replace(/\r/g, '').trim().slice(0, 600)
-  return notes ? `${escapeHtml(safety)}<br><br>${escapeHtml(notes).replace(/\n/g, '<br>')}` : escapeHtml(safety)
+function closeUpdateDialog() {
+  if (!installingUpdate.value) pendingUpdate.value = null
 }
 
 async function startInstall(update: AvailableUpdate) {
@@ -109,20 +105,19 @@ async function checkUpdate() {
       return
     }
 
-    const alert = await alertController.create({
-      header: `发现新版本 v${result.latest.versionName}`,
-      message: updateMessage(result.latest),
-      buttons: [
-        { text: '稍后', role: 'cancel' },
-        { text: '下载并安装', handler: () => void startInstall(result.latest) },
-      ],
-    })
-    await alert.present()
+    pendingUpdate.value = result.latest
   } catch (error) {
     await showToast(errorMessage(error))
   } finally {
     checkingUpdate.value = false
   }
+}
+
+async function installPendingUpdate() {
+  const update = pendingUpdate.value
+  if (!update || installingUpdate.value) return
+  await startInstall(update)
+  pendingUpdate.value = null
 }
 
 async function verifyUpgrade() {
@@ -131,7 +126,7 @@ async function verifyUpgrade() {
     currentVersion.value = version
     const alert = await alertController.create({
       header: '升级验证通过',
-      message: `当前版本 v${escapeHtml(version.versionName)}，本机数据库可正常读取，现有日记 ${diaries.length} 篇。`,
+      message: `当前版本 v${version.versionName}，本机数据库可正常读取，现有日记 ${diaries.length} 篇。`,
       buttons: ['知道了'],
     })
     await alert.present()
@@ -196,6 +191,45 @@ async function verifyUpgrade() {
           <p class="update-safety-note">更新时不要卸载应用。签名、包名或版本异常的安装包会被自动拦截。</p>
         </div>
       </section>
+
+      <Teleport to="body">
+        <div v-if="pendingUpdate" class="update-dialog-backdrop" role="presentation" @click.self="closeUpdateDialog">
+          <section class="update-dialog" role="dialog" aria-modal="true" aria-labelledby="update-dialog-title">
+          <div class="update-dialog-topline">
+            <span class="update-dialog-kicker"><IonIcon :icon="sparklesOutline" /> 拾光笺 · 新版本</span>
+            <button class="update-dialog-close" aria-label="关闭更新弹窗" @click="closeUpdateDialog"><IonIcon :icon="closeOutline" /></button>
+          </div>
+          <div class="update-dialog-icon" aria-hidden="true"><IonIcon :icon="cloudDownloadOutline" /></div>
+          <p class="update-dialog-label">一颗新的星星抵达了</p>
+          <h2 id="update-dialog-title">发现新版本 <span>v{{ pendingUpdate.versionName }}</span></h2>
+          <div class="update-dialog-meta">
+            <span><IonIcon :icon="cloudDownloadOutline" /> {{ readableSize(pendingUpdate.apkSize) }}</span>
+            <span><IonIcon :icon="shieldCheckmarkOutline" /> 安全覆盖安装</span>
+          </div>
+
+          <div class="update-dialog-notes">
+            <div class="update-dialog-section-title"><span>本次更新</span><i></i></div>
+            <p v-if="formatReleaseNoteLines(pendingUpdate.releaseNotes).length === 0" class="update-dialog-empty">这次更新带来了更细腻的体验。</p>
+            <ul v-else>
+              <li v-for="(line, index) in formatReleaseNoteLines(pendingUpdate.releaseNotes)" :key="`${index}-${line}`">{{ line }}</li>
+            </ul>
+          </div>
+
+          <div class="update-dialog-safety">
+            <IonIcon :icon="shieldCheckmarkOutline" />
+            <span>会保留本机日记和设置，请勿先卸载应用。</span>
+          </div>
+          <div class="update-dialog-actions">
+            <button class="update-dialog-later" :disabled="installingUpdate" @click="closeUpdateDialog">稍后再说</button>
+            <button class="update-dialog-install" :disabled="installingUpdate" @click="installPendingUpdate">
+              <IonSpinner v-if="installingUpdate" name="crescent" />
+              <IonIcon v-else :icon="cloudDownloadOutline" />
+              {{ installingUpdate ? '准备安装' : '下载并安装' }}
+            </button>
+          </div>
+          </section>
+        </div>
+      </Teleport>
     </IonContent>
   </IonPage>
 </template>

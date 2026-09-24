@@ -4,7 +4,7 @@ import { onBeforeRouteLeave, useRoute } from 'vue-router'
 import { alertController, IonContent, IonIcon, IonPage, toastController, useIonRouter } from '@ionic/vue'
 import { chevronBack } from 'ionicons/icons'
 import { useDiaryStore } from '../stores/diaryStore'
-import { createDiaryToStarAnimation, createEditorSaveAnimation } from '../animations'
+import { createDiaryPaperExitAnimation, createDiaryToStarAnimation, createEditorSaveAnimation } from '../animations'
 import type { Mood } from '../types/diary'
 
 const route = useRoute()
@@ -32,8 +32,9 @@ watch([() => route.params.id, () => store.loaded], () => {
 function closeEditor() {
   allowLeave.value = true
   const target = existing.value ? `/diary/${existing.value.id}` : '/timeline'
-  if (ionRouter.canGoBack()) ionRouter.navigate(target, 'back', 'pop')
-  else ionRouter.navigate(target, 'none', 'replace')
+  const animation = existing.value ? undefined : createDiaryPaperExitAnimation
+  if (ionRouter.canGoBack()) ionRouter.navigate(target, 'back', 'pop', animation)
+  else ionRouter.navigate(target, 'back', 'replace', animation)
 }
 
 async function confirmDiscard() {
@@ -95,7 +96,7 @@ async function save() {
         <div class="editor-paper">
           <div class="editor-paper-top"><span class="paper-mark"></span><span>一段正在成形的记忆</span><span class="paper-date">{{ new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' }).format(Date.now()) }}</span></div>
           <input v-model="title" class="title-input" placeholder="给今天取个标题" maxlength="50" />
-          <textarea v-model="body" class="body-input" placeholder="写下此刻的心情、看到的风景，或者一句还没说出口的话……" autofocus />
+          <textarea v-model="body" class="body-input" placeholder="写下此刻的心情、看到的风景，或者一句还没说出口的话……" />
           <div class="editor-footer"><span>{{ body.length }} 字</span><span>仅保存在本设备</span></div>
         </div>
         <div class="mood-section">

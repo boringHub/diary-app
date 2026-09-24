@@ -7,6 +7,17 @@ import { useDiaryStore } from '../stores/diaryStore'
 import { moodLabels } from '../types/diary'
 import type { Diary, Mood } from '../types/diary'
 import { createStarEnterAnimation } from '../animations'
+import {
+  identityQuaternion,
+  interpolateQuaternions,
+  multiplyQuaternions,
+  pointOnTrackball,
+  quaternionBetweenVectors,
+  quaternionFromAxisAngle,
+  rotateVector,
+  type Quaternion,
+  type Vector3,
+} from '../utils/trackball'
 
 type Star = { diary?: Diary; x: number; y: number; z: number; size: number; phase: number; color: string; brightness: number; decorative?: boolean }
 type ClusterItem = { diary: Diary; color: string; x: number; y: number }
@@ -43,15 +54,14 @@ const bubbleStyle = computed(() => ({
 
 let context: CanvasRenderingContext2D | null = null
 let stars: Star[] = []
-let rotationX = 0
-let rotationY = 0
-let targetRotationX = 0
-let targetRotationY = 0
+let orientation = identityQuaternion()
+let targetOrientation = identityQuaternion()
+let dragStartOrientation = identityQuaternion()
+let dragStartVector: Vector3 | null = null
 let animationFrame = 0
 let lastTime = 0
 let pointerDown = false
 let moved = false
-let lastPointer = { x: 0, y: 0 }
 let pointerStart = { x: 0, y: 0 }
 let settleToken = 0
 let resizeObserver: ResizeObserver | null = null
@@ -92,13 +102,7 @@ function resizeCanvas() {
   canvasSize.value = { width: rect.width, height: rect.height }
 }
 
-function rotatePoint(star: Star) {
-  const cosY = Math.cos(rotationY), sinY = Math.sin(rotationY)
-  const x1 = star.x * cosY - star.z * sinY
-  const z1 = star.x * sinY + star.z * cosY
-  const cosX = Math.cos(rotationX), sinX = Math.sin(rotationX)
-  return { x: x1, y: star.y * cosX - z1 * sinX, z: star.y * sinX + z1 * cosX }
-}
+function rotatePoint(star: Star) { return rotateVector(star, orientation) }
 
 function project(star: Star, index: number, now: number) {
   const point = rotatePoint(star)
@@ -117,8 +121,10 @@ function draw(now: number) {
   const glow = context.createRadialGradient(centerX, centerY, radius * 0.22, centerX, centerY, radius * 1.16)
   glow.addColorStop(0, 'rgba(45, 91, 107, .1)'); glow.addColorStop(.68, 'rgba(21, 53, 70, .07)'); glow.addColorStop(1, 'rgba(8, 17, 32, 0)')
   context.fillStyle = glow; context.beginPath(); context.arc(centerX, centerY, radius * 1.18, 0, Math.PI * 2); context.fill()
+  const equatorAxis = rotateVector({ x: 1, y: 0, z: 0 }, orientation)
+  const orbitAngle = Math.atan2(equatorAxis.y, equatorAxis.x)
   context.strokeStyle = 'rgba(137, 193, 205, .09)'; context.lineWidth = 1
-  for (const scale of [1, .78, .55]) { context.beginPath(); context.ellipse(centerX, centerY, radius * scale, radius * scale * .29, rotationY * .28, 0, Math.PI * 2); context.stroke() }
+  for (const scale of [1, .78, .55]) { context.beginPath(); context.ellipse(centerX, centerY, radius * scale, radius * scale * .29, orbitAngle, 0, Math.PI * 2); context.stroke() }
   const projected = stars.map((star, index) => ({ star, point: project(star, index, now) })).sort((a, b) => a.point.z - b.point.z)
   for (const { star, point } of projected) {
     if (star.decorative && point.z < -0.35) continue
@@ -149,10 +155,6 @@ function draw(now: number) {
 
 function getProjectedRealStars(now = performance.now()) { return stars.map((star, index) => ({ star, point: project(star, index, now) })).filter((item) => item.star.diary) }
 
-function shortestTargetAngle(angle: number, current: number) {
-  return current + Math.atan2(Math.sin(angle - current), Math.cos(angle - current))
-}
-
 function updateFocusedStar() {
   if (!canvasSize.value.width || clusterMode.value) return
   const centerX = canvasSize.value.width / 2, centerY = canvasSize.value.height * .48
@@ -173,20 +175,19 @@ function updateFocusedStar() {
 
 function loop(now: number) {
   const delta = Math.min((now - lastTime) / 1000 || 0, .05); lastTime = now
-  if (!pointerDown && !isSettling.value && !selectedDiaryId.value) targetRotationY += delta * .035
-  rotationX += (targetRotationX - rotationX) * Math.min(delta * 8, 1); rotationY += (targetRotationY - rotationY) * Math.min(delta * 8, 1)
+  if (!pointerDown && !isSettling.value && !selectedDiaryId.value) {
+    targetOrientation = multiplyQuaternions(quaternionFromAxisAngle({ x: 0, y: 1, z: 0 }, delta * .035), targetOrientation)
+  }
+  orientation = interpolateQuaternions(orientation, targetOrientation, Math.min(delta * 8, 1))
   draw(now); if (!clusterMode.value && !isSearching.value && !isSettling.value && !pointerDown) updateFocusedStar(); animationFrame = requestAnimationFrame(loop)
 }
 
 function setFocusForDiary(diary: Diary) {
   const star = stars.find((item) => item.diary?.id === diary.id)
   if (!star) return
-  // Solve the inverse of rotatePoint: first place the star on the front
-  // meridian with Y, then lift it onto the screen center with X.
-  const targetY = Math.atan2(star.x, star.z)
-  const targetX = Math.atan2(star.y, Math.hypot(star.x, star.z))
-  targetRotationY = shortestTargetAngle(targetY, targetRotationY)
-  targetRotationX = Math.max(-Math.PI / 2 + .02, Math.min(Math.PI / 2 - .02, targetX))
+  const currentPoint = rotateVector(star, targetOrientation)
+  const focusRotation = quaternionBetweenVectors(currentPoint, { x: 0, y: 0, z: 1 })
+  targetOrientation = multiplyQuaternions(focusRotation, targetOrientation)
   selectedDiaryId.value = null; focusVisible.value = false; cluster.value = []; isSettling.value = true
   const token = ++settleToken; window.setTimeout(() => { if (token === settleToken) isSettling.value = false }, 700)
 }
@@ -267,16 +268,35 @@ function toggleSearch() {
   if (searchOpen.value) nextTick(() => searchInput.value?.showPicker?.())
 }
 
-function onPointerDown(event: PointerEvent) { pointerDown = true; moved = false; isDragging.value = false; pointerStart = { x: event.clientX, y: event.clientY }; lastPointer = { x: event.clientX, y: event.clientY }; canvas.value?.setPointerCapture(event.pointerId) }
+function pointerTrackballPosition(event: PointerEvent) {
+  const rect = canvas.value?.getBoundingClientRect()
+  if (!rect) return null
+  const radius = Math.min(rect.width, rect.height) * (rect.width < 560 ? .39 : .34)
+  return pointOnTrackball(event.clientX - rect.left - rect.width / 2, event.clientY - rect.top - rect.height * .48, radius)
+}
+
+function onPointerDown(event: PointerEvent) {
+  pointerDown = true; moved = false; isDragging.value = false
+  pointerStart = { x: event.clientX, y: event.clientY }
+  targetOrientation = orientation
+  dragStartOrientation = orientation
+  dragStartVector = pointerTrackballPosition(event)
+  canvas.value?.setPointerCapture(event.pointerId)
+}
 function onPointerMove(event: PointerEvent) {
   if (!pointerDown) return
-  const dx = event.clientX - lastPointer.x, dy = event.clientY - lastPointer.y, total = Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y)
+  const total = Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y)
   if (total > 6) { moved = true; isDragging.value = true; selectedDiaryId.value = null; focusVisible.value = false; cluster.value = []; hint.value = '松开，让最近的星星停在中心' }
-  targetRotationY -= dx * .008; targetRotationX = Math.max(-1.3, Math.min(1.3, targetRotationX - dy * .006)); lastPointer = { x: event.clientX, y: event.clientY }
+  const currentVector = pointerTrackballPosition(event)
+  if (dragStartVector && currentVector) {
+    const dragRotation = quaternionBetweenVectors(dragStartVector, currentVector)
+    targetOrientation = multiplyQuaternions(dragRotation, dragStartOrientation)
+    orientation = targetOrientation
+  }
 }
 function onPointerUp(event: PointerEvent) {
   if (!pointerDown) return
-  pointerDown = false; isDragging.value = false; canvas.value?.releasePointerCapture(event.pointerId)
+  pointerDown = false; isDragging.value = false; dragStartVector = null; canvas.value?.releasePointerCapture(event.pointerId)
   if (moved) { isSettling.value = true; const token = ++settleToken; window.setTimeout(() => { if (token === settleToken) isSettling.value = false }, 320); return }
   const rect = canvas.value?.getBoundingClientRect(); if (!rect) return
   const x = event.clientX - rect.left, y = event.clientY - rect.top

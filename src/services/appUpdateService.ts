@@ -91,6 +91,19 @@ export function compareVersions(left: string, right: string): number {
   return 0
 }
 
+export function formatReleaseNoteLines(releaseNotes: string): string[] {
+  return releaseNotes
+    .replace(/\r/g, '')
+    .replace(/<br\s*\/?\s*>/gi, '\n')
+    .replace(/<\/p>\s*<p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .trim()
+    .slice(0, 1200)
+    .split(/\n+/)
+    .map((line) => line.trim().replace(/^[-*]\s*/, ''))
+    .filter(Boolean)
+}
+
 function selectApkAsset(assets: GitHubReleaseAsset[], manifest?: UpdateManifest) {
   const apkAssets = assets.filter((asset) => asset.name.toLowerCase().endsWith('.apk'))
   if (manifest?.apk) {

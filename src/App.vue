@@ -16,7 +16,8 @@ const nav = [
   { path: '/settings', label: '设置', icon: settingsOutline },
 ]
 
-const showTabBar = computed(() => !route.path.startsWith('/diary/'))
+const isNewDiaryRoute = computed(() => route.path === '/diary/new')
+const showTabBar = computed(() => !route.path.startsWith('/diary/') || isNewDiaryRoute.value)
 
 function switchRoot(path: '/timeline' | '/settings') {
   if (route.path === path) return
@@ -41,8 +42,8 @@ function createDiary() {
 
 <template>
   <IonApp>
-    <IonRouterOutlet />
-    <nav v-if="showTabBar" class="floating-nav" :class="{ 'floating-nav-night': route.path !== '/timeline' }" aria-label="主导航">
+    <IonRouterOutlet :animated="true" />
+    <nav v-if="showTabBar" class="floating-nav" :class="{ 'floating-nav-night': route.path !== '/timeline', 'floating-nav-editor': isNewDiaryRoute }" aria-label="主导航">
       <button class="nav-action" :class="{ active: route.path.startsWith(nav[0].path) }" @click="switchRoot('/timeline')">
         <IonIcon :icon="nav[0].icon" />
         <span>{{ nav[0].label }}</span>

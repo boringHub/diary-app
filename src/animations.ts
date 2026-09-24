@@ -3,7 +3,7 @@ import type { AnimationBuilder } from '@ionic/vue'
 
 export type TabSlideDirection = 'forward' | 'back'
 
-function buildTabSlideAnimation(direction: TabSlideDirection, _baseEl: HTMLElement, opts: Parameters<AnimationBuilder>[1] = {}) {
+function buildTabSlideAnimation(direction: TabSlideDirection, baseEl: HTMLElement, opts: Parameters<AnimationBuilder>[1] = {}) {
   const enteringEl = opts.enteringEl as HTMLElement | undefined
   const leavingEl = opts.leavingEl as HTMLElement | undefined
   if (!enteringEl || !leavingEl) return createAnimation('primary-tab-slide').duration(0)
@@ -14,20 +14,23 @@ function buildTabSlideAnimation(direction: TabSlideDirection, _baseEl: HTMLEleme
 
   const enteringAnimation = createAnimation('primary-tab-enter')
     .addElement(enteringEl)
-    .beforeStyles({ visibility: 'visible', background: '#07131f' })
+    .beforeStyles({ visibility: 'visible', opacity: '1', zIndex: '2', background: '#07131f' })
     .fromTo('transform', `translate3d(${enteringFrom}, 0, 0)`, 'translate3d(0, 0, 0)')
-    .afterClearStyles(['transform'])
+    .afterClearStyles(['transform', 'opacity', 'visibility', 'z-index', 'background'])
 
   const leavingAnimation = createAnimation('primary-tab-leave')
     .addElement(leavingEl)
-    .beforeStyles({ visibility: 'visible', background: '#07131f' })
+    .beforeStyles({ visibility: 'visible', opacity: '1', zIndex: '1', background: '#07131f' })
     .fromTo('transform', 'translate3d(0, 0, 0)', `translate3d(${leavingTo}, 0, 0)`)
-    .afterClearStyles(['transform'])
+    .afterClearStyles(['transform', 'opacity', 'visibility', 'z-index', 'background'])
 
   return createAnimation('primary-tab-slide')
+    .addElement(baseEl)
+    .beforeStyles({ overflow: 'hidden', background: '#07131f' })
     .addAnimation([enteringAnimation, leavingAnimation])
     .duration(280)
     .easing('cubic-bezier(0.32, 0.72, 0, 1)')
+    .afterClearStyles(['overflow', 'background'])
 }
 
 /** Build a root-navigation animation with an explicit visual direction. */
@@ -91,6 +94,43 @@ export const createDiaryPaperEnterAnimation: AnimationBuilder = (baseEl, opts = 
     .addAnimation([enteringAnimation, leavingAnimation])
     .duration(520)
     .easing('cubic-bezier(0.2, 0.78, 0.18, 1)')
+}
+
+/** Reverse the new-diary sheet back into the bottom-center create action. */
+export const createDiaryPaperExitAnimation: AnimationBuilder = (baseEl, opts = {}) => {
+  const enteringEl = opts.enteringEl as HTMLElement | undefined
+  const leavingEl = opts.leavingEl as HTMLElement | undefined
+  if (!enteringEl || !leavingEl) return createAnimation('diary-paper-exit').duration(0)
+
+  const enteringAnimation = createAnimation('diary-paper-return-background')
+    .addElement(enteringEl)
+    .beforeStyles({ visibility: 'visible', opacity: '.72', transform: 'scale(.975)', background: '#07131f' })
+    .fromTo('opacity', '.72', '1')
+    .fromTo('transform', 'scale(.975)', 'scale(1)')
+    .afterClearStyles(['transform', 'opacity', 'visibility', 'background'])
+
+  const leavingAnimation = createAnimation('diary-paper-collapse')
+    .addElement(leavingEl)
+    .beforeStyles({
+      visibility: 'visible',
+      transformOrigin: '50% calc(100% - 48px)',
+      willChange: 'transform, opacity, clip-path',
+    })
+    .keyframes([
+      { offset: 0, opacity: '1', transform: 'translate3d(0, 0, 0) scale(1)', clipPath: 'inset(0 round 0)' },
+      { offset: .46, opacity: '1', transform: 'translate3d(0, 12%, 0) scale(.94, .82)', clipPath: 'polygon(7% 0, 93% 0, 67% 100%, 33% 100%)' },
+      { offset: .76, opacity: '.9', transform: 'translate3d(0, 54%, 0) scale(.42, .26)', clipPath: 'inset(34% 41% round 26px)' },
+      { offset: 1, opacity: '0', transform: 'translate3d(0, 74%, 0) scale(.22, .08)', clipPath: 'polygon(20% 0, 80% 0, 58% 100%, 42% 100%)' },
+    ])
+    .afterClearStyles(['transform', 'opacity', 'clip-path', 'transform-origin', 'will-change', 'visibility'])
+
+  return createAnimation('diary-paper-exit')
+    .addElement(baseEl)
+    .beforeStyles({ overflow: 'hidden', background: '#07131f' })
+    .addAnimation([enteringAnimation, leavingAnimation])
+    .duration(520)
+    .easing('cubic-bezier(0.2, 0.78, 0.18, 1)')
+    .afterClearStyles(['overflow', 'background'])
 }
 
 /** Collapse a newly saved sheet into a star while revealing the memory planet. */

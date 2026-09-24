@@ -4,6 +4,11 @@
 
 项目目前处于 Android 开发预览阶段，核心日记流程和本地持久化已经可用，数据不会上传到服务器。
 
+## 维护文档
+
+- [Android 版本更新与发布手册](RELEASE.md)：后续发布前必须先阅读，包含版本修改、构建、签名、发布、升级验证和数据保护步骤。
+- [更新日志](CHANGELOG.md)：累计记录每个版本的新增功能、优化、修复和兼容性变化。
+
 ## 下载与安装
 
 - [前往 Releases 下载 Android 安装包](https://github.com/boringHub/diary-app/releases/latest)
@@ -101,6 +106,8 @@ android/app/build/outputs/apk/debug/app-debug.apk
 Android SDK 的本地路径写在被 Git 忽略的 `android/local.properties` 中，不应提交到仓库。
 
 ## 发布 Android 更新
+
+完整发布流程、当前版本基线、签名指纹和发布历史统一维护在 [RELEASE.md](RELEASE.md)。以下仅保留不可省略的发布原则。
 
 每次准备 GitHub Release 时必须完成以下事项：
 
