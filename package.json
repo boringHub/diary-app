@@ -1,7 +1,7 @@
 {
   "name": "diary-app",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "本地优先的私人日记 App，以可交互的记忆星球呈现每一段记录。",
   "repository": {
     "type": "git",

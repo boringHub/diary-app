@@ -99,14 +99,19 @@
 
     ```json
     {
-      "versionCode": 4,
-      "versionName": "1.3.0",
+      "versionCode": 5,
+      "versionName": "1.3.1",
       "apk": "shiguangjian-android.apk",
-      "sha256": "最终 APK 的小写 SHA-256"
+      "apkSize": 13900000,
+      "sha256": "最终 APK 的小写 SHA-256",
+      "githubUrl": "https://github.com/boringHub/diary-app/releases/download/v1.3.1/shiguangjian-android.apk",
+      "ossUrl": "https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/v1.3.1/shiguangjian-android.zip",
+      "ossFormat": "zip",
+      "releaseNotes": "本版本面向用户的简短更新说明"
     }
     ```
 
-    `versionCode` 和 `versionName` 必须与 APK 内部值一致，`apk` 文件名不要修改。
+    `versionCode`、`versionName`、`apkSize` 和 `sha256` 必须与最终 APK 一致，`apk` 文件名不要修改。GitHub 与 OSS 地址必须使用本次不可变版本路径，不能写 `latest`。
 
 11. 执行最终检查：
 
@@ -134,7 +139,26 @@
 
     Release 标题使用 `拾光笺 v{versionName}`。正文从本次 `CHANGELOG.md` 提取，并明确写明“直接覆盖安装，请勿先卸载”。
 
-14. 发布后通过公开地址复核，不能只检查本地文件：
+14. 同步发布到阿里云 OSS：
+
+    ```powershell
+    .\scripts\publish-oss.ps1
+    ```
+
+    脚本会生成 `release/shiguangjian-android.zip`，并上传以下对象：
+
+    ```text
+    releases/v{versionName}/shiguangjian-android.apk
+    releases/v{versionName}/shiguangjian-android.zip
+    releases/v{versionName}/update.json
+    releases/latest/shiguangjian-android.apk
+    releases/latest/shiguangjian-android.zip
+    releases/latest/update.json
+    ```
+
+    版本目录使用一年不可变缓存，`latest` 使用 60 秒缓存。脚本会公开下载 `latest/update.json` 和 ZIP，解压后核对 APK SHA-256；验证失败时发布不算完成。
+
+15. 发布后通过公开地址复核，不能只检查本地文件：
 
     ```powershell
     Invoke-RestMethod `
@@ -148,7 +172,14 @@
     https://github.com/boringHub/diary-app/releases/latest
     ```
 
-15. 在保留真实日记的上一版 App 上完成升级测试：
+    阿里云公开资源：
+
+    ```text
+    https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/update.json
+    https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/shiguangjian-android.zip
+    ```
+
+16. 在保留真实日记的上一版 App 上完成升级测试：
 
     - 更新前记录当前版本和日记数量。
     - 在“设置 > 检查更新”中发现新版本。
@@ -186,23 +217,69 @@
 - 换电脑或重装系统后，构建发布 APK 前必须恢复同一份密钥，并用证书 SHA-256 与本文件记录的指纹对比。
 - 正式签名前需要单独制定迁移方案；不能直接用新证书覆盖当前 Debug 签名安装包。
 
+## 阿里云 OSS 发布配置
+
+发布脚本只从环境变量读取凭据，不使用仓库 `.env` 文件。推荐使用 Windows 用户级环境变量，注册表位置为：
+
+```text
+HKCU\Environment
+```
+
+脚本也兼容系统级环境变量：
+
+```text
+HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment
+```
+
+变量名如下：
+
+```text
+OSS_ACCESS_KEY_ID          必填
+OSS_ACCESS_KEY_SECRET      必填
+OSS_BUCKET                 可选，默认 diary-app
+OSS_ENDPOINT               可选，默认 oss-cn-hangzhou.aliyuncs.com
+OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.aliyuncs.com
+```
+
+查询时只确认是否存在，不要在日志或对话中输出凭据值：
+
+```powershell
+[Environment]::GetEnvironmentVariable('OSS_ACCESS_KEY_ID', 'User')
+[Environment]::GetEnvironmentVariable('OSS_ACCESS_KEY_SECRET', 'User')
+```
+
+新建或修改变量后必须重启 PowerShell、Codex 和其他构建进程。AccessKey 不得提交到 Git、写入 `.env`、发布清单或文档；一旦在聊天、截图或日志中暴露，应立即在阿里云控制台禁用并轮换。
+
+当前 OSS 默认 Endpoint 对 APK 公网下载返回 `ApkDownloadForbidden`，必须使用 CNAME 才能直接分发 APK。因此应用的备用下载固定使用 ZIP，ZIP 根目录只允许一个 `shiguangjian-android.apk`。脚本仍上传 APK 对象，便于以后配置自定义域名后切换，但当前公开备用地址不得指向 APK 对象。
+
+换开发设备时，除上述环境变量外，还必须恢复原发布设备的 `%USERPROFILE%\.android\debug.keystore`，并校验证书 SHA-256。只有 OSS 凭据而没有相同签名密钥，无法生成可覆盖安装的更新包。
+
+## 双源更新规则
+
+- 更新检查先访问 GitHub Releases API；HTTP/网络明确失败时立即读取 OSS `releases/latest/update.json`，连续 30 秒没有响应时也切换 OSS。
+- 安装包先下载 GitHub APK；HTTP/网络明确失败时立即切换 OSS ZIP，连接或读取连续 30 秒没有收到数据时切换。
+- 下载弹窗必须显示当前来源、阶段、百分比和字节数；未知总大小时显示不定进度。
+- OSS ZIP 解压后与 GitHub APK 执行相同的 HTTPS、大小、包名、递增版本号、预期版本、签名和 SHA-256 校验。
+- 更改超时、对象路径、清单字段或来源优先级时，必须同时更新测试、`update.example.json`、本文件和 `AGENTS.md`。
+
 ## 当前发布基线
 
 后续发布开始前，先以此表和 GitHub 最新 Release 交叉确认，不要仅凭记忆推断当前版本。
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新版本 | `1.3.0` |
-| Android `versionCode` | `4` |
-| Git 标签 | `v1.3.0` |
+| 最新版本 | `1.3.1` |
+| Android `versionCode` | `5` |
+| Git 标签 | `v1.3.1` |
 | 分支 | `main` |
 | 包名 | `xyz.shiguangjian.app` |
 | APK 资源名 | `shiguangjian-android.apk` |
 | 更新清单名 | `update.json` |
 | 签名类型 | Android Debug 签名，当前仅用于开发测试 |
 | 签名证书 SHA-256 | `c6ef39d7955b402a7bfce9e9e9ce3a1a1bbcfa87c2cca4356c29eec7e9845d01` |
-| v1.3.0 APK SHA-256 | `6b0bc9a16c41019460d92bc0380b5ec787167699cf2f04a3169faef96e22f031` |
+| v1.3.1 APK SHA-256 | `7228582e23beaf727e343322dd0b0758ca3a6270a82625832097fccc6dae5fe2` |
 | 最新 Release | <https://github.com/boringHub/diary-app/releases/latest> |
+| OSS 最新清单 | <https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/update.json> |
 
 发布正式签名 APK 前必须单独设计签名迁移方案。当前已安装的 Debug 签名版本不能直接覆盖为另一证书签名的 APK。
 
@@ -217,6 +294,7 @@
 | `src/services/appUpdateService.ts` | Web 环境回退版本 | 是 |
 | `release/shiguangjian-android.apk` | GitHub Release 最终安装包 | 是 |
 | `release/update.json` | 应用内更新使用的版本、APK 名称和哈希 | 是 |
+| `scripts/publish-oss.ps1` | 生成 ZIP、同步 OSS 版本/latest 对象并公开校验 | 流程变化时更新 |
 | `update.example.json` | 更新清单格式示例 | 仅格式变化时更新 |
 
 ## 发布历史索引
@@ -225,6 +303,7 @@
 
 | 版本 | versionCode | 日期 | APK SHA-256 | 主要内容 |
 | --- | ---: | --- | --- | --- |
+| `1.3.1` | 5 | 2026-09-24 | `7228582e23beaf727e343322dd0b0758ca3a6270a82625832097fccc6dae5fe2` | GitHub 优先、30 秒无响应切换 OSS、下载进度和双平台发布脚本 |
 | `1.3.0` | 4 | 2026-09-24 | `6b0bc9a16c41019460d92bc0380b5ec787167699cf2f04a3169faef96e22f031` | 最多 5 张本地图片、全局界面主题、ZIP 主题导入和日记板素材包数据边界 |
 | `1.2.0` | 3 | 2026-09-24 | `9642c7ab295f4c7a979a3dc95df2f299215c90e1f8fe1b6cb478d8b22516eefe` | 新 App 图标、升级验证、vivo/OriginOS 顶部启动图与安全区修复 |
 | `1.1.0` | 2 | 2026-09-23 | `c9cb1eb20fa1715cb054c7ba1638ec88d34481705f9807bf7ddd8a186b9c933f` | 应用内检查更新、安全下载与覆盖安装校验、首轮图标和多机型布局优化 |

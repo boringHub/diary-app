@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compareVersions, formatReleaseNoteLines } from './appUpdateService'
+import { compareVersions, formatReleaseNoteLines, parseUpdateManifest } from './appUpdateService'
 
 describe('compareVersions', () => {
   it('compares semantic version segments numerically', () => {
@@ -21,5 +21,26 @@ describe('formatReleaseNoteLines', () => {
 
   it('removes other HTML tags instead of rendering them', () => {
     expect(formatReleaseNoteLines('<p>安全更新</p><p><strong>保留日记</strong></p>')).toEqual(['安全更新', '保留日记'])
+  })
+})
+
+describe('parseUpdateManifest', () => {
+  it('accepts the GitHub-first manifest with an OSS ZIP fallback', () => {
+    expect(
+      parseUpdateManifest({
+        versionCode: 5,
+        versionName: '1.3.1',
+        apk: 'shiguangjian-android.apk',
+        apkSize: 1024,
+        sha256: 'abc123',
+        githubUrl: 'https://github.com/example/app.apk',
+        ossUrl: 'https://example.oss-cn-hangzhou.aliyuncs.com/releases/app.zip',
+        ossFormat: 'zip',
+      }),
+    ).toBeTruthy()
+  })
+
+  it('rejects unsupported fallback formats and invalid version codes', () => {
+    expect(parseUpdateManifest({ versionCode: 5.5, ossFormat: 'apk' })).toBeUndefined()
   })
 })

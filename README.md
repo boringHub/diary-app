@@ -13,6 +13,7 @@
 
 - [前往 Releases 下载 Android 安装包](https://github.com/boringHub/diary-app/releases/latest)
 - [直接下载最新 Android APK](https://github.com/boringHub/diary-app/releases/latest/download/shiguangjian-android.apk)
+- GitHub 下载连续 30 秒没有响应时，应用会自动切换到阿里云 OSS 备用下载；设置页会显示当前来源、下载进度、校验和安装状态。
 
 当前提供的是调试签名 APK，仅用于开发体验和功能测试。Android 安装时可能需要允许浏览器或文件管理器“安装未知应用”。应用内支持在“设置 > 应用更新”中手动检查 GitHub Releases。
 
@@ -31,6 +32,7 @@
 - 每篇日记独立保存固定布局和日记板素材包标识，为后续个性化日记板预留边界
 - 首次启动欢迎日记、加载状态和保存失败提示
 - 设置页手动检查更新、APK 下载和系统安装引导
+- GitHub 优先、30 秒无响应自动切换阿里云 OSS 的双源更新下载和可视化进度
 - 更新包包名、版本号、签名和可选 SHA-256 完整性校验
 
 ## 技术栈
@@ -136,8 +138,9 @@ Android SDK 的本地路径写在被 Git 忽略的 `android/local.properties` �
 2. 将 `android/app/build.gradle` 中的 `versionCode` 至少增加 1，并同步增加 `versionName`。
 3. 使用与上一版完全相同的签名密钥。当前公开版本为调试签名，下一次覆盖升级必须保留构建该 APK 的原始调试密钥；迁移到不同签名会被 Android 拒绝。
 4. 将 APK 上传为 `shiguangjian-android.apk`，Release 标签与 `versionName` 保持一致，例如 `v1.2.0`。
-5. 建议同时上传名为 `update.json` 的发布清单，格式参考仓库根目录的 `update.example.json`，其中 SHA-256 必须由最终签名 APK 计算。
-6. 在保留已有日记的真机上执行覆盖安装验证，禁止通过卸载应用来解决签名或版本问题。
+5. 同时上传名为 `update.json` 的发布清单，格式参考仓库根目录的 `update.example.json`，其中 SHA-256 和大小必须由最终签名 APK 计算。
+6. 运行 `scripts/publish-oss.ps1`，同步版本目录和 `releases/latest` 下的 APK、ZIP 与清单，并通过公开地址复核 ZIP 内 APK 的哈希。
+7. 在保留已有日记的真机上执行覆盖安装验证，禁止通过卸载应用来解决签名或版本问题。
 
 应用下载 APK 后会再次校验包名、内部 `versionCode` 和签名证书。任一项不匹配都会停止安装，以避免错误更新影响本机数据。
 

@@ -1,8 +1,10 @@
-import { Capacitor, registerPlugin } from '@capacitor/core'
+import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor/core'
 
 const RELEASE_API_URL = 'https://api.github.com/repos/boringHub/diary-app/releases/latest'
+const OSS_MANIFEST_URL = 'https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/update.json'
+const NETWORK_TIMEOUT_MS = 30_000
 const PREFERRED_APK_NAMES = ['shiguangjian-android.apk', 'shiguangjian-android-debug.apk']
-const WEB_VERSION = '1.3.0'
+const WEB_VERSION = '1.3.1'
 
 interface NativeVersionInfo {
   versionName: string
@@ -12,6 +14,8 @@ interface NativeVersionInfo {
 
 interface InstallUpdateOptions {
   url: string
+  fallbackUrl?: string
+  fallbackFormat?: 'zip'
   expectedVersionCode?: number
   expectedSha256?: string
 }
@@ -22,7 +26,9 @@ interface InstallUpdateResult {
 
 interface AppUpdatePlugin {
   getCurrentVersion(): Promise<NativeVersionInfo>
+  fetchJson(options: { url: string }): Promise<Record<string, unknown>>
   downloadAndInstall(options: InstallUpdateOptions): Promise<InstallUpdateResult>
+  addListener(eventName: 'downloadProgress', listener: (event: DownloadProgress) => void): Promise<PluginListenerHandle>
 }
 
 interface GitHubReleaseAsset {
@@ -41,11 +47,16 @@ interface GitHubRelease {
   assets: GitHubReleaseAsset[]
 }
 
-interface UpdateManifest {
+export interface UpdateManifest {
   versionCode?: number
   versionName?: string
   apk?: string
+  apkSize?: number
   sha256?: string
+  githubUrl?: string
+  ossUrl?: string
+  ossFormat?: 'zip'
+  releaseNotes?: string
 }
 
 export interface AppVersionInfo {
@@ -61,8 +72,18 @@ export interface AvailableUpdate {
   releaseNotes: string
   releaseUrl: string
   apkUrl: string
+  fallbackUrl?: string
+  fallbackFormat?: 'zip'
   apkSize: number
   sha256?: string
+}
+
+export interface DownloadProgress {
+  status: 'connecting' | 'downloading' | 'switching' | 'extracting' | 'verifying' | 'installing'
+  source: 'github' | 'aliyun'
+  downloadedBytes?: number
+  totalBytes?: number
+  percent?: number
 }
 
 export interface UpdateCheckResult {
@@ -117,15 +138,52 @@ function selectApkAsset(assets: GitHubReleaseAsset[], manifest?: UpdateManifest)
   return apkAssets[0]
 }
 
-function isUpdateManifest(value: unknown): value is UpdateManifest {
-  if (!value || typeof value !== 'object') return false
+export function parseUpdateManifest(value: unknown): UpdateManifest | undefined {
+  if (!value || typeof value !== 'object') return undefined
   const manifest = value as Record<string, unknown>
-  return (
+  const valid =
     (manifest.versionCode === undefined || (typeof manifest.versionCode === 'number' && Number.isInteger(manifest.versionCode))) &&
     (manifest.versionName === undefined || typeof manifest.versionName === 'string') &&
     (manifest.apk === undefined || typeof manifest.apk === 'string') &&
-    (manifest.sha256 === undefined || typeof manifest.sha256 === 'string')
-  )
+    (manifest.apkSize === undefined || (typeof manifest.apkSize === 'number' && Number.isFinite(manifest.apkSize))) &&
+    (manifest.sha256 === undefined || typeof manifest.sha256 === 'string') &&
+    (manifest.githubUrl === undefined || typeof manifest.githubUrl === 'string') &&
+    (manifest.ossUrl === undefined || typeof manifest.ossUrl === 'string') &&
+    (manifest.ossFormat === undefined || manifest.ossFormat === 'zip') &&
+    (manifest.releaseNotes === undefined || typeof manifest.releaseNotes === 'string')
+  return valid ? (value as UpdateManifest) : undefined
+}
+
+async function fetchJsonWithTimeout(url: string, init?: RequestInit): Promise<{ response: Response; value: unknown }> {
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), NETWORK_TIMEOUT_MS)
+  try {
+    const response = await fetch(url, { ...init, signal: controller.signal })
+    const value: unknown = await response.json()
+    return { response, value }
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error('连接 GitHub 超过 30 秒，已尝试切换阿里云')
+    throw error
+  } finally {
+    window.clearTimeout(timeout)
+  }
+}
+
+async function loadOssManifest(): Promise<UpdateManifest> {
+  let value: unknown
+  if (Capacitor.isNativePlatform()) {
+    value = await AppUpdate.fetchJson({ url: OSS_MANIFEST_URL })
+  } else {
+    const result = await fetchJsonWithTimeout(OSS_MANIFEST_URL, { cache: 'no-store' })
+    const response = result.response
+    if (!response.ok) throw new Error(`阿里云更新信息读取失败 (${response.status})`)
+    value = result.value
+  }
+  const manifest = parseUpdateManifest(value)
+  if (!manifest?.versionName || !manifest.githubUrl || !manifest.ossUrl) {
+    throw new Error('阿里云更新信息无效')
+  }
+  return manifest
 }
 
 async function loadUpdateManifest(assets: GitHubReleaseAsset[]): Promise<UpdateManifest | undefined> {
@@ -133,10 +191,9 @@ async function loadUpdateManifest(assets: GitHubReleaseAsset[]): Promise<UpdateM
   if (!asset) return undefined
 
   try {
-    const response = await fetch(asset.browser_download_url, { cache: 'no-store' })
+    const { response, value } = await fetchJsonWithTimeout(asset.browser_download_url, { cache: 'no-store' })
     if (!response.ok) return undefined
-    const value: unknown = await response.json()
-    return isUpdateManifest(value) ? value : undefined
+    return parseUpdateManifest(value)
   } catch {
     return undefined
   }
@@ -148,41 +205,59 @@ export async function getCurrentVersion(): Promise<AppVersionInfo> {
 }
 
 export async function checkForUpdate(): Promise<UpdateCheckResult> {
-  const [current, releaseResponse] = await Promise.all([
-    getCurrentVersion(),
-    fetch(RELEASE_API_URL, {
+  const current = await getCurrentVersion()
+
+  try {
+    const { response: releaseResponse, value } = await fetchJsonWithTimeout(RELEASE_API_URL, {
       cache: 'no-store',
       headers: { Accept: 'application/vnd.github+json' },
-    }),
-  ])
+    })
 
-  if (!releaseResponse.ok) {
-    throw new Error(`检查更新失败 (${releaseResponse.status})`)
+    if (!releaseResponse.ok) throw new Error(`检查更新失败 (${releaseResponse.status})`)
+
+    const release = value as GitHubRelease
+    if (!release.tag_name || !Array.isArray(release.assets) || release.draft) throw new Error('最新发布信息无效')
+
+    const manifest = (await loadUpdateManifest(release.assets)) ?? (await loadOssManifest().catch(() => undefined))
+    const apkAsset = selectApkAsset(release.assets, manifest)
+    if (!apkAsset) throw new Error('最新版本没有可用的 Android 安装包')
+
+    const versionName = manifest?.versionName?.trim() || release.tag_name.replace(/^v/i, '')
+    return makeCheckResult(current, {
+      versionName,
+      versionCode: manifest?.versionCode,
+      releaseName: release.name?.trim() || `拾光笺 v${versionName}`,
+      releaseNotes: release.body?.trim() || manifest?.releaseNotes?.trim() || '',
+      releaseUrl: release.html_url,
+      apkUrl: apkAsset.browser_download_url,
+      fallbackUrl: manifest?.ossUrl?.trim(),
+      fallbackFormat: manifest?.ossFormat,
+      apkSize: apkAsset.size,
+      sha256: manifest?.sha256?.trim(),
+    })
+  } catch (githubError) {
+    try {
+      const manifest = await loadOssManifest()
+      const versionName = manifest.versionName!.trim()
+      return makeCheckResult(current, {
+        versionName,
+        versionCode: manifest.versionCode,
+        releaseName: `拾光笺 v${versionName}`,
+        releaseNotes: manifest.releaseNotes?.trim() || '',
+        releaseUrl: `https://github.com/boringHub/diary-app/releases/tag/v${versionName}`,
+        apkUrl: manifest.githubUrl!.trim(),
+        fallbackUrl: manifest.ossUrl!.trim(),
+        fallbackFormat: manifest.ossFormat,
+        apkSize: manifest.apkSize ?? 0,
+        sha256: manifest.sha256?.trim(),
+      })
+    } catch {
+      throw githubError instanceof Error ? githubError : new Error('检查更新失败，请稍后重试')
+    }
   }
+}
 
-  const release = (await releaseResponse.json()) as GitHubRelease
-  if (!release.tag_name || !Array.isArray(release.assets) || release.draft) {
-    throw new Error('最新发布信息无效')
-  }
-
-  const manifest = await loadUpdateManifest(release.assets)
-  const apkAsset = selectApkAsset(release.assets, manifest)
-  if (!apkAsset) {
-    throw new Error('最新版本没有可用的 Android 安装包')
-  }
-
-  const versionName = manifest?.versionName?.trim() || release.tag_name.replace(/^v/i, '')
-  const latest: AvailableUpdate = {
-    versionName,
-    versionCode: manifest?.versionCode,
-    releaseName: release.name?.trim() || `拾光笺 v${versionName}`,
-    releaseNotes: release.body?.trim() || '',
-    releaseUrl: release.html_url,
-    apkUrl: apkAsset.browser_download_url,
-    apkSize: apkAsset.size,
-    sha256: manifest?.sha256?.trim(),
-  }
-
+function makeCheckResult(current: AppVersionInfo, latest: AvailableUpdate): UpdateCheckResult {
   const updateAvailable =
     current.versionCode !== undefined && latest.versionCode !== undefined
       ? latest.versionCode > current.versionCode
@@ -191,15 +266,25 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
   return { current, latest, updateAvailable }
 }
 
-export async function installUpdate(update: AvailableUpdate): Promise<InstallUpdateResult> {
+export async function installUpdate(
+  update: AvailableUpdate,
+  onProgress?: (progress: DownloadProgress) => void,
+): Promise<InstallUpdateResult> {
   if (!Capacitor.isNativePlatform()) {
     window.open(update.releaseUrl, '_blank', 'noopener,noreferrer')
     return { status: 'installer_opened' }
   }
 
-  return AppUpdate.downloadAndInstall({
-    url: update.apkUrl,
-    expectedVersionCode: update.versionCode,
-    expectedSha256: update.sha256,
-  })
+  const listener = onProgress ? await AppUpdate.addListener('downloadProgress', onProgress) : undefined
+  try {
+    return await AppUpdate.downloadAndInstall({
+      url: update.apkUrl,
+      fallbackUrl: update.fallbackUrl,
+      fallbackFormat: update.fallbackFormat,
+      expectedVersionCode: update.versionCode,
+      expectedSha256: update.sha256,
+    })
+  } finally {
+    await listener?.remove()
+  }
 }

@@ -1,6 +1,11 @@
 {
-  "versionCode": 4,
-  "versionName": "1.3.0",
+  "versionCode": 5,
+  "versionName": "1.3.1",
   "apk": "shiguangjian-android.apk",
-  "sha256": "REPLACE_WITH_FINAL_SIGNED_APK_SHA256"
+  "apkSize": 0,
+  "sha256": "REPLACE_WITH_FINAL_SIGNED_APK_SHA256",
+  "githubUrl": "https://github.com/boringHub/diary-app/releases/download/v1.3.1/shiguangjian-android.apk",
+  "ossUrl": "https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/v1.3.1/shiguangjian-android.zip",
+  "ossFormat": "zip",
+  "releaseNotes": "REPLACE_WITH_RELEASE_NOTES"
 }

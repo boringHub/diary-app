@@ -21,18 +21,24 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 @CapacitorPlugin(name = "AppUpdate")
 public class AppUpdatePlugin extends Plugin {
     private static final int BUFFER_SIZE = 16 * 1024;
+    private static final int NETWORK_TIMEOUT_MS = 30_000;
     private static final long MAX_APK_SIZE = 250L * 1024L * 1024L;
+    private static final long MAX_ARCHIVE_SIZE = 300L * 1024L * 1024L;
     private static final String APK_MIME_TYPE = "application/vnd.android.package-archive";
 
     @PluginMethod
@@ -72,21 +78,48 @@ public class AppUpdatePlugin extends Plugin {
 
         Long expectedVersionCode = getOptionalLong(call, "expectedVersionCode");
         String expectedSha256 = call.getString("expectedSha256");
+        String fallbackUrl = call.getString("fallbackUrl");
+        String fallbackFormat = call.getString("fallbackFormat");
+        if (fallbackUrl != null && !fallbackUrl.startsWith("https://")) {
+            call.reject("备用更新地址无效，仅允许 HTTPS 下载", "INVALID_FALLBACK_URL");
+            return;
+        }
 
         execute(() -> {
             File updateDirectory = new File(getContext().getCacheDir(), "updates");
             File temporaryApk = new File(updateDirectory, "shiguangjian-update.download");
+            File temporaryArchive = new File(updateDirectory, "shiguangjian-update.zip");
             File updateApk = new File(updateDirectory, "shiguangjian-update.apk");
 
             try {
+                String activeSource = "github";
                 if (!updateDirectory.exists() && !updateDirectory.mkdirs()) {
                     throw new UpdateException("无法创建更新缓存目录", "CACHE_CREATE_FAILED");
                 }
 
                 deleteIfPresent(temporaryApk);
-                downloadApk(downloadUrl, temporaryApk);
+                deleteIfPresent(temporaryArchive);
+                try {
+                    downloadFile(downloadUrl, temporaryApk, "github", MAX_APK_SIZE);
+                } catch (UpdateException primaryException) {
+                    if (fallbackUrl == null || fallbackUrl.isBlank()) {
+                        throw primaryException;
+                    }
+                    activeSource = "aliyun";
+                    deleteIfPresent(temporaryApk);
+                    emitProgress("switching", "aliyun", 0, -1);
+                    if ("zip".equalsIgnoreCase(fallbackFormat)) {
+                        downloadFile(fallbackUrl, temporaryArchive, "aliyun", MAX_ARCHIVE_SIZE);
+                        extractApk(temporaryArchive, temporaryApk);
+                        deleteIfPresent(temporaryArchive);
+                    } else {
+                        downloadFile(fallbackUrl, temporaryApk, "aliyun", MAX_APK_SIZE);
+                    }
+                }
+                emitProgress("verifying", activeSource, 0, -1);
                 verifyApk(temporaryApk, expectedVersionCode, expectedSha256);
                 replaceFile(temporaryApk, updateApk);
+                emitProgress("installing", activeSource, 0, -1);
                 launchInstaller(updateApk);
 
                 JSObject result = new JSObject();
@@ -94,22 +127,61 @@ public class AppUpdatePlugin extends Plugin {
                 call.resolve(result);
             } catch (UpdateException exception) {
                 deleteIfPresent(temporaryApk);
+                deleteIfPresent(temporaryArchive);
                 call.reject(exception.getMessage(), exception.code, exception);
             } catch (Exception exception) {
                 deleteIfPresent(temporaryApk);
+                deleteIfPresent(temporaryArchive);
                 call.reject("更新包下载或安装失败", "UPDATE_FAILED", exception);
             }
         });
     }
 
-    private void downloadApk(String downloadUrl, File destination) throws UpdateException {
+    @PluginMethod
+    public void fetchJson(PluginCall call) {
+        String requestUrl = call.getString("url");
+        if (requestUrl == null || !requestUrl.startsWith("https://")) {
+            call.reject("更新信息地址无效，仅允许 HTTPS 请求", "INVALID_JSON_URL");
+            return;
+        }
+
+        execute(() -> {
+            HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection) new URL(requestUrl).openConnection();
+                connection.setConnectTimeout(NETWORK_TIMEOUT_MS);
+                connection.setReadTimeout(NETWORK_TIMEOUT_MS);
+                connection.setInstanceFollowRedirects(true);
+                connection.setRequestProperty("Accept", "application/json");
+                connection.setRequestProperty("User-Agent", "Shiguangjian-Android-Updater");
+                connection.connect();
+                int responseCode = connection.getResponseCode();
+                if (responseCode < 200 || responseCode >= 300) {
+                    throw new UpdateException("更新信息读取失败，服务器返回 " + responseCode, "JSON_HTTP_ERROR");
+                }
+
+                byte[] body = readLimited(connection.getInputStream(), 512L * 1024L);
+                JSObject result = new JSObject(new String(body, StandardCharsets.UTF_8));
+                call.resolve(result);
+            } catch (UpdateException exception) {
+                call.reject(exception.getMessage(), exception.code, exception);
+            } catch (Exception exception) {
+                call.reject("无法读取备用更新信息", "JSON_FETCH_FAILED", exception);
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        });
+    }
+
+    private void downloadFile(String downloadUrl, File destination, String source, long maxSize) throws UpdateException {
         HttpURLConnection connection = null;
         try {
+            emitProgress("connecting", source, 0, -1);
             connection = (HttpURLConnection) new URL(downloadUrl).openConnection();
-            connection.setConnectTimeout(20_000);
-            connection.setReadTimeout(60_000);
+            connection.setConnectTimeout(NETWORK_TIMEOUT_MS);
+            connection.setReadTimeout(NETWORK_TIMEOUT_MS);
             connection.setInstanceFollowRedirects(true);
-            connection.setRequestProperty("Accept", "application/vnd.android.package-archive, application/octet-stream");
+            connection.setRequestProperty("Accept", "application/vnd.android.package-archive, application/zip, application/octet-stream");
             connection.setRequestProperty("User-Agent", "Shiguangjian-Android-Updater");
             connection.connect();
 
@@ -119,11 +191,12 @@ public class AppUpdatePlugin extends Plugin {
             }
 
             long contentLength = connection.getContentLengthLong();
-            if (contentLength > MAX_APK_SIZE) {
-                throw new UpdateException("更新包体积异常", "APK_TOO_LARGE");
+            if (contentLength > maxSize) {
+                throw new UpdateException("更新文件体积异常", "UPDATE_TOO_LARGE");
             }
 
             long totalBytes = 0;
+            long lastProgressAt = 0;
             byte[] buffer = new byte[BUFFER_SIZE];
             try (
                 BufferedInputStream input = new BufferedInputStream(connection.getInputStream());
@@ -132,17 +205,23 @@ public class AppUpdatePlugin extends Plugin {
                 int bytesRead;
                 while ((bytesRead = input.read(buffer)) != -1) {
                     totalBytes += bytesRead;
-                    if (totalBytes > MAX_APK_SIZE) {
-                        throw new UpdateException("更新包体积异常", "APK_TOO_LARGE");
+                    if (totalBytes > maxSize) {
+                        throw new UpdateException("更新文件体积异常", "UPDATE_TOO_LARGE");
                     }
                     output.write(buffer, 0, bytesRead);
+                    long now = System.currentTimeMillis();
+                    if (now - lastProgressAt >= 180) {
+                        emitProgress("downloading", source, totalBytes, contentLength);
+                        lastProgressAt = now;
+                    }
                 }
                 output.getFD().sync();
             }
 
             if (totalBytes == 0) {
-                throw new UpdateException("下载到的更新包为空", "EMPTY_APK");
+                throw new UpdateException("下载到的更新文件为空", "EMPTY_UPDATE");
             }
+            emitProgress("downloading", source, totalBytes, contentLength);
         } catch (UpdateException exception) {
             throw exception;
         } catch (IOException exception) {
@@ -151,6 +230,81 @@ public class AppUpdatePlugin extends Plugin {
             if (connection != null) {
                 connection.disconnect();
             }
+        }
+    }
+
+    private void extractApk(File archive, File destination) throws UpdateException {
+        emitProgress("extracting", "aliyun", 0, archive.length());
+        int apkEntries = 0;
+        long extractedBytes = 0;
+        byte[] buffer = new byte[BUFFER_SIZE];
+
+        try (
+            ZipInputStream input = new ZipInputStream(new BufferedInputStream(new FileInputStream(archive)));
+            FileOutputStream output = new FileOutputStream(destination)
+        ) {
+            ZipEntry entry;
+            while ((entry = input.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    input.closeEntry();
+                    continue;
+                }
+                if (!entry.getName().toLowerCase(Locale.US).endsWith(".apk")) {
+                    throw new UpdateException("备用更新压缩包包含非 APK 文件", "INVALID_UPDATE_ARCHIVE");
+                }
+                apkEntries += 1;
+                if (apkEntries > 1) {
+                    throw new UpdateException("备用更新压缩包必须只包含一个 APK", "INVALID_UPDATE_ARCHIVE");
+                }
+
+                int bytesRead;
+                while ((bytesRead = input.read(buffer)) != -1) {
+                    extractedBytes += bytesRead;
+                    if (extractedBytes > MAX_APK_SIZE) {
+                        throw new UpdateException("解压后的更新包体积异常", "APK_TOO_LARGE");
+                    }
+                    output.write(buffer, 0, bytesRead);
+                }
+                input.closeEntry();
+            }
+            output.getFD().sync();
+        } catch (UpdateException exception) {
+            throw exception;
+        } catch (IOException exception) {
+            throw new UpdateException("无法解压阿里云备用更新包", "ARCHIVE_EXTRACT_FAILED", exception);
+        }
+
+        if (apkEntries != 1 || extractedBytes == 0) {
+            throw new UpdateException("备用更新压缩包中没有有效 APK", "INVALID_UPDATE_ARCHIVE");
+        }
+    }
+
+    private void emitProgress(String status, String source, long downloadedBytes, long totalBytes) {
+        JSObject event = new JSObject();
+        event.put("status", status);
+        event.put("source", source);
+        if (downloadedBytes >= 0) event.put("downloadedBytes", downloadedBytes);
+        if (totalBytes > 0) {
+            event.put("totalBytes", totalBytes);
+            event.put("percent", Math.min(100, Math.round(downloadedBytes * 100.0 / totalBytes)));
+        }
+        notifyListeners("downloadProgress", event);
+    }
+
+    private static byte[] readLimited(InputStream inputStream, long maxBytes) throws IOException, UpdateException {
+        try (BufferedInputStream input = new BufferedInputStream(inputStream)) {
+            java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+            byte[] buffer = new byte[BUFFER_SIZE];
+            long totalBytes = 0;
+            int bytesRead;
+            while ((bytesRead = input.read(buffer)) != -1) {
+                totalBytes += bytesRead;
+                if (totalBytes > maxBytes) {
+                    throw new UpdateException("更新信息体积异常", "JSON_TOO_LARGE");
+                }
+                output.write(buffer, 0, bytesRead);
+            }
+            return output.toByteArray();
         }
     }
 

@@ -12,6 +12,7 @@ import {
   installUpdate,
   type AppVersionInfo,
   type AvailableUpdate,
+  type DownloadProgress,
 } from '../services/appUpdateService'
 
 const settings = ref(settingsRepository.get())
@@ -19,6 +20,7 @@ const currentVersion = ref<AppVersionInfo>({ versionName: '...' })
 const checkingUpdate = ref(false)
 const installingUpdate = ref(false)
 const pendingUpdate = ref<AvailableUpdate | null>(null)
+const downloadProgress = ref<DownloadProgress | null>(null)
 const ionRouter = useIonRouter()
 const currentTheme = ref(getCurrentTheme())
 
@@ -73,6 +75,26 @@ function readableSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+function progressStatus(progress: DownloadProgress) {
+  const labels: Record<DownloadProgress['status'], string> = {
+    connecting: '正在连接下载服务',
+    downloading: '正在下载安装包',
+    switching: 'GitHub 响应较慢，正在切换阿里云',
+    extracting: '正在准备备用安装包',
+    verifying: '正在校验安装包安全性',
+    installing: '校验通过，正在打开安装程序',
+  }
+  return labels[progress.status]
+}
+
+function progressSource(progress: DownloadProgress) {
+  return progress.source === 'aliyun' ? '阿里云' : 'GitHub'
+}
+
+function progressWidth(progress: DownloadProgress) {
+  return `${Math.max(0, Math.min(100, progress.percent ?? 0))}%`
+}
+
 function errorMessage(error: unknown) {
   if (error instanceof Error && error.message) return error.message
   if (typeof error === 'object' && error && 'message' in error) return String(error.message)
@@ -85,8 +107,11 @@ function closeUpdateDialog() {
 
 async function startInstall(update: AvailableUpdate) {
   installingUpdate.value = true
+  downloadProgress.value = { status: 'connecting', source: 'github' }
   try {
-    const result = await installUpdate(update)
+    const result = await installUpdate(update, (progress) => {
+      downloadProgress.value = progress
+    })
     if (result.status === 'permission_required') {
       const alert = await alertController.create({
         header: '需要一点安装权限',
@@ -114,6 +139,7 @@ async function checkUpdate() {
     }
 
     pendingUpdate.value = result.latest
+    downloadProgress.value = null
   } catch (error) {
     await showToast(errorMessage(error))
   } finally {
@@ -227,12 +253,27 @@ async function verifyUpgrade() {
             <IonIcon :icon="shieldCheckmarkOutline" />
             <span>会保留本机日记和设置，先别卸载应用哦。</span>
           </div>
+          <div v-if="installingUpdate && downloadProgress" class="update-download-progress" aria-live="polite">
+            <div class="update-progress-copy">
+              <div>
+                <strong>{{ progressStatus(downloadProgress) }}</strong>
+                <span>{{ progressSource(downloadProgress) }}</span>
+              </div>
+              <b v-if="downloadProgress.percent !== undefined">{{ downloadProgress.percent }}%</b>
+            </div>
+            <div class="update-progress-track" :class="{ indeterminate: downloadProgress.percent === undefined }">
+              <i :style="downloadProgress.percent === undefined ? undefined : { width: progressWidth(downloadProgress) }"></i>
+            </div>
+            <p v-if="downloadProgress.downloadedBytes && downloadProgress.totalBytes">
+              {{ readableSize(downloadProgress.downloadedBytes) }} / {{ readableSize(downloadProgress.totalBytes) }}
+            </p>
+          </div>
           <div class="update-dialog-actions">
             <button class="update-dialog-later" :disabled="installingUpdate" @click="closeUpdateDialog">晚点再说</button>
             <button class="update-dialog-install" :disabled="installingUpdate" @click="installPendingUpdate">
               <IonSpinner v-if="installingUpdate" name="crescent" />
               <IonIcon v-else :icon="cloudDownloadOutline" />
-              {{ installingUpdate ? '准备安装中' : '下载并安装' }}
+              {{ installingUpdate ? '正在处理' : '下载并安装' }}
             </button>
           </div>
           </section>

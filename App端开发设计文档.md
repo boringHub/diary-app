@@ -229,6 +229,14 @@ npx cap run android
 
 调试 APK 用于设备安装，正式发布使用签名 APK 或 AAB。Vue 页面开发不要求 Android Studio 常驻，但最终 Android 构建需要 JDK、Android SDK 和 Gradle 环境。
 
+版本发布采用 GitHub + 阿里云 OSS 双源：
+
+- 检查更新和安装包下载默认访问 GitHub；HTTP/网络明确失败时立即切换，连接或读取连续 30 秒没有响应时切换 OSS。
+- OSS 公共域名为 `https://diary-app.oss-cn-hangzhou.aliyuncs.com`。默认 Endpoint 会阻止 APK 公网分发，因此备用地址使用只包含 `shiguangjian-android.apk` 的 ZIP，下载后在应用缓存目录解压。
+- 下载界面显示来源、连接、下载、切换、解压、校验和安装状态；有总大小时显示百分比和字节进度。
+- 两个来源最终都必须经过包名、递增 `versionCode`、预期版本、签名证书和 APK SHA-256 校验，ZIP 不改变信任边界。
+- 每版发布必须运行 `scripts/publish-oss.ps1`，具体环境变量、对象路径和验证流程以 `RELEASE.md` 为准。
+
 ## 8. 验收标准
 
 - 浏览器执行 `npm run dev` 可以查看并操作时间线。
@@ -241,3 +249,4 @@ npx cap run android
 - 日记板素材包与全局主题相互独立；当前日记保存默认 `boardPackId + boardPackVersion`，未来由编辑器单独选择。
 - DiaryLayout 固定为 `1080 × 1440`，只引用 `blockId` 或 `assetId`，不复制正文和本地路径。
 - SQLite V1 → V2 自动迁移保留原数据；发布前还必须在保留 V1 数据库的 Android 设备上完成覆盖安装验证。
+- GitHub 更新接口或下载连续 30 秒无响应时会切换 OSS，下载界面能持续显示来源和进度，备用 ZIP 解压后仍通过完整 APK 安全校验。
