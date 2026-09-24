@@ -2,7 +2,7 @@ import { Capacitor, registerPlugin } from '@capacitor/core'
 
 const RELEASE_API_URL = 'https://api.github.com/repos/boringHub/diary-app/releases/latest'
 const PREFERRED_APK_NAMES = ['shiguangjian-android.apk', 'shiguangjian-android-debug.apk']
-const WEB_VERSION = '1.1.0'
+const WEB_VERSION = '1.2.0'
 
 interface NativeVersionInfo {
   versionName: string

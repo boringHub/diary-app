@@ -13,22 +13,22 @@
   --sj-radius-lg: 22px;
   --sj-radius-md: 16px;
   --sj-shadow-soft: 0 14px 40px rgba(44, 54, 48, 0.08);
-  --app-safe-top: var(--ion-safe-area-top, env(safe-area-inset-top, 0px));
-  --app-safe-right: var(--ion-safe-area-right, env(safe-area-inset-right, 0px));
-  --app-safe-bottom: var(--ion-safe-area-bottom, env(safe-area-inset-bottom, 0px));
-  --app-safe-left: var(--ion-safe-area-left, env(safe-area-inset-left, 0px));
+  --app-safe-top: env(safe-area-inset-top, 0px);
+  --app-safe-right: env(safe-area-inset-right, 0px);
+  --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-safe-left: env(safe-area-inset-left, 0px);
   --ion-background-color: #07131f;
   --ion-text-color: var(--sj-ink);
   --ion-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Noto Sans SC", "Microsoft YaHei", sans-serif;
 }
 
 * { box-sizing: border-box; }
-html, body, #app { width: 100%; min-width: 320px; min-height: 100%; background: #07131f; }
+html, body, #app { width: 100%; height: 100%; min-width: 320px; min-height: 100%; background: #07131f; }
 body { margin: 0; color: var(--sj-ink); font-synthesis: none; }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
-ion-app, ion-router-outlet, .ion-page { background: #07131f; }
-ion-content { --background: #07131f; }
+ion-app, ion-router-outlet, .ion-page { min-height: 100%; background: #07131f; }
+ion-content { --background: #07131f; background: #07131f; }
 ion-toolbar { --background: transparent; --border-width: 0; }
 
 .screen { width: min(100%, 760px); min-height: 100%; margin: 0 auto; padding: calc(20px + var(--app-safe-top)) calc(20px + var(--app-safe-right)) calc(32px + var(--app-safe-bottom)) calc(20px + var(--app-safe-left)); }

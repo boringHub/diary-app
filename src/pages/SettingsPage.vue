@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { alertController, IonContent, IonIcon, IonPage, IonSpinner, toastController } from '@ionic/vue'
-import { chevronForward, cloudDownloadOutline, colorPaletteOutline, mailOutline, shieldCheckmarkOutline } from 'ionicons/icons'
+import { checkmarkCircleOutline, chevronForward, cloudDownloadOutline, colorPaletteOutline, mailOutline, shieldCheckmarkOutline } from 'ionicons/icons'
+import { diaryRepository } from '../repositories/diaryRepository'
 import { settingsRepository } from '../repositories/settingsRepository'
 import {
   checkForUpdate,
@@ -123,6 +124,21 @@ async function checkUpdate() {
     checkingUpdate.value = false
   }
 }
+
+async function verifyUpgrade() {
+  try {
+    const [version, diaries] = await Promise.all([getCurrentVersion(), diaryRepository.list()])
+    currentVersion.value = version
+    const alert = await alertController.create({
+      header: '升级验证通过',
+      message: `当前版本 v${escapeHtml(version.versionName)}，本机数据库可正常读取，现有日记 ${diaries.length} 篇。`,
+      buttons: ['知道了'],
+    })
+    await alert.present()
+  } catch (error) {
+    await showToast(`升级验证失败：${errorMessage(error)}`)
+  }
+}
 </script>
 
 <template>
@@ -170,6 +186,11 @@ async function checkUpdate() {
               <div><strong>检查更新</strong><p>当前 v{{ currentVersion.versionName }} · 覆盖安装保留本机日记</p></div>
               <IonSpinner v-if="checkingUpdate || installingUpdate" class="update-spinner" name="crescent" />
               <IonIcon v-else class="row-chevron" :icon="chevronForward" />
+            </button>
+            <button class="setting-row setting-button update-row" @click="verifyUpgrade">
+              <span class="setting-icon"><IonIcon :icon="checkmarkCircleOutline" /></span>
+              <div><strong>升级验证</strong><p>确认新版本运行并读取本机日记</p></div>
+              <IonIcon class="row-chevron" :icon="chevronForward" />
             </button>
           </div>
           <p class="update-safety-note">更新时不要卸载应用。签名、包名或版本异常的安装包会被自动拦截。</p>
