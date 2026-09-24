@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core'
-import type { Diary, Mood } from '../types/diary'
+import type { Diary, DiaryImageInput, Mood } from '../types/diary'
 import { LocalStorageDiaryRepository } from './localStorageDiaryRepository'
 
 export interface SaveDiaryInput {
@@ -7,6 +7,7 @@ export interface SaveDiaryInput {
   title: string
   body: string
   mood: Mood
+  images?: DiaryImageInput[]
 }
 
 export interface DiaryRepository {

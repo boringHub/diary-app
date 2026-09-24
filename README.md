@@ -26,6 +26,9 @@
 - 收藏日记和按日期搜索
 - Web 端 LocalStorage 持久化
 - Android 端 SQLite 本地持久化
+- 最多 5 张日记图片的选择、预览、私有目录保存和详情展示
+- 三套内置全局界面主题、ZIP 界面主题包导入和即时全局切换
+- 每篇日记独立保存固定布局和日记板素材包标识，为后续个性化日记板预留边界
 - 首次启动欢迎日记、加载状态和保存失败提示
 - 设置页手动检查更新、APK 下载和系统安装引导
 - 更新包包名、版本号、签名和可选 SHA-256 完整性校验
@@ -48,7 +51,23 @@
 - Android 数据库文件名为 `shiguangjianSQLite.db`
 - Android 数据库位于应用私有目录，通常为 `/data/user/0/xyz.shiguangjian.app/databases/`
 
-SQLite V1 包含 `diaries`、`diary_blocks`、`diary_assets`、`diary_layouts`、`app_settings` 和 `event_queue`。当前正文保存为 `text` Block，后续图片功能将使用 `image` Block 和 `diary_assets`。
+SQLite V2 包含 `diaries`、`diary_blocks`、`diary_assets`、`diary_layouts`、`themes`、`theme_assets`、`app_settings` 和 `event_queue`。正文和图片分别保存为 `text`、`image` Block，图片文件位于 Capacitor `Directory.Data` 对应的应用私有目录，数据库只保存相对路径。
+
+从 V1 升级到 V2 时只新增主题索引表，不删除或重建已有日记数据。自动迁移测试会先创建 V1 日记、Block、图片和布局，再执行 V2 升级并核对原数据仍可读取。浏览器中的旧版 LocalStorage 文字日记会在读取时补齐 Block 和布局结构。
+
+图片数量上限不只由页面控制，LocalStorage 和 SQLite Repository 在写入前也会校验每篇日记最多 5 张图片，避免绕过界面写入不兼容的数据。
+
+## 全局界面主题
+
+主题中心可以导入 ZIP 界面主题包。ZIP 根目录必须包含 `manifest.json`，清单使用 `schemaVersion: 1`，并声明稳定的 `id`、语义化 `version` 和全局界面颜色。选择主题后，时间线、编辑器、详情页、设置页、主题中心和底部导航会立即一起变化；主题选择只保存在 App 设置中，不写入单篇日记。
+
+- 压缩包不超过 20 MB，解压后不超过 40 MB，文件数不超过 128
+- 拒绝绝对路径、Windows 路径、URL 和 `..` 等越界路径
+- 文件保存在 `Directory.Data/themes/{themeId}/{version}/`，同一版本不会被覆盖
+- Android 会在事务中写入 `themes` 清单索引；`theme_assets` 表暂为旧结构兼容保留
+- 导入或索引失败时会回滚清单记录并删除本次新写入的主题目录
+
+全局界面主题与日记板素材包是两个独立系统。日记保存 `boardPackId + boardPackVersion` 和只引用 `blockId`、`assetId` 的固定布局；当前版本统一使用默认日记板。后续会在写日记时加入日记板素材包选择器，用背景板、贴纸和装饰实现每篇日记的个性化，不影响 App 的全局界面主题。
 
 ## 本地开发
 
@@ -75,6 +94,8 @@ npm test
 npm run build
 ```
 
+当前阶段二验收包含 32 项 Vitest 测试，覆盖图片上限、旧 LocalStorage 兼容、主题 manifest、ZIP 包安全校验、SQLite 主题索引和 V1 → V2 数据保留迁移。
+
 ### 构建 Android APK
 
 先让 Capacitor 同步 Web 产物和原生插件：
@@ -87,14 +108,14 @@ Windows：
 
 ```powershell
 cd android
-.\gradlew.bat assembleDebug
+.\gradlew.bat clean assembleDebug --no-problems-report
 ```
 
 macOS 或 Linux：
 
 ```bash
 cd android
-./gradlew assembleDebug
+./gradlew clean assembleDebug --no-problems-report
 ```
 
 APK 输出位置：
@@ -126,16 +147,16 @@ Android SDK 的本地路径写在被 Git 忽略的 `android/local.properties` �
 src/pages/           页面与交互
 src/stores/          Pinia 状态管理
 src/repositories/    Web/Android 数据适配器
+src/services/        图片文件、主题和应用更新服务
 src/types/           领域类型
 android/             Capacitor Android 工程
 ```
 
 ## 开发计划
 
-- 图片选择与应用私有目录存储
-- `diary_assets` 和 `image` Block 渲染
+- 下一阶段：日记保存事务写入 `event_queue`，仅发送允许的通知元数据，并支持失败重试与幂等
+- 后续个性化：加入独立的日记板素材包安装与编辑器选择，不与全局界面主题混用
 - 数据导出、导入与备份
-- 主题系统和日记布局
 - 正式签名的 Android Release 构建
 
 ## 说明

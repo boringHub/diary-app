@@ -2,13 +2,25 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { alertController, IonContent, IonIcon, IonPage, useIonRouter } from '@ionic/vue'
-import { chevronBack, createOutline, heart, heartOutline } from 'ionicons/icons'
+import { chevronBack, createOutline, heart, heartOutline, imageOutline } from 'ionicons/icons'
 import { useDiaryStore } from '../stores/diaryStore'
+import type { DiaryBlock } from '../types/diary'
 import { moodLabels } from '../types/diary'
 import { createStarReturnAnimation } from '../animations'
 const route = useRoute(); const ionRouter = useIonRouter(); const store = useDiaryStore()
 void store.ensureLoaded().catch(() => undefined)
 const diary = computed(() => store.get(String(route.params.id)))
+function textFor(block: DiaryBlock) {
+  return 'text' in block.content ? block.content.text : ''
+}
+function imageAsset(block: DiaryBlock) {
+  if (!('assetId' in block.content) || !diary.value) return undefined
+  const assetId = block.content.assetId
+  return diary.value.assets.find((asset) => asset.id === assetId)
+}
+function imageCaption(block: DiaryBlock) {
+  return 'assetId' in block.content ? block.content.caption : undefined
+}
 function backToTimeline() {
   if (ionRouter.canGoBack()) ionRouter.navigate('/timeline', 'back', 'pop', createStarReturnAnimation)
   else ionRouter.navigate('/timeline', 'none', 'replace')
@@ -43,7 +55,16 @@ async function remove() {
           <p class="detail-date">{{ new Intl.DateTimeFormat('zh-CN', { dateStyle: 'full' }).format(diary.updatedAt) }}</p>
           <h1>{{ diary.title || '还没取名字' }}</h1>
           <div class="detail-rule"></div>
-          <p class="detail-body">{{ diary.body }}</p>
+          <div class="detail-blocks">
+            <template v-for="block in diary.blocks" :key="block.id">
+              <p v-if="block.blockType === 'text'" class="detail-body">{{ textFor(block) }}</p>
+              <figure v-else class="detail-image-block">
+                <img v-if="imageAsset(block)?.url" :src="imageAsset(block)?.url" alt="日记里的照片" />
+                <span v-else class="missing-image detail-missing-image"><IonIcon :icon="imageOutline" />这张图片暂时找不到</span>
+                <figcaption v-if="imageCaption(block)">{{ imageCaption(block) }}</figcaption>
+              </figure>
+            </template>
+          </div>
         </article>
         <button class="delete-button" @click="remove">删掉这篇日记</button>
       </section>

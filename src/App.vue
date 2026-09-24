@@ -5,11 +5,17 @@ import { useDiaryStore } from './stores/diaryStore'
 import { IonApp, IonIcon, IonRouterOutlet, useIonRouter } from '@ionic/vue'
 import { add, planetOutline, settingsOutline } from 'ionicons/icons'
 import { createDiaryPaperEnterAnimation, createTabSlideAnimation } from './animations'
+import { getThemePresentation, useCurrentTheme } from './services/themeService'
 
 const route = useRoute()
 const ionRouter = useIonRouter()
 const store = useDiaryStore()
 void store.ensureLoaded().catch(() => undefined)
+const currentTheme = useCurrentTheme()
+const appThemeStyle = computed(() => getThemePresentation(
+  currentTheme.value?.id ?? 'default',
+  currentTheme.value?.version ?? '1.0.0',
+).cssVariables)
 
 const nav = [
   { path: '/timeline', label: '星球', icon: planetOutline },
@@ -41,7 +47,7 @@ function createDiary() {
 </script>
 
 <template>
-  <IonApp>
+  <IonApp class="app-theme" :style="appThemeStyle">
     <IonRouterOutlet :animated="true" />
     <nav v-if="showTabBar" class="floating-nav" :class="{ 'floating-nav-night': route.path !== '/timeline', 'floating-nav-editor': isNewDiaryRoute }" aria-label="主导航">
       <button class="nav-action" :class="{ active: route.path.startsWith(nav[0].path) }" @click="switchRoot('/timeline')">

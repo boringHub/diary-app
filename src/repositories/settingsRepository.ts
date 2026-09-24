@@ -3,6 +3,8 @@ export interface AppSettings {
   notificationEmail: string
   appearance: 'light'
   themeName: string
+  themeId: string
+  themeVersion: string
 }
 
 const KEY = 'shiguangjian.settings.v1'
@@ -12,9 +14,12 @@ const defaults: AppSettings = {
   notificationEmail: '',
   appearance: 'light',
   themeName: '记忆星空',
+  themeId: 'default',
+  themeVersion: '1.0.0',
 }
 
 function read(): AppSettings {
+  if (typeof localStorage === 'undefined') return { ...defaults }
   const value = localStorage.getItem(KEY)
   if (!value) return defaults
 
@@ -36,7 +41,7 @@ export const settingsRepository = {
   },
   update(patch: Partial<AppSettings>): AppSettings {
     const settings = { ...read(), ...patch }
-    localStorage.setItem(KEY, JSON.stringify(settings))
+    if (typeof localStorage !== 'undefined') localStorage.setItem(KEY, JSON.stringify(settings))
     return settings
   },
 }

@@ -133,7 +133,21 @@ h1 { margin-bottom: 0; color: var(--sj-ink); font-size: 34px; font-weight: 740; 
 .editor-paper .title-input { margin-bottom: 19px; font: 700 30px/1.2 Georgia, 'Noto Serif SC', serif; }
 .editor-paper .title-input::placeholder, .editor-paper .body-input::placeholder { color: rgba(176,207,205,.4); }
 .editor-paper .body-input { min-height: 335px; color: rgba(217,238,232,.88); font-size: 15px; line-height: 1.9; }
-.editor-footer { color: rgba(157,196,195,.52); }
+.image-preview-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.editor-image-preview-grid { display: flex; gap: 8px; margin-top: 14px; overflow-x: auto; padding-top: 12px; border-top: 1px solid rgba(172,220,216,.12); scrollbar-width: none; }
+.editor-image-preview-grid::-webkit-scrollbar { display: none; }
+.editor-image-preview-grid .image-preview-item { flex: 0 0 68px; width: 68px; }
+.image-preview-item { position: relative; overflow: hidden; aspect-ratio: 1; border: 1px solid rgba(172,220,216,.14); border-radius: 12px; background: rgba(4,18,29,.55); }
+.image-preview-item img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.image-preview-item button { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 27px; height: 27px; padding: 0; border: 1px solid rgba(255,255,255,.18); border-radius: 50%; background: rgba(4,16,26,.76); color: #e9f7f3; font-size: 18px; line-height: 1; }
+.missing-image { display: grid; width: 100%; height: 100%; place-content: center; justify-items: center; gap: 7px; padding: 12px; color: rgba(168,207,201,.58); font-size: 10px; text-align: center; }
+.missing-image ion-icon { font-size: 24px; }
+.editor-image-button { position: relative; display: grid; flex: 0 0 auto; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid rgba(158,224,202,.22); border-radius: 11px; background: rgba(63,124,118,.14); color: #a8d9cc; font-size: 19px; }
+.editor-image-button:disabled { opacity: .45; cursor: default; }
+.editor-image-count { position: absolute; top: -5px; right: -5px; display: grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border: 2px solid rgba(9,29,43,.96); border-radius: 9px; background: #81d3bd; color: #082019; font-size: 9px; font-weight: 800; line-height: 1; }
+.visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden !important; clip: rect(0 0 0 0) !important; clip-path: inset(50%) !important; white-space: nowrap !important; }
+.editor-footer { align-items: center; justify-content: flex-start; gap: 12px; color: rgba(157,196,195,.52); }
+.editor-local-note { margin-left: auto; }
 .mood-section { position: relative; z-index: 1; margin-top: 24px; }
 .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .section-heading > span { color: rgba(158,199,197,.54); font-size: 11px; }
@@ -152,6 +166,12 @@ h1 { margin-bottom: 0; color: var(--sj-ink); font-size: 34px; font-weight: 740; 
 .detail-paper h1 { margin: 18px 0 21px; color: #effaf6; font: 700 33px/1.22 Georgia, 'Noto Serif SC', serif; letter-spacing: 0; }
 .detail-rule { width: 42px; height: 2px; margin-bottom: 23px; background: #81d3bd; box-shadow: 0 0 12px rgba(129,211,189,.55); }
 .detail-body { color: rgba(215,235,231,.83); font-size: 15px; line-height: 2; }
+.detail-blocks { display: grid; gap: 18px; }
+.detail-blocks .detail-body { margin: 0; }
+.detail-image-block { overflow: hidden; margin: 0; border: 1px solid rgba(172,220,216,.14); border-radius: 14px; background: rgba(4,18,29,.55); }
+.detail-image-block img { display: block; width: 100%; max-height: 560px; object-fit: contain; }
+.detail-image-block figcaption { padding: 9px 12px; color: rgba(179,211,207,.64); font-size: 11px; }
+.detail-missing-image { min-height: 180px; font-size: 12px; }
 .night-page .delete-button { margin: 19px auto 0; color: rgba(235,159,143,.72); }
 .settings-heading { padding: 8px 2px 0; }
 .settings-heading h1 { color: #effaf6; font: 700 34px/1.08 Georgia, 'Noto Serif SC', serif; }
@@ -191,10 +211,23 @@ h1 { margin-bottom: 0; color: var(--sj-ink); font-size: 34px; font-weight: 740; 
 .themes-screen .page-description { margin: 25px 0 20px; color: rgba(190,220,216,.64); }
 .themes-screen .theme-list { gap: 13px; }
 .themes-screen .theme-card { position: relative; gap: 15px; padding: 13px; border: 1px solid rgba(172,220,216,.14); border-radius: 17px; background: rgba(9,29,43,.68); box-shadow: 0 16px 38px rgba(0,0,0,.16), inset 0 1px rgba(255,255,255,.04); }
+.themes-screen .theme-card { width: 100%; color: inherit; text-align: left; }
 .themes-screen .theme-card.active { border-color: rgba(129,211,189,.42); box-shadow: 0 0 0 1px rgba(129,211,189,.08), 0 16px 38px rgba(0,0,0,.2); }
 .themes-screen .theme-preview { width: 86px; height: 104px; border-radius: 13px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25), 0 8px 16px rgba(0,0,0,.16); }
-.themes-screen .theme-info h2 { color: #e6f4f0; }.themes-screen .theme-info h2 span { color: #91ddc8; }.themes-screen .theme-info p { color: rgba(175,208,205,.62); line-height: 1.55; }
+.theme-preview-board { position: relative; display: grid; place-items: center; width: 64%; height: 72%; border: 1px solid; border-radius: 7px; font: 16px/1.25 Georgia, 'Noto Serif SC', serif; text-align: center; box-shadow: 0 7px 16px rgba(0,0,0,.14); }
+.theme-preview-board i { position: absolute; top: 9px; left: 9px; width: 13px; height: 2px; border-radius: 2px; }
+.themes-screen .theme-info { display: grid; flex: 1; min-width: 0; gap: 8px; }
+.themes-screen .theme-info strong { color: #e6f4f0; font-size: 16px; }
+.themes-screen .theme-info em { margin-left: 8px; color: #91ddc8; font-size: 10px; font-style: normal; font-weight: 650; }
+.themes-screen .theme-info small { color: rgba(175,208,205,.62); font-size: 12px; line-height: 1.55; }
+.themes-screen .theme-import-button { display: flex; align-items: center; gap: 13px; width: 100%; padding: 13px; border: 1px dashed rgba(172,220,216,.26); border-radius: 17px; background: rgba(9,29,43,.42); color: inherit; text-align: left; }
+.themes-screen .theme-import-button:disabled { opacity: .62; }
+.themes-screen .theme-import-button > span:nth-child(2) { display: grid; flex: 1; min-width: 0; gap: 6px; }
+.themes-screen .theme-import-button strong { color: #e6f4f0; font-size: 14px; }
+.themes-screen .theme-import-button small { color: rgba(175,208,205,.62); font-size: 12px; line-height: 1.45; }
+.themes-screen .theme-import-icon { display: grid; flex: 0 0 auto; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: rgba(129,211,189,.12); color: #91ddc8; font-size: 20px; }
 .theme-arrow { margin-left: auto; color: #78a9a8; font-size: 25px; line-height: 1; }
+.subbar-spacer { flex: 0 0 auto; width: 44px; height: 44px; }
 .floating-nav-night, .floating-nav { border-color: rgba(161,214,211,.24); background: rgba(8,27,40,.8); box-shadow: 0 14px 38px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.08); }
 .floating-nav-night .nav-action { color: rgba(166,203,204,.64); }.floating-nav-night .nav-action.active { background: rgba(96,176,161,.14); color: #a5ddcf; }.floating-nav-night .nav-create { background: #4f887d; box-shadow: 0 8px 18px rgba(47,109,98,.38); }
 .floating-nav-editor { z-index: 1002; pointer-events: none; animation: floating-nav-editor-fade 520ms cubic-bezier(.2,.78,.18,1) both; }
@@ -202,3 +235,80 @@ h1 { margin-bottom: 0; color: var(--sj-ink); font-size: 34px; font-weight: 740; 
 @media (max-width: 430px) { .night-page { padding-right: calc(15px + var(--app-safe-right)); padding-left: calc(15px + var(--app-safe-left)); }.page-title-kicker { max-width: 150px; }.editor-paper { padding-right: 17px; padding-left: 17px; }.editor-paper .title-input { font-size: 27px; }.editor-paper .body-input { min-height: clamp(220px, calc(100vh - var(--app-safe-top) - var(--app-safe-bottom) - 390px), 300px); min-height: clamp(220px, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 390px), 300px); }.section-heading { display: grid; gap: 4px; }.detail-paper h1 { font-size: 29px; }.themes-screen .theme-preview { width: 76px; height: 96px; }.settings-screen, .themes-screen { padding-bottom: calc(190px + var(--app-safe-bottom)); } }
 @media (max-width: 360px) { .page-title-kicker { max-width: 105px; }.page-title strong { font-size: 14px; }.page-subbar .actions { gap: 2px; }.page-subbar .icon-button { width: 40px; height: 40px; }.save-button { min-width: 48px; padding-right: 9px; padding-left: 9px; }.starfield-tools { gap: 5px; }.starfield-tool { width: 40px; height: 40px; }.starfield-search { width: calc(100vw - var(--app-safe-left) - var(--app-safe-right) - 137px); min-width: 112px; padding-left: 9px; } }
 @media (max-height: 620px) { .starfield-stage { height: clamp(260px, calc(100vh - var(--app-safe-top) - var(--app-safe-bottom) - 180px), 390px); height: clamp(260px, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 180px), 390px); min-height: 260px; }.starfield-stage canvas { min-height: 260px; }.editor-paper .body-input { min-height: 220px; } }
+
+/* The selected theme colors every screen in the active app shell. */
+.app-theme,
+.app-theme ion-router-outlet,
+.app-theme .ion-page,
+.app-theme ion-content {
+  --ion-background-color: var(--app-theme-background);
+  --background: var(--app-theme-background);
+  background: var(--app-theme-background);
+}
+.app-theme .night-page,
+.app-theme .starfield-screen { color: var(--app-theme-text); background: var(--app-theme-background); }
+.app-theme .night-page::before,
+.app-theme .starfield-screen::before { background: radial-gradient(circle at 50% 12%, color-mix(in srgb, var(--app-theme-primary) 30%, var(--app-theme-background)) 0, color-mix(in srgb, var(--app-theme-surface) 52%, var(--app-theme-background)) 34%, var(--app-theme-background) 74%); }
+.app-theme .night-page::after,
+.app-theme .starfield-screen::after { background-image: radial-gradient(color-mix(in srgb, var(--app-theme-primary) 38%, transparent) .7px, transparent .7px), radial-gradient(color-mix(in srgb, var(--app-theme-text) 18%, transparent) .6px, transparent .6px); }
+.app-theme .page-title strong,
+.app-theme .settings-heading h1,
+.app-theme .editor-paper .title-input,
+.app-theme .themes-screen .theme-info strong,
+.app-theme .themes-screen .theme-import-button strong,
+.app-theme .night-page .setting-row,
+.app-theme .night-page .setting-row strong,
+.app-theme .detail-paper h1 { color: var(--app-theme-text); }
+.app-theme .page-title-kicker,
+.app-theme .settings-heading .eyebrow,
+.app-theme .night-page .section-label,
+.app-theme .section-heading > span,
+.app-theme .page-lead,
+.app-theme .themes-screen .page-description,
+.app-theme .themes-screen .theme-info small,
+.app-theme .themes-screen .theme-import-button small,
+.app-theme .night-page .setting-row p { color: color-mix(in srgb, var(--app-theme-text) 60%, transparent); }
+.app-theme .page-subbar .icon-button,
+.app-theme .starfield-tool { border-color: color-mix(in srgb, var(--app-theme-primary) 28%, transparent); background: color-mix(in srgb, var(--app-theme-surface) 74%, transparent); color: var(--app-theme-primary); }
+.app-theme .editor-paper,
+.app-theme .detail-paper,
+.app-theme .night-page .settings-card,
+.app-theme .themes-screen .theme-card,
+.app-theme .themes-screen .theme-import-button { border-color: color-mix(in srgb, var(--app-theme-primary) 22%, transparent); background: color-mix(in srgb, var(--app-theme-surface) 88%, transparent); box-shadow: 0 18px 44px color-mix(in srgb, var(--app-theme-background) 35%, transparent), inset 0 1px color-mix(in srgb, white 18%, transparent); }
+.app-theme .editor-paper .body-input,
+.app-theme .detail-body { color: color-mix(in srgb, var(--app-theme-text) 86%, transparent); }
+.app-theme .editor-paper .title-input::placeholder,
+.app-theme .editor-paper .body-input::placeholder { color: color-mix(in srgb, var(--app-theme-text) 38%, transparent); }
+.app-theme .paper-mark,
+.app-theme .hint-dot,
+.app-theme .orbit-dot,
+.app-theme .detail-rule { background: var(--app-theme-primary); box-shadow: 0 0 12px color-mix(in srgb, var(--app-theme-primary) 58%, transparent); }
+.app-theme .editor-paper-top,
+.app-theme .paper-date,
+.app-theme .editor-footer { color: color-mix(in srgb, var(--app-theme-text) 50%, transparent); }
+.app-theme .detail-date,
+.app-theme .detail-orbit { color: color-mix(in srgb, var(--app-theme-primary) 80%, var(--app-theme-text)); }
+.app-theme .detail-image-block { border-color: color-mix(in srgb, var(--app-theme-primary) 20%, transparent); background: color-mix(in srgb, var(--app-theme-background) 45%, var(--app-theme-surface)); }
+.app-theme .detail-image-block figcaption,
+.app-theme .missing-image { color: color-mix(in srgb, var(--app-theme-text) 62%, transparent); }
+.app-theme .editor-image-button { border-color: color-mix(in srgb, var(--app-theme-primary) 30%, transparent); background: color-mix(in srgb, var(--app-theme-primary) 14%, transparent); color: var(--app-theme-primary); }
+.app-theme .editor-image-count { border-color: var(--app-theme-surface); background: var(--app-theme-primary); color: var(--app-theme-background); }
+.app-theme .mood-picker button { border-color: color-mix(in srgb, var(--app-theme-primary) 16%, transparent); background: color-mix(in srgb, var(--app-theme-surface) 76%, transparent); color: color-mix(in srgb, var(--app-theme-text) 66%, transparent); }
+.app-theme .mood-picker button.selected { border-color: color-mix(in srgb, var(--app-theme-primary) 44%, transparent); background: color-mix(in srgb, var(--app-theme-primary) 24%, var(--app-theme-surface)); color: var(--app-theme-text); }
+.app-theme .night-page .setting-icon,
+.app-theme .themes-screen .theme-import-icon { background: color-mix(in srgb, var(--app-theme-primary) 18%, transparent); color: var(--app-theme-primary); }
+.app-theme .themes-screen .theme-card.active { border-color: color-mix(in srgb, var(--app-theme-primary) 62%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--app-theme-primary) 14%, transparent), 0 16px 38px color-mix(in srgb, var(--app-theme-background) 30%, transparent); }
+.app-theme .themes-screen .theme-info em,
+.app-theme .theme-arrow,
+.app-theme .night-page .row-chevron { color: var(--app-theme-primary); }
+.app-theme .floating-nav { border-color: color-mix(in srgb, var(--app-theme-primary) 30%, transparent); background: color-mix(in srgb, var(--app-theme-surface) 88%, transparent); box-shadow: 0 14px 38px color-mix(in srgb, var(--app-theme-background) 42%, transparent), inset 0 1px color-mix(in srgb, white 20%, transparent); }
+.app-theme .floating-nav .nav-action { color: color-mix(in srgb, var(--app-theme-text) 58%, transparent); }
+.app-theme .floating-nav .nav-action.active { background: color-mix(in srgb, var(--app-theme-primary) 16%, transparent); color: var(--app-theme-primary); }
+.app-theme .floating-nav .nav-create { background: var(--app-theme-primary); color: var(--app-theme-background); box-shadow: 0 8px 18px color-mix(in srgb, var(--app-theme-primary) 38%, transparent); }
+.app-theme .starfield-search,
+.app-theme .mood-bubble { border-color: color-mix(in srgb, var(--app-theme-primary) 28%, transparent); background: color-mix(in srgb, var(--app-theme-surface) 90%, transparent); color: var(--app-theme-text); }
+.app-theme .starfield-search input,
+.app-theme .bubble-mood { color: var(--app-theme-text); }
+.app-theme .starfield-search > ion-icon,
+.app-theme .bubble-date,
+.app-theme .starfield-hint { color: color-mix(in srgb, var(--app-theme-text) 58%, transparent); }

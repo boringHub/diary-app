@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { alertController, IonContent, IonIcon, IonPage, IonSpinner, toastController } from '@ionic/vue'
+import { alertController, IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillEnter, toastController, useIonRouter } from '@ionic/vue'
 import { checkmarkCircleOutline, chevronForward, cloudDownloadOutline, closeOutline, colorPaletteOutline, mailOutline, shieldCheckmarkOutline, sparklesOutline } from 'ionicons/icons'
 import { diaryRepository } from '../repositories/diaryRepository'
 import { settingsRepository } from '../repositories/settingsRepository'
+import { getCurrentTheme } from '../services/themeService'
 import {
   checkForUpdate,
   formatReleaseNoteLines,
@@ -18,6 +19,13 @@ const currentVersion = ref<AppVersionInfo>({ versionName: '...' })
 const checkingUpdate = ref(false)
 const installingUpdate = ref(false)
 const pendingUpdate = ref<AvailableUpdate | null>(null)
+const ionRouter = useIonRouter()
+const currentTheme = ref(getCurrentTheme())
+
+onIonViewWillEnter(() => {
+  settings.value = settingsRepository.get()
+  currentTheme.value = getCurrentTheme()
+})
 
 onMounted(async () => {
   try {
@@ -145,11 +153,11 @@ async function verifyUpgrade() {
         <div class="settings-group">
           <p class="section-label">看起来</p>
           <div class="settings-card">
-            <div class="setting-row setting-disabled" aria-disabled="true">
+            <button class="setting-row setting-button" @click="ionRouter.navigate('/themes', 'forward', 'push')">
               <span class="setting-icon"><IonIcon :icon="colorPaletteOutline" /></span>
-              <div><strong>主题和样子</strong><p>{{ settings.themeName }} · 沉浸夜色</p></div>
-              <span class="setting-badge">还在准备中</span>
-            </div>
+              <div><strong>主题和样子</strong><p>{{ currentTheme.name }} · 整个界面正在使用</p></div>
+              <IonIcon class="row-chevron" :icon="chevronForward" />
+            </button>
           </div>
         </div>
         <div class="settings-group">
