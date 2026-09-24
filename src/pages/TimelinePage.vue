@@ -36,7 +36,7 @@ const selectedDiaryId = ref<string | null>(null)
 const cluster = ref<ClusterItem[]>([])
 const focusVisible = ref(false)
 const focusAnchor = ref({ x: 0, y: 0 })
-const hint = ref('拖动星球，寻找一段记忆')
+const hint = ref('拖动星球，找找今天的心情呀')
 const canvasSize = ref({ width: 0, height: 0 })
 const arrivingStar = ref<{ diaryId: string; color: string; x: number; y: number; focusX: number; focusY: number; phase: 'falling' | 'settling' } | null>(null)
 
@@ -211,7 +211,7 @@ async function playNewDiaryArrival() {
   focusVisible.value = false
   cluster.value = []
   isSettling.value = true
-  hint.value = '一颗新的记忆正在落入星球'
+  hint.value = '一颗新的记忆落下来啦'
   arrivingStar.value = {
     diaryId: diary.id,
     color: moodColors[diary.mood],
@@ -227,7 +227,7 @@ async function playNewDiaryArrival() {
     if (!arrivingStar.value) return
     arrivingStar.value = { ...arrivingStar.value, phase: 'settling' }
     setFocusForDiary(diary)
-    hint.value = '新记忆已回到它的位置'
+    hint.value = '新记忆回到它的位置啦'
     arrivalTimer = window.setTimeout(() => { arrivingStar.value = null }, 760)
   }, 760)
 }
@@ -238,29 +238,29 @@ function focusCluster(items: Diary[]) {
     const distance = items.length === 2 ? 38 : 52
     return { diary, color: moodColors[diary.mood], x: Math.cos(angle) * distance, y: Math.sin(angle) * distance }
   })
-  selectedDiaryId.value = items[0]?.id ?? null; focusVisible.value = true; hint.value = `${formatShortDate(items[0].createdAt)} · ${items.length} 段记忆聚集于此`
+  selectedDiaryId.value = items[0]?.id ?? null; focusVisible.value = true; hint.value = `${formatShortDate(items[0].createdAt)} · 找到 ${items.length} 段记忆啦`
 }
 
 function selectClusterDiary(diary: Diary) {
   selectedDiaryId.value = diary.id
   focusVisible.value = true
-  hint.value = `已选中：${diary.title || '无题'}`
+  hint.value = `选中啦：${diary.title || '还没取名字'}`
 }
 
 function searchByDate() {
   if (!searchDate.value) return
   isSearching.value = true
   const matches = store.diaries.filter((diary) => dateKey(diary.createdAt) === searchDate.value)
-  if (matches.length === 1) { setFocusForDiary(matches[0]); hint.value = '已找到这一天的记忆' }
+  if (matches.length === 1) { setFocusForDiary(matches[0]); hint.value = '找到这一天的记忆啦' }
   else if (matches.length > 1) focusCluster(matches)
-  else { selectedDiaryId.value = null; focusVisible.value = false; cluster.value = []; hint.value = '这一天还没有星星' }
+  else { selectedDiaryId.value = null; focusVisible.value = false; cluster.value = []; hint.value = '这一天还没有星星哦，写一篇吧~' }
   window.setTimeout(() => { isSearching.value = false }, 560)
 }
 
 function randomFocus() {
   const diary = store.diaries[Math.floor(Math.random() * store.diaries.length)]
   if (!diary) return
-  searchDate.value = ''; setFocusForDiary(diary); hint.value = '随机回望一段记忆'
+  searchDate.value = ''; setFocusForDiary(diary); hint.value = '随机回望一段记忆呀'
 }
 function openDiary(diary: Diary) { ionRouter.navigate(`/diary/${diary.id}`, 'forward', 'push', createStarEnterAnimation) }
 function toggleSearch() {
@@ -286,7 +286,7 @@ function onPointerDown(event: PointerEvent) {
 function onPointerMove(event: PointerEvent) {
   if (!pointerDown) return
   const total = Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y)
-  if (total > 6) { moved = true; isDragging.value = true; selectedDiaryId.value = null; focusVisible.value = false; cluster.value = []; hint.value = '松开，让最近的星星停在中心' }
+  if (total > 6) { moved = true; isDragging.value = true; selectedDiaryId.value = null; focusVisible.value = false; cluster.value = []; hint.value = '松手，让最近的星星停在中间哦' }
   const currentVector = pointerTrackballPosition(event)
   if (dragStartVector && currentVector) {
     const dragRotation = quaternionBetweenVectors(dragStartVector, currentVector)
@@ -352,11 +352,11 @@ onBeforeUnmount(() => {
           <div class="starfield-tools">
             <div v-if="searchOpen" class="starfield-search" role="search">
               <IonIcon :icon="searchOutline" aria-hidden="true" />
-              <input ref="searchInput" v-model="searchDate" type="date" aria-label="按日期搜索日记" @keydown.enter="searchByDate" @change="searchByDate" />
-              <button :disabled="!searchDate || isSearching" aria-label="搜索日期" title="搜索日期" @click="searchByDate"><IonIcon :icon="calendarOutline" /></button>
+              <input ref="searchInput" v-model="searchDate" type="date" aria-label="按日期找日记" @keydown.enter="searchByDate" @change="searchByDate" />
+              <button :disabled="!searchDate || isSearching" aria-label="找这一天的日记" title="找这一天的日记" @click="searchByDate"><IonIcon :icon="calendarOutline" /></button>
             </div>
-            <button class="starfield-tool" :class="{ active: searchOpen }" :aria-label="searchOpen ? '关闭日期搜索' : '按日期搜索'" :title="searchOpen ? '关闭日期搜索' : '按日期搜索'" @click="toggleSearch"><IonIcon :icon="searchOpen ? closeOutline : searchOutline" /></button>
-            <button class="starfield-tool" aria-label="随机回望" title="随机回望" @click="randomFocus"><IonIcon :icon="sparklesOutline" /></button>
+            <button class="starfield-tool" :class="{ active: searchOpen }" :aria-label="searchOpen ? '收起日期搜索' : '按日期找日记'" :title="searchOpen ? '收起日期搜索' : '按日期找日记'" @click="toggleSearch"><IonIcon :icon="searchOpen ? closeOutline : searchOutline" /></button>
+            <button class="starfield-tool" aria-label="随机回望一段记忆" title="随机回望一段记忆" @click="randomFocus"><IonIcon :icon="sparklesOutline" /></button>
           </div>
         </header>
         <div class="starfield-stage" :class="{ dragging: isDragging, settling: isSettling }">

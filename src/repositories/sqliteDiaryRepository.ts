@@ -224,7 +224,7 @@ export class SQLiteDiaryRepository implements DiaryRepository {
     if (Number(result.values?.[0]?.total ?? 0) > 0) return
 
     const now = Date.now() - 86400000
-    const body = '欢迎来到拾光笺。\n\n先记下一点此刻的心情，日记会保存在当前设备中。'
+    const body = '欢迎来到拾光笺呀~\n\n先记下一点此刻的心情吧，日记只会留在这台设备里。'
     await db.beginTransaction()
     try {
       await db.run(`
@@ -232,7 +232,7 @@ export class SQLiteDiaryRepository implements DiaryRepository {
           id, title, summary, created_at, updated_at, mood,
           theme_id, theme_version, layout_id, is_favorite, is_archived, is_deleted
         ) VALUES ('welcome', ?, ?, ?, ?, 'calm', 'default', '1.0.0', 'layout-default', 1, 0, 0)
-      `, ['把今天收进一页笺', '这是一个可以慢慢写下来的地方。', now, now], false)
+      `, ['把今天收进一页笺', '这里可以慢慢写下今天的小心情。', now, now], false)
       await db.run(`
         INSERT INTO diary_blocks (
           id, diary_id, block_type, sort_order, content_json, created_at, updated_at

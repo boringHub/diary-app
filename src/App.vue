@@ -48,7 +48,7 @@ function createDiary() {
         <IonIcon :icon="nav[0].icon" />
         <span>{{ nav[0].label }}</span>
       </button>
-      <button class="nav-create" aria-label="新建日记" @click="createDiary">
+      <button class="nav-create" aria-label="写一篇新日记呀" @click="createDiary">
         <IonIcon :icon="add" />
       </button>
       <button class="nav-action" :class="{ active: route.path.startsWith(nav[1].path) }" @click="switchRoot('/settings')">

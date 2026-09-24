@@ -7,8 +7,8 @@ const seed: Diary[] = [
   {
     id: 'welcome',
     title: '把今天收进一页笺',
-    summary: '这是一个可以慢慢写下来的地方。',
-    body: '欢迎来到拾光笺。\n\n先记下一点此刻的心情，日记会保存在当前设备中。',
+    summary: '这里可以慢慢写下今天的小心情。',
+    body: '欢迎来到拾光笺呀~\n\n先记下一点此刻的心情吧，日记只会留在这台设备里。',
     mood: 'calm',
     createdAt: Date.now() - 86400000,
     updatedAt: Date.now() - 86400000,

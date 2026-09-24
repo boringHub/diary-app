@@ -17,11 +17,11 @@ async function remove() {
   if (!diary.value) return
   const id = diary.value.id
   const alert = await alertController.create({
-    header: '删除这篇日记？',
-    message: '日记会从时间线中移除。',
+    header: '真的要删掉这篇吗？',
+    message: '删掉后，它就会从星球上离开啦。',
     buttons: [
       { text: '取消', role: 'cancel' },
-      { text: '删除', role: 'destructive', handler: async () => { await store.remove(id); ionRouter.navigate('/timeline', 'none', 'replace') } },
+      { text: '删掉', role: 'destructive', handler: async () => { await store.remove(id); ionRouter.navigate('/timeline', 'none', 'replace') } },
     ],
   })
   await alert.present()
@@ -41,14 +41,14 @@ async function remove() {
         <article class="detail-paper">
           <div class="detail-orbit"><span class="orbit-dot"></span><span>{{ moodLabels[diary.mood] }} · {{ diary.isFavorite ? '已收藏' : '一段日常' }}</span></div>
           <p class="detail-date">{{ new Intl.DateTimeFormat('zh-CN', { dateStyle: 'full' }).format(diary.updatedAt) }}</p>
-          <h1>{{ diary.title || '无题' }}</h1>
+          <h1>{{ diary.title || '还没取名字' }}</h1>
           <div class="detail-rule"></div>
           <p class="detail-body">{{ diary.body }}</p>
         </article>
-        <button class="delete-button" @click="remove">删除日记</button>
+        <button class="delete-button" @click="remove">删掉这篇日记</button>
       </section>
-      <section v-else-if="store.loading || !store.loaded" class="empty-state"><h2>正在打开这颗星</h2></section>
-      <section v-else class="empty-state"><h2>这篇日记不存在</h2><button class="primary-button" @click="ionRouter.navigate('/timeline', 'none', 'replace')">回到时间线</button></section>
+      <section v-else-if="store.loading || !store.loaded" class="empty-state"><h2>正在把这颗星找回来…</h2></section>
+      <section v-else class="empty-state"><h2>这颗星暂时找不到啦</h2><button class="primary-button" @click="ionRouter.navigate('/timeline', 'none', 'replace')">回星球</button></section>
     </IonContent>
   </IonPage>
 </template>

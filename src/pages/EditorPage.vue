@@ -40,12 +40,12 @@ function closeEditor() {
 async function confirmDiscard() {
   return new Promise<boolean>(async (resolve) => {
     const alert = await alertController.create({
-      header: '放弃这次编辑？',
-      message: '尚未保存的内容会丢失。',
+      header: '要先放一放吗？',
+      message: '还没保存的内容会不见哦。',
       backdropDismiss: false,
       buttons: [
-        { text: '继续编辑', role: 'cancel', handler: () => resolve(false) },
-        { text: '放弃', role: 'destructive', handler: () => resolve(true) },
+        { text: '继续写', role: 'cancel', handler: () => resolve(false) },
+        { text: '先放弃', role: 'destructive', handler: () => resolve(true) },
       ],
     })
     await alert.present()
@@ -77,7 +77,7 @@ async function save() {
       else ionRouter.navigate('/timeline', 'none', 'replace', createDiaryToStarAnimation)
     }
   } catch {
-    const toast = await toastController.create({ message: '保存失败，请稍后重试', duration: 2000, position: 'top' })
+    const toast = await toastController.create({ message: '没保存好，再试一次哦', duration: 2000, position: 'top' })
     await toast.present()
   }
 }
@@ -90,17 +90,17 @@ async function save() {
         <div class="page-stars" aria-hidden="true"></div>
         <header class="subbar page-subbar">
           <button class="icon-button" aria-label="返回" @click="cancel"><IonIcon :icon="chevronBack" /></button>
-          <div class="page-title"><span class="page-title-kicker">{{ existing ? '回到这颗星' : '写下一颗新星' }}</span><strong>{{ existing ? '编辑日记' : '新建日记' }}</strong></div>
+          <div class="page-title"><span class="page-title-kicker">{{ existing ? '回到这颗星' : '写下一颗新星' }}</span><strong>{{ existing ? '改改日记' : '写篇新日记' }}</strong></div>
           <button class="save-button" :disabled="!body.trim() || !isDirty || store.saving" @click="save">{{ store.saving ? '保存中' : '保存' }}</button>
         </header>
         <div class="editor-paper">
-          <div class="editor-paper-top"><span class="paper-mark"></span><span>一段正在成形的记忆</span><span class="paper-date">{{ new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' }).format(Date.now()) }}</span></div>
-          <input v-model="title" class="title-input" placeholder="给今天取个标题" maxlength="50" />
-          <textarea v-model="body" class="body-input" placeholder="写下此刻的心情、看到的风景，或者一句还没说出口的话……" />
-          <div class="editor-footer"><span>{{ body.length }} 字</span><span>仅保存在本设备</span></div>
+          <div class="editor-paper-top"><span class="paper-mark"></span><span>一段正在长出来的记忆</span><span class="paper-date">{{ new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' }).format(Date.now()) }}</span></div>
+          <input v-model="title" class="title-input" placeholder="给今天取个标题呀" maxlength="50" />
+          <textarea v-model="body" class="body-input" placeholder="写下此刻的心情、看到的风景，或者一句还没说出口的话呀……" />
+          <div class="editor-footer"><span>{{ body.length }} 字</span><span>只留在这台设备里</span></div>
         </div>
         <div class="mood-section">
-          <div class="section-heading"><p class="section-label">今天的心情</p><span>选择一颗属于此刻的颜色</span></div>
+          <div class="section-heading"><p class="section-label">今天是什么心情呀</p><span>挑一个最像现在的颜色~</span></div>
           <div class="mood-picker">
             <button v-for="item in moods" :key="item" :class="{ selected: mood === item }" :aria-pressed="mood === item" @click="mood = item">
               <span class="mood-dot" :class="item"></span>{{ labels[item] }}
