@@ -3,6 +3,7 @@ import { IonicVue } from '@ionic/vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
+import { startNotificationSync } from './services/notificationSync'
 import '@ionic/vue/css/core.css'
 import '@ionic/vue/css/normalize.css'
 import '@ionic/vue/css/structure.css'
@@ -16,3 +17,4 @@ import '@ionic/vue/css/display.css'
 import './styles.css'
 
 createApp(App).use(IonicVue, { mode: 'ios' }).use(createPinia()).use(router).mount('#app')
+startNotificationSync()

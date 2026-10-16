@@ -1,6 +1,6 @@
 import initSqlJs, { type Database } from 'sql.js'
 import { describe, expect, it } from 'vitest'
-import { DATABASE_VERSION, MIGRATION_V2 } from './sqliteSchema'
+import { DATABASE_VERSION, MIGRATION_V2, MIGRATION_V3 } from './sqliteSchema'
 
 const V1_SCHEMA = `
 PRAGMA foreign_keys = ON;
@@ -81,6 +81,7 @@ describe('SQLite schema migrations', () => {
     db.run('BEGIN TRANSACTION')
     try {
       for (const statement of MIGRATION_V2) db.run(statement)
+      for (const statement of MIGRATION_V3) db.run(statement)
       // Capacitor SQLite calls setVersion(toVersion) after these statements commit.
       db.run(`PRAGMA user_version = ${DATABASE_VERSION}`)
       db.run('COMMIT')
@@ -91,8 +92,26 @@ describe('SQLite schema migrations', () => {
 
     expect(snapshotV1Data(db)).toEqual(before)
     expect(tableNames(db)).toEqual(expect.arrayContaining(['themes', 'theme_assets']))
-    expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(2)
+    expect(readRows(db, "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_event_queue_retry'")).toHaveLength(1)
+    expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(3)
     expect(readRows(db, 'PRAGMA foreign_key_check')).toEqual([])
+    db.close()
+  })
+
+  it('adds the retry index to an existing V2 database without changing queued events', async () => {
+    const SQL = await initSqlJs({ locateFile: (file) => `node_modules/sql.js/dist/${file}` })
+    const db = new SQL.Database()
+    createPopulatedV1Database(db)
+    for (const statement of MIGRATION_V2) db.run(statement)
+    db.run('PRAGMA user_version = 2')
+    const queuedBefore = readRows(db, 'SELECT * FROM event_queue ORDER BY id')
+
+    for (const statement of MIGRATION_V3) db.run(statement)
+    db.run('PRAGMA user_version = 3')
+
+    expect(readRows(db, 'SELECT * FROM event_queue ORDER BY id')).toEqual(queuedBefore)
+    expect(readRows(db, "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_event_queue_retry'")).toHaveLength(1)
+    expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(3)
     db.close()
   })
 })

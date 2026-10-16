@@ -1,5 +1,5 @@
 export const DATABASE_NAME = 'shiguangjian'
-export const DATABASE_VERSION = 2
+export const DATABASE_VERSION = 3
 
 export const DATABASE_SCHEMA = `
 PRAGMA foreign_keys = ON;
@@ -105,6 +105,7 @@ CREATE INDEX IF NOT EXISTS idx_diaries_timeline ON diaries(is_deleted, updated_a
 CREATE INDEX IF NOT EXISTS idx_diary_blocks_diary ON diary_blocks(diary_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_diary_assets_diary ON diary_assets(diary_id);
 CREATE INDEX IF NOT EXISTS idx_event_queue_status ON event_queue(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_event_queue_retry ON event_queue(status, last_attempt_at, created_at);
 `
 
 export const MIGRATION_V2 = [
@@ -132,4 +133,8 @@ export const MIGRATION_V2 = [
     PRIMARY KEY (id, theme_id, theme_version),
     FOREIGN KEY (theme_id, theme_version) REFERENCES themes(id, version) ON DELETE CASCADE
   );`,
+]
+
+export const MIGRATION_V3 = [
+  `CREATE INDEX IF NOT EXISTS idx_event_queue_retry ON event_queue(status, last_attempt_at, created_at);`,
 ]

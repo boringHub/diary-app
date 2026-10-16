@@ -3,6 +3,16 @@ import type { SQLiteDBConnection } from '@capacitor-community/sqlite'
 import { diaryAssetStorage, type StoredDiaryAsset } from '../services/diaryAssetStorage'
 import { validateDiaryImageInputs } from '../services/diaryImageValidation'
 import {
+  enqueueDiaryCreatedEvent,
+  listReadyDiaryEvents,
+  markDiaryEventAttempt,
+  markDiaryEventFailed,
+  markDiaryEventSent,
+  markDiaryEventTerminal,
+} from '../services/diaryEventQueue'
+import { NotifyApiError, sendDiaryCreatedEvent } from '../services/notifyApiClient'
+import { settingsRepository } from './settingsRepository'
+import {
   createFixedLayout,
   DEFAULT_DIARY_BOARD_PACK,
   getDiaryBoardPack,
@@ -19,7 +29,7 @@ import type {
   SaveDiaryImageInput,
 } from '../types/diary'
 import type { DiaryRepository, SaveDiaryInput } from './diaryRepository'
-import { DATABASE_NAME, DATABASE_SCHEMA, DATABASE_VERSION, MIGRATION_V2 } from './sqliteSchema'
+import { DATABASE_NAME, DATABASE_SCHEMA, DATABASE_VERSION, MIGRATION_V2, MIGRATION_V3 } from './sqliteSchema'
 
 type Row = Record<string, unknown>
 
@@ -134,6 +144,9 @@ export class SQLiteDiaryRepository implements DiaryRepository {
         [layoutId, id, JSON.stringify(layout), createdAt, now],
         false,
       )
+      if (!existing && settingsRepository.get().notificationEnabled) {
+        await enqueueDiaryCreatedEvent(db, input.mood, now)
+      }
       await db.commitTransaction()
     } catch (error) {
       if (transactionStarted) await db.rollbackTransaction().catch(() => undefined)
@@ -172,13 +185,38 @@ export class SQLiteDiaryRepository implements DiaryRepository {
     await db.run('UPDATE diaries SET is_deleted = 1, updated_at = ? WHERE id = ?', [Date.now(), id])
   }
 
+  async syncPendingNotificationEvents(): Promise<void> {
+    if (!settingsRepository.get().notificationEnabled) return
+    const credential = await getNotificationCredential()
+    if (!credential) return
+
+    const db = await this.connection()
+    const events = await listReadyDiaryEvents(db)
+    for (const event of events) {
+      await markDiaryEventAttempt(db, event.id)
+      try {
+        await sendDiaryCreatedEvent(event.payload, credential)
+        await markDiaryEventSent(db, event.id)
+      } catch (error) {
+        if (error instanceof NotifyApiError && !error.retryable) {
+          await markDiaryEventTerminal(db, event.id, error)
+        } else {
+          await markDiaryEventFailed(db, event.id, error)
+        }
+      }
+    }
+  }
+
   private async connection(): Promise<SQLiteDBConnection> {
     this.connectionPromise ??= this.openConnection()
     return this.connectionPromise
   }
 
   private async openConnection(): Promise<SQLiteDBConnection> {
-    await this.sqlite.addUpgradeStatement(DATABASE_NAME, [{ toVersion: DATABASE_VERSION, statements: MIGRATION_V2 }])
+    await this.sqlite.addUpgradeStatement(DATABASE_NAME, [
+      { toVersion: 2, statements: MIGRATION_V2 },
+      { toVersion: 3, statements: MIGRATION_V3 },
+    ])
     const existing = await this.sqlite.isConnection(DATABASE_NAME, false)
     const db = existing.result
       ? await this.sqlite.retrieveConnection(DATABASE_NAME, false)
@@ -393,4 +431,9 @@ export class SQLiteDiaryRepository implements DiaryRepository {
   private readMood(value: unknown): Mood {
     return value === 'happy' || value === 'sad' || value === 'tired' || value === 'excited' ? value : 'calm'
   }
+}
+
+async function getNotificationCredential(): Promise<string | null> {
+  // INGEST_TOKEN is a server secret and must never be bundled in the App.
+  return null
 }

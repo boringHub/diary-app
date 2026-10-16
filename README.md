@@ -53,7 +53,7 @@
 - Android 数据库文件名为 `shiguangjianSQLite.db`
 - Android 数据库位于应用私有目录，通常为 `/data/user/0/xyz.shiguangjian.app/databases/`
 
-SQLite V2 包含 `diaries`、`diary_blocks`、`diary_assets`、`diary_layouts`、`themes`、`theme_assets`、`app_settings` 和 `event_queue`。正文和图片分别保存为 `text`、`image` Block，图片文件位于 Capacitor `Directory.Data` 对应的应用私有目录，数据库只保存相对路径。
+SQLite V3 包含 `diaries`、`diary_blocks`、`diary_assets`、`diary_layouts`、`themes`、`theme_assets`、`app_settings` 和 `event_queue`。正文和图片分别保存为 `text`、`image` Block，图片文件位于 Capacitor `Directory.Data` 对应的应用私有目录，数据库只保存相对路径。V3 只新增通知队列重试索引。
 
 从 V1 升级到 V2 时只新增主题索引表，不删除或重建已有日记数据。自动迁移测试会先创建 V1 日记、Block、图片和布局，再执行 V2 升级并核对原数据仍可读取。浏览器中的旧版 LocalStorage 文字日记会在读取时补齐 Block 和布局结构。
 
@@ -157,7 +157,7 @@ android/             Capacitor Android 工程
 
 ## 开发计划
 
-- 下一阶段：日记保存事务写入 `event_queue`，仅发送允许的通知元数据，并支持失败重试与幂等
+- 当前阶段：新建日记与最小元数据通知事件同事务入队；notify-api 已实现 Bearer Secret 鉴权、D1 持久接收和 eventId 幂等；App 网络发送调度、正式客户端身份、邮件投递和前台恢复仍待接入
 - 后续个性化：加入独立的日记板素材包安装与编辑器选择，不与全局界面主题混用
 - 数据导出、导入与备份
 - 正式签名的 Android Release 构建

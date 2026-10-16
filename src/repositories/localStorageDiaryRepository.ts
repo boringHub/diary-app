@@ -96,6 +96,10 @@ export class LocalStorageDiaryRepository implements DiaryRepository {
     this.write(this.read().map((item) => (item.id === id ? { ...item, isDeleted: true, updatedAt: Date.now() } : item)))
   }
 
+  async syncPendingNotificationEvents(): Promise<void> {
+    // Browser storage does not persist notification events.
+  }
+
   private read(): Diary[] {
     const value = this.getStorage().getItem(DIARY_STORAGE_KEY)
     if (!value) return this.restoreSeed()

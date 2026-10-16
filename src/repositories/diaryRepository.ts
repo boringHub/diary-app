@@ -16,6 +16,7 @@ export interface DiaryRepository {
   save(input: SaveDiaryInput): Promise<Diary>
   toggleFavorite(id: string): Promise<void>
   remove(id: string): Promise<void>
+  syncPendingNotificationEvents(): Promise<void>
 }
 
 let repositoryPromise: Promise<DiaryRepository> | undefined
@@ -42,5 +43,8 @@ export const diaryRepository: DiaryRepository = {
   },
   async remove(id) {
     return (await resolveRepository()).remove(id)
+  },
+  async syncPendingNotificationEvents() {
+    return (await resolveRepository()).syncPendingNotificationEvents()
   },
 }

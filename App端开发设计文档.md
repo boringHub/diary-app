@@ -192,7 +192,7 @@ Storage Adapter / Notification API
 - 使用 Filesystem 保存照片、主题和生成素材。
 - 加入图片选择和主题 manifest 解析。
 
-当前进度（2026-09-24）：
+当前进度（2026-09-28）：
 
 - 已引入 Capacitor 8 并生成 Android 工程。
 - 已建立异步 `DiaryRepository` 契约；浏览器使用 LocalStorage，Android 自动使用 SQLite。
@@ -216,7 +216,7 @@ Storage Adapter / Notification API
 - 失败保留待发送事件，在 App 回到前台或网络恢复时重试。
 - 使用 `eventId` 实现幂等；正文、标题和图片不离开设备。
 
-下一项功能：实现通知事件队列的本地事务写入与重试调度。第一步先定义允许出站的事件 payload 白名单和 `NotificationService` 边界，再把“新建日记”事件与日记保存放入同一 SQLite 事务；网络发送、前台恢复重试和幂等随后接入。
+阶段三进行中：新建日记已在保存事务中写入最小元数据事件；队列提供待处理读取、指数退避、成功标记、永久错误终止和最多 8 次临时失败停止策略。Android App 已接入通知 API 客户端，并在启动、回到前台或网络恢复时尝试排空队列；请求严格只包含 `eventId`、`eventType`、`occurredAt`、`mood`、`deviceId`。发送器只把匹配当前 `eventId` 的 `202 accepted` 或 `200 duplicate` 视为成功，临时网络/服务端错误重试，鉴权、校验及冲突错误停止重试。App 的生产凭据提供器目前 fail-closed，未配置用户令牌/可撤销设备凭据前队列会保留且不发请求。notify-api 已在代码中增加设备凭据注册/撤销、事件与设备身份绑定，以及注册来源 IP 限流；这部分尚未部署，D1 migration `0002_create_devices.sql` 和生产 `ENROLLMENT_TOKEN` 也未配置。管理用 bootstrap secret 不能放入 APK，仍需确定 App 可安全使用的设备注册/身份方案。SQLite V3 只增加队列重试索引，保留既有数据。notify-api 的 `202 accepted` 仅表示 D1 持久接收，不代表邮件或推送已送达；服务端异步投递、收件人管理和真实通知渠道仍未实现。
 
 ### 阶段四：Android 发布
 
