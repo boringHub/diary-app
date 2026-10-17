@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
         setTheme(R.style.AppTheme_NoActionBar);
         EdgeToEdge.enable(this);
         registerPlugin(AppUpdatePlugin.class);
+        registerPlugin(DeviceKeyAuthPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

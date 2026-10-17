@@ -1,14 +1,11 @@
 import { CapacitorSQLite, SQLiteConnection } from '@capacitor-community/sqlite'
 import type { ThemeManifest } from '../services/themeService'
-import { DATABASE_NAME, DATABASE_SCHEMA, DATABASE_VERSION, MIGRATION_V2, MIGRATION_V3 } from './sqliteSchema'
+import { DATABASE_NAME, DATABASE_SCHEMA, DATABASE_UPGRADES, DATABASE_VERSION } from './sqliteSchema'
 import { upsertThemeManifest } from './sqliteThemeIndex'
 
 export async function indexImportedTheme(manifest: ThemeManifest) {
   const sqlite = new SQLiteConnection(CapacitorSQLite)
-  await sqlite.addUpgradeStatement(DATABASE_NAME, [
-    { toVersion: 2, statements: MIGRATION_V2 },
-    { toVersion: 3, statements: MIGRATION_V3 },
-  ])
+  await sqlite.addUpgradeStatement(DATABASE_NAME, DATABASE_UPGRADES)
   const existing = await sqlite.isConnection(DATABASE_NAME, false)
   const db = existing.result
     ? await sqlite.retrieveConnection(DATABASE_NAME, false)

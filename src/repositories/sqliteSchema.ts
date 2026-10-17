@@ -108,6 +108,78 @@ CREATE INDEX IF NOT EXISTS idx_event_queue_status ON event_queue(status, created
 CREATE INDEX IF NOT EXISTS idx_event_queue_retry ON event_queue(status, last_attempt_at, created_at);
 `
 
+export const MIGRATION_V1 = [
+  `CREATE TABLE IF NOT EXISTS diaries (
+    id TEXT PRIMARY KEY NOT NULL,
+    title TEXT NOT NULL DEFAULT '',
+    summary TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    mood TEXT,
+    mood_value INTEGER,
+    theme_id TEXT NOT NULL,
+    theme_version TEXT NOT NULL,
+    layout_id TEXT NOT NULL,
+    is_favorite INTEGER NOT NULL DEFAULT 0,
+    is_archived INTEGER NOT NULL DEFAULT 0,
+    is_deleted INTEGER NOT NULL DEFAULT 0,
+    cover_asset_id TEXT,
+    metadata_json TEXT
+  );`,
+  `CREATE TABLE IF NOT EXISTS diary_blocks (
+    id TEXT PRIMARY KEY NOT NULL,
+    diary_id TEXT NOT NULL,
+    block_type TEXT NOT NULL,
+    sort_order INTEGER NOT NULL,
+    content_json TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (diary_id) REFERENCES diaries(id) ON DELETE CASCADE
+  );`,
+  `CREATE TABLE IF NOT EXISTS diary_assets (
+    id TEXT PRIMARY KEY NOT NULL,
+    diary_id TEXT NOT NULL,
+    asset_type TEXT NOT NULL,
+    local_path TEXT NOT NULL,
+    width INTEGER,
+    height INTEGER,
+    file_size INTEGER,
+    mime_type TEXT,
+    created_at INTEGER NOT NULL,
+    metadata_json TEXT,
+    FOREIGN KEY (diary_id) REFERENCES diaries(id) ON DELETE CASCADE
+  );`,
+  `CREATE TABLE IF NOT EXISTS diary_layouts (
+    id TEXT PRIMARY KEY NOT NULL,
+    diary_id TEXT NOT NULL,
+    schema_version INTEGER NOT NULL,
+    layout_json TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (diary_id) REFERENCES diaries(id) ON DELETE CASCADE
+  );`,
+  `CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY NOT NULL,
+    value_json TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );`,
+  `CREATE TABLE IF NOT EXISTS event_queue (
+    id TEXT PRIMARY KEY NOT NULL,
+    event_type TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    last_attempt_at INTEGER,
+    sent_at INTEGER,
+    status TEXT NOT NULL DEFAULT 'pending',
+    last_error TEXT
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_diaries_timeline ON diaries(is_deleted, updated_at DESC);`,
+  `CREATE INDEX IF NOT EXISTS idx_diary_blocks_diary ON diary_blocks(diary_id, sort_order);`,
+  `CREATE INDEX IF NOT EXISTS idx_diary_assets_diary ON diary_assets(diary_id);`,
+  `CREATE INDEX IF NOT EXISTS idx_event_queue_status ON event_queue(status, created_at);`,
+]
+
 export const MIGRATION_V2 = [
   `CREATE TABLE IF NOT EXISTS themes (
     id TEXT NOT NULL,
@@ -136,5 +208,12 @@ export const MIGRATION_V2 = [
 ]
 
 export const MIGRATION_V3 = [
+  ...MIGRATION_V1,
   `CREATE INDEX IF NOT EXISTS idx_event_queue_retry ON event_queue(status, last_attempt_at, created_at);`,
+]
+
+export const DATABASE_UPGRADES = [
+  { toVersion: 1, statements: MIGRATION_V1 },
+  { toVersion: 2, statements: MIGRATION_V2 },
+  { toVersion: 3, statements: MIGRATION_V3 },
 ]

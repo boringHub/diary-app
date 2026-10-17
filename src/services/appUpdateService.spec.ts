@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compareVersions, formatReleaseNoteLines, parseUpdateManifest } from './appUpdateService'
+import { compareVersions, formatReleaseNoteLines, parseUpdateManifest, updateChannelForPackage } from './appUpdateService'
 
 describe('compareVersions', () => {
   it('compares semantic version segments numerically', () => {
@@ -42,5 +42,28 @@ describe('parseUpdateManifest', () => {
 
   it('rejects unsupported fallback formats and invalid version codes', () => {
     expect(parseUpdateManifest({ versionCode: 5.5, ossFormat: 'apk' })).toBeUndefined()
+  })
+
+  it('accepts an OSS-only internal update manifest', () => {
+    expect(
+      parseUpdateManifest({
+        versionCode: 1_797_000_000,
+        versionName: '1.3.1-internal.20261017.190501',
+        apkSize: 1024,
+        sha256: 'abc123',
+        ossUrl: 'https://example.oss-cn-hangzhou.aliyuncs.com/internal/builds/20261017.190501/app.zip',
+        ossFormat: 'zip',
+      }),
+    ).toBeTruthy()
+  })
+})
+
+describe('updateChannelForPackage', () => {
+  it('keeps the production package on the stable channel', () => {
+    expect(updateChannelForPackage('xyz.shiguangjian.app')).toBe('stable')
+  })
+
+  it('routes the independently installable test package to internal OSS updates', () => {
+    expect(updateChannelForPackage('xyz.shiguangjian.app.debug')).toBe('internal')
   })
 })

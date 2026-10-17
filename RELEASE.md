@@ -1,11 +1,13 @@
 # Android 版本更新与发布手册
 
-> 后续开发者或 AI 准备发布版本时，先阅读本文件，再阅读 [CHANGELOG.md](CHANGELOG.md)。
+> 后续开发者或 AI 准备发布版本时，先阅读本文件和 [双渠道版本管理规范](docs/RELEASE_CHANNELS.md)，再分别阅读 [CHANGELOG.md](CHANGELOG.md) 与 [INTERNAL_CHANGELOG.md](INTERNAL_CHANGELOG.md)。
 > 本文件记录固定发布流程、当前发布基线和历史发布索引；`CHANGELOG.md` 累计记录每个版本的功能、优化和修复。
 
 ## 快速发布步骤
 
 每次发布严格按以下顺序执行，不要跳过版本、签名、数据保留或公开资源检查。
+
+正式版与测试版是两个可同时安装的 Android 应用：正式版包名为 `xyz.shiguangjian.app`，测试版包名为 `xyz.shiguangjian.app.debug`。正式版继续使用 GitHub 优先、OSS 备用的 `releases/` 通道；测试版只读取 OSS `internal/latest/update.json`。
 
 1. 确认工作区和远端基线：
 
@@ -43,24 +45,24 @@
    npm run cap:sync
    ```
 
-6. 从 Android 工程目录执行全量构建：
+6. 从 Android 工程目录执行正式版构建：
 
    ```powershell
    Push-Location android
-   .\gradlew.bat clean assembleDebug
+   .\gradlew.bat clean assembleRelease
    Pop-Location
    ```
 
-   当前发布链路使用 Debug APK，输出文件为：
+   当前正式发布链路使用 Release 变体，并要求通过 `STABLE_KEYSTORE_FILE` 显式提供现有正式版密钥。构建脚本会拒绝证书指纹不是 `c6ef39d7955b402a7bfce9e9e9ce3a1a1bbcfa87c2cca4356c29eec7e9845d01` 的 APK。输出文件为：
 
    ```text
-   android/app/build/outputs/apk/debug/app-debug.apk
+   android/app/build/outputs/apk/release/app-release.apk
    ```
 
 7. 检查最终 APK 元数据。包名必须保持 `xyz.shiguangjian.app`，内部版本必须等于本次发布版本：
 
    ```powershell
-   $apk = Resolve-Path 'android/app/build/outputs/apk/debug/app-debug.apk'
+   $apk = Resolve-Path 'android/app/build/outputs/apk/release/app-release.apk'
    $aapt2 = Get-ChildItem "$env:LOCALAPPDATA\Android\Sdk\build-tools" -Recurse -Filter aapt2.exe |
      Sort-Object FullName -Descending |
      Select-Object -First 1
@@ -76,7 +78,7 @@
    Windows 检查命令：
 
    ```powershell
-   $apk = Resolve-Path 'android/app/build/outputs/apk/debug/app-debug.apk'
+   $apk = Resolve-Path 'android/app/build/outputs/apk/release/app-release.apk'
    $apksigner = Get-ChildItem "$env:LOCALAPPDATA\Android\Sdk\build-tools" -Recurse -Filter apksigner.bat |
      Sort-Object FullName -Descending |
      Select-Object -First 1
@@ -87,7 +89,7 @@
 
    ```powershell
    Copy-Item `
-     'android/app/build/outputs/apk/debug/app-debug.apk' `
+     'android/app/build/outputs/apk/release/app-release.apk' `
      'release/shiguangjian-android.apk' `
      -Force
 
@@ -118,6 +120,7 @@
     ```powershell
     npm test
     npm run build
+    npm run release:validate
     git diff --check
     git status --short
     ```
@@ -137,7 +140,7 @@
     - `release/shiguangjian-android.apk`
     - `release/update.json`
 
-    Release 标题使用 `拾光笺 v{versionName}`。正文从本次 `CHANGELOG.md` 提取，并明确写明“直接覆盖安装，请勿先卸载”。
+    Release 标题使用 `拾光笺 v{versionName}`。先执行 `npm run release:notes:stable -- {versionName}`，再使用生成的 `release/github-release-notes.md` 作为正文。脚本只读取 `CHANGELOG.md` 中指定的正式版本，并拒绝内部包名、内部 OSS 路径和测试安装包名称。禁止从 `INTERNAL_CHANGELOG.md` 手工复制正式公告。
 
 14. 同步发布到阿里云 OSS：
 
@@ -187,6 +190,19 @@
     - 更新后确认版本号、App 图标、关键功能和已有日记正常。
     - 点击“设置 > 升级验证”，确认 SQLite 数据库可读取且日记数量未减少。
 
+## 内部测试版构建与更新
+
+- 双渠道文件职责、日志边界和防误发规则统一维护在 `docs/RELEASE_CHANNELS.md`。
+- 测试版每次迭代先写入 `INTERNAL_CHANGELOG.md` 的“未发布”；正式版用户变更写入 `CHANGELOG.md`，两者不得混用。
+- 本地构建测试版：`npm run android:build:internal`。脚本输出 `android/app/build/outputs/apk/debug/app-debug.apk`，包名固定为 `xyz.shiguangjian.app.debug`。
+- 构建正式版：`npm run android:build:stable`。脚本输出 `android/app/build/outputs/apk/release/app-release.apk`，包名保持 `xyz.shiguangjian.app`。
+- 发布内部测试版：`npm run android:publish:internal`。脚本自动生成 Unix 秒级递增 `versionCode` 与 `1.3.1-internal.YYYYMMDD.HHmmss` 版本名，默认从内部日志生成更新说明；OSS 公网校验成功后自动归档本次内部迭代。
+- 内部发布对象使用不可变目录 `internal/builds/{构建时间}/`，并同步 `internal/latest/update.json` 与 ZIP；测试 App 不查询 GitHub Release。
+- 内部 ZIP 根目录只包含一个 `shiguangjian-internal.apk`。上传后脚本会重新下载清单和 ZIP，并核对 APK SHA-256。
+- 内部测试版与正式版的数据、设置、设备 ID 和 Keystore 设备密钥完全隔离。测试版只能覆盖相同包名、相同 Android 签名且 `versionCode` 更高的测试版。
+- 测试版 Android 签名默认固定使用 `%USERPROFILE%\.android\diary-internal.keystore`；必须备份该文件。可通过 `INTERNAL_KEYSTORE_FILE`、`INTERNAL_KEYSTORE_PASSWORD`、`INTERNAL_KEY_ALIAS`、`INTERNAL_KEY_PASSWORD` 覆盖路径与密钥参数。
+- OSS 凭据与正式发布共用环境变量；发布脚本不会把 AccessKey 写入文件或输出到控制台。
+
 ## 版本号规则
 
 - 补丁版本，例如 `1.2.0 -> 1.2.1`：问题修复、小范围兼容性或文案调整。
@@ -206,15 +222,18 @@
 
 ## 签名密钥保管
 
-当前已发布 APK 使用本机默认 Android Debug 密钥，默认位置为：
+当前已发布 APK 使用历史 Android Debug 密钥，但当前设备的 `%USERPROFILE%\.android\debug.keystore` 已不是同一把密钥。正式版构建前必须从备份或原设备恢复旧密钥，并配置：
 
 ```text
-%USERPROFILE%\.android\debug.keystore
+STABLE_KEYSTORE_FILE        必填，旧密钥绝对路径
+STABLE_KEYSTORE_PASSWORD    可选，默认 android
+STABLE_KEY_ALIAS            可选，默认 androiddebugkey
+STABLE_KEY_PASSWORD         可选，默认 android
 ```
 
 - 该文件没有提交到 Git 仓库，也不应该提交到公开仓库。
 - 必须在受控位置保留备份。丢失或重新生成后，即使包名相同，Android 也无法覆盖安装当前用户设备上的版本。
-- 换电脑或重装系统后，构建发布 APK 前必须恢复同一份密钥，并用证书 SHA-256 与本文件记录的指纹对比。
+- 换电脑或重装系统后，构建发布 APK 前必须恢复同一份密钥，并用证书 SHA-256 与本文件记录的指纹对比。`npm run android:build:stable` 会在构建后自动核验并拒绝错误证书。
 - 正式签名前需要单独制定迁移方案；不能直接用新证书覆盖当前 Debug 签名安装包。
 
 ## 阿里云 OSS 发布配置
@@ -252,7 +271,7 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 
 当前 OSS 默认 Endpoint 对 APK 公网下载返回 `ApkDownloadForbidden`，必须使用 CNAME 才能直接分发 APK。因此应用的备用下载固定使用 ZIP，ZIP 根目录只允许一个 `shiguangjian-android.apk`。脚本仍上传 APK 对象，便于以后配置自定义域名后切换，但当前公开备用地址不得指向 APK 对象。
 
-换开发设备时，除上述环境变量外，还必须恢复原发布设备的 `%USERPROFILE%\.android\debug.keystore`，并校验证书 SHA-256。只有 OSS 凭据而没有相同签名密钥，无法生成可覆盖安装的更新包。
+换开发设备时，除上述环境变量外，还必须恢复原发布设备的旧密钥，通过 `STABLE_KEYSTORE_FILE` 指向它并校验证书 SHA-256。只有 OSS 凭据而没有相同签名密钥，无法生成可覆盖安装的正式更新包。
 
 ## 双源更新规则
 
@@ -277,6 +296,7 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 | 更新清单名 | `update.json` |
 | 签名类型 | Android Debug 签名，当前仅用于开发测试 |
 | 签名证书 SHA-256 | `c6ef39d7955b402a7bfce9e9e9ce3a1a1bbcfa87c2cca4356c29eec7e9845d01` |
+| 当前测试版签名证书 SHA-256 | `a490f52e123093f27b88d3c53b4a363798868f5d9808f366b134d1d13a29553c` |
 | v1.3.1 APK SHA-256 | `7228582e23beaf727e343322dd0b0758ca3a6270a82625832097fccc6dae5fe2` |
 | 最新 Release | <https://github.com/boringHub/diary-app/releases/latest> |
 | OSS 最新清单 | <https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/update.json> |
@@ -289,12 +309,15 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 | --- | --- | --- |
 | `RELEASE.md` | 固定流程、当前基线、发布索引和维护约定 | 是，更新当前基线和发布索引 |
 | `CHANGELOG.md` | 累计记录新增、优化、修复和数据兼容性 | 是，在顶部追加版本 |
+| `INTERNAL_CHANGELOG.md` | 测试版目标、临时变更、已知问题和验证结果 | 每次内部发布自动归档 |
+| `docs/RELEASE_CHANNELS.md` | 双渠道边界、公告来源和防误发规则 | 渠道规则变化时更新 |
 | `android/app/build.gradle` | Android 内部版本和对外版本 | 是 |
 | `package.json`、`package-lock.json` | Web 工程版本 | 是 |
 | `src/services/appUpdateService.ts` | Web 环境回退版本 | 是 |
 | `release/shiguangjian-android.apk` | GitHub Release 最终安装包 | 是 |
 | `release/update.json` | 应用内更新使用的版本、APK 名称和哈希 | 是 |
 | `scripts/publish-oss.ps1` | 生成 ZIP、同步 OSS 版本/latest 对象并公开校验 | 流程变化时更新 |
+| `scripts/release-channel.mjs` | 校验渠道边界并生成正式/测试更新说明 | 流程变化时更新 |
 | `update.example.json` | 更新清单格式示例 | 仅格式变化时更新 |
 
 ## 发布历史索引

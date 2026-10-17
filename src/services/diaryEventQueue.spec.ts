@@ -28,6 +28,7 @@ describe('diary event queue', () => {
     const first = JSON.parse(String(events[0]?.values[0]?.[2]))
     const second = JSON.parse(String(events[0]?.values[1]?.[2]))
     expect(Object.keys(first).sort()).toEqual(['deviceId', 'eventId', 'eventType', 'mood', 'occurredAt'])
+    expect(first.deviceId).toMatch(/^dvc_[\w-]+$/)
     expect(first).toMatchObject({ eventId: events[0]?.values[0]?.[0], eventType: 'diary_created', occurredAt: 1234, mood: 'happy' })
     expect(second).toMatchObject({ eventType: 'diary_created', occurredAt: 5678, mood: 'calm', deviceId: first.deviceId })
     expect(events[0]?.values.map((row) => row[4])).toEqual(['pending', 'pending'])

@@ -1,5 +1,30 @@
 apply plugin: 'com.android.application'
 
+def internalVersionCode = project.findProperty('INTERNAL_VERSION_CODE') ?: System.getenv('INTERNAL_VERSION_CODE')
+def internalVersionName = project.findProperty('INTERNAL_VERSION_NAME') ?: System.getenv('INTERNAL_VERSION_NAME')
+def isInternalBuild = gradle.startParameter.taskNames.any { it.toLowerCase().contains('debug') } && internalVersionCode && internalVersionName
+def internalKeystoreFile = project.findProperty('INTERNAL_KEYSTORE_FILE') ?: System.getenv('INTERNAL_KEYSTORE_FILE') ?: new File(System.getProperty('user.home'), '.android/diary-internal.keystore').absolutePath
+def internalKeystorePassword = project.findProperty('INTERNAL_KEYSTORE_PASSWORD') ?: System.getenv('INTERNAL_KEYSTORE_PASSWORD') ?: 'android'
+def internalKeyAlias = project.findProperty('INTERNAL_KEY_ALIAS') ?: System.getenv('INTERNAL_KEY_ALIAS') ?: 'androiddebugkey'
+def internalKeyPassword = project.findProperty('INTERNAL_KEY_PASSWORD') ?: System.getenv('INTERNAL_KEY_PASSWORD') ?: 'android'
+def isStableBuild = gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }
+def stableKeystoreFile = project.findProperty('STABLE_KEYSTORE_FILE') ?: System.getenv('STABLE_KEYSTORE_FILE')
+def stableKeystorePassword = project.findProperty('STABLE_KEYSTORE_PASSWORD') ?: System.getenv('STABLE_KEYSTORE_PASSWORD') ?: 'android'
+def stableKeyAlias = project.findProperty('STABLE_KEY_ALIAS') ?: System.getenv('STABLE_KEY_ALIAS') ?: 'androiddebugkey'
+def stableKeyPassword = project.findProperty('STABLE_KEY_PASSWORD') ?: System.getenv('STABLE_KEY_PASSWORD') ?: 'android'
+
+if (isStableBuild) {
+    if (!stableKeystoreFile) {
+        throw new GradleException('STABLE_KEYSTORE_FILE is required for Release builds. Restore the keystore whose SHA-256 certificate is c6ef39d7955b402a7bfce9e9e9ce3a1a1bbcfa87c2cca4356c29eec7e9845d01.')
+    }
+    if (!file(stableKeystoreFile).isFile()) {
+        throw new GradleException("Stable keystore was not found: ${stableKeystoreFile}")
+    }
+}
+if (isInternalBuild && !file(internalKeystoreFile).isFile()) {
+    throw new GradleException("Internal keystore was not found: ${internalKeystoreFile}")
+}
+
 android {
     namespace = "xyz.shiguangjian.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +32,8 @@ android {
         applicationId "xyz.shiguangjian.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
-        versionName "1.3.1"
+        versionCode isInternalBuild ? internalVersionCode.toInteger() : 5
+        versionName isInternalBuild ? internalVersionName.toString() : "1.3.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +41,32 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        internal {
+            storeFile file(internalKeystoreFile)
+            storePassword internalKeystorePassword
+            keyAlias internalKeyAlias
+            keyPassword internalKeyPassword
+        }
+        stable {
+            if (stableKeystoreFile) {
+                storeFile file(stableKeystoreFile)
+                storePassword stableKeystorePassword
+                keyAlias stableKeyAlias
+                keyPassword stableKeyPassword
+            }
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.internal
+            applicationIdSuffix ".debug"
+            versionNameSuffix isInternalBuild ? "" : "-debug"
+            resValue "string", "app_name", "拾光笺 测试版"
+            resValue "string", "title_activity_main", "拾光笺 测试版"
+        }
         release {
+            signingConfig signingConfigs.stable
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

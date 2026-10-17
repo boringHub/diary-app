@@ -2,6 +2,7 @@ import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor
 
 const RELEASE_API_URL = 'https://api.github.com/repos/boringHub/diary-app/releases/latest'
 const OSS_MANIFEST_URL = 'https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/update.json'
+const INTERNAL_OSS_MANIFEST_URL = 'https://diary-app.oss-cn-hangzhou.aliyuncs.com/internal/latest/update.json'
 const NETWORK_TIMEOUT_MS = 30_000
 const PREFERRED_APK_NAMES = ['shiguangjian-android.apk', 'shiguangjian-android-debug.apk']
 const WEB_VERSION = '1.3.1'
@@ -14,6 +15,8 @@ interface NativeVersionInfo {
 
 interface InstallUpdateOptions {
   url: string
+  format?: 'apk' | 'zip'
+  source?: 'github' | 'aliyun'
   fallbackUrl?: string
   fallbackFormat?: 'zip'
   expectedVersionCode?: number
@@ -72,6 +75,8 @@ export interface AvailableUpdate {
   releaseNotes: string
   releaseUrl: string
   apkUrl: string
+  format?: 'apk' | 'zip'
+  source: 'github' | 'aliyun'
   fallbackUrl?: string
   fallbackFormat?: 'zip'
   apkSize: number
@@ -169,18 +174,26 @@ async function fetchJsonWithTimeout(url: string, init?: RequestInit): Promise<{ 
   }
 }
 
-async function loadOssManifest(): Promise<UpdateManifest> {
+export function updateChannelForPackage(packageName?: string): 'stable' | 'internal' {
+  return packageName?.endsWith('.debug') ? 'internal' : 'stable'
+}
+
+async function loadOssManifest(channel: 'stable' | 'internal' = 'stable'): Promise<UpdateManifest> {
+  const manifestUrl = channel === 'internal' ? INTERNAL_OSS_MANIFEST_URL : OSS_MANIFEST_URL
   let value: unknown
   if (Capacitor.isNativePlatform()) {
-    value = await AppUpdate.fetchJson({ url: OSS_MANIFEST_URL })
+    value = await AppUpdate.fetchJson({ url: manifestUrl })
   } else {
-    const result = await fetchJsonWithTimeout(OSS_MANIFEST_URL, { cache: 'no-store' })
+    const result = await fetchJsonWithTimeout(manifestUrl, { cache: 'no-store' })
     const response = result.response
     if (!response.ok) throw new Error(`阿里云更新信息读取失败 (${response.status})`)
     value = result.value
   }
   const manifest = parseUpdateManifest(value)
-  if (!manifest?.versionName || !manifest.githubUrl || !manifest.ossUrl) {
+  const validStableManifest = channel === 'stable' && manifest?.versionName && manifest.githubUrl && manifest.ossUrl
+  const validInternalManifest =
+    channel === 'internal' && manifest?.versionName && manifest.ossUrl && manifest.ossFormat === 'zip'
+  if (!validStableManifest && !validInternalManifest) {
     throw new Error('阿里云更新信息无效')
   }
   return manifest
@@ -206,6 +219,25 @@ export async function getCurrentVersion(): Promise<AppVersionInfo> {
 
 export async function checkForUpdate(): Promise<UpdateCheckResult> {
   const current = await getCurrentVersion()
+  const channel = updateChannelForPackage(current.packageName)
+
+  if (channel === 'internal') {
+    const manifest = await loadOssManifest('internal')
+    const versionName = manifest.versionName!.trim()
+    const ossUrl = manifest.ossUrl!.trim()
+    return makeCheckResult(current, {
+      versionName,
+      versionCode: manifest.versionCode,
+      releaseName: `拾光笺测试版 v${versionName}`,
+      releaseNotes: manifest.releaseNotes?.trim() || '',
+      releaseUrl: ossUrl,
+      apkUrl: ossUrl,
+      format: 'zip',
+      source: 'aliyun',
+      apkSize: manifest.apkSize ?? 0,
+      sha256: manifest.sha256?.trim(),
+    })
+  }
 
   try {
     const { response: releaseResponse, value } = await fetchJsonWithTimeout(RELEASE_API_URL, {
@@ -230,6 +262,8 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
       releaseNotes: release.body?.trim() || manifest?.releaseNotes?.trim() || '',
       releaseUrl: release.html_url,
       apkUrl: apkAsset.browser_download_url,
+      format: 'apk',
+      source: 'github',
       fallbackUrl: manifest?.ossUrl?.trim(),
       fallbackFormat: manifest?.ossFormat,
       apkSize: apkAsset.size,
@@ -246,6 +280,8 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
         releaseNotes: manifest.releaseNotes?.trim() || '',
         releaseUrl: `https://github.com/boringHub/diary-app/releases/tag/v${versionName}`,
         apkUrl: manifest.githubUrl!.trim(),
+        format: 'apk',
+        source: 'github',
         fallbackUrl: manifest.ossUrl!.trim(),
         fallbackFormat: manifest.ossFormat,
         apkSize: manifest.apkSize ?? 0,
@@ -279,6 +315,8 @@ export async function installUpdate(
   try {
     return await AppUpdate.downloadAndInstall({
       url: update.apkUrl,
+      format: update.format,
+      source: update.source,
       fallbackUrl: update.fallbackUrl,
       fallbackFormat: update.fallbackFormat,
       expectedVersionCode: update.versionCode,

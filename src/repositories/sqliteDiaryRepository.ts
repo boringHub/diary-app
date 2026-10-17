@@ -11,6 +11,7 @@ import {
   markDiaryEventTerminal,
 } from '../services/diaryEventQueue'
 import { NotifyApiError, sendDiaryCreatedEvent } from '../services/notifyApiClient'
+import { ensureActiveRegisteredDevice } from '../services/deviceIdentity'
 import { settingsRepository } from './settingsRepository'
 import {
   createFixedLayout,
@@ -29,7 +30,7 @@ import type {
   SaveDiaryImageInput,
 } from '../types/diary'
 import type { DiaryRepository, SaveDiaryInput } from './diaryRepository'
-import { DATABASE_NAME, DATABASE_SCHEMA, DATABASE_VERSION, MIGRATION_V2, MIGRATION_V3 } from './sqliteSchema'
+import { DATABASE_NAME, DATABASE_SCHEMA, DATABASE_UPGRADES, DATABASE_VERSION } from './sqliteSchema'
 
 type Row = Record<string, unknown>
 
@@ -186,16 +187,20 @@ export class SQLiteDiaryRepository implements DiaryRepository {
   }
 
   async syncPendingNotificationEvents(): Promise<void> {
-    if (!settingsRepository.get().notificationEnabled) return
-    const credential = await getNotificationCredential()
-    if (!credential) return
-
     const db = await this.connection()
+    let identity
+    try {
+      identity = await ensureActiveRegisteredDevice(db)
+    } catch {
+      return
+    }
+    if (!settingsRepository.get().notificationEnabled) return
+
     const events = await listReadyDiaryEvents(db)
     for (const event of events) {
       await markDiaryEventAttempt(db, event.id)
       try {
-        await sendDiaryCreatedEvent(event.payload, credential)
+        await sendDiaryCreatedEvent(event.payload, identity)
         await markDiaryEventSent(db, event.id)
       } catch (error) {
         if (error instanceof NotifyApiError && !error.retryable) {
@@ -213,10 +218,7 @@ export class SQLiteDiaryRepository implements DiaryRepository {
   }
 
   private async openConnection(): Promise<SQLiteDBConnection> {
-    await this.sqlite.addUpgradeStatement(DATABASE_NAME, [
-      { toVersion: 2, statements: MIGRATION_V2 },
-      { toVersion: 3, statements: MIGRATION_V3 },
-    ])
+    await this.sqlite.addUpgradeStatement(DATABASE_NAME, DATABASE_UPGRADES)
     const existing = await this.sqlite.isConnection(DATABASE_NAME, false)
     const db = existing.result
       ? await this.sqlite.retrieveConnection(DATABASE_NAME, false)
@@ -431,9 +433,4 @@ export class SQLiteDiaryRepository implements DiaryRepository {
   private readMood(value: unknown): Mood {
     return value === 'happy' || value === 'sad' || value === 'tired' || value === 'excited' ? value : 'calm'
   }
-}
-
-async function getNotificationCredential(): Promise<string | null> {
-  // INGEST_TOKEN is a server secret and must never be bundled in the App.
-  return null
 }

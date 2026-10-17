@@ -107,7 +107,7 @@ function closeUpdateDialog() {
 
 async function startInstall(update: AvailableUpdate) {
   installingUpdate.value = true
-  downloadProgress.value = { status: 'connecting', source: 'github' }
+  downloadProgress.value = { status: 'connecting', source: update.source }
   try {
     const result = await installUpdate(update, (progress) => {
       downloadProgress.value = progress
@@ -168,6 +168,7 @@ async function verifyUpgrade() {
     await showToast(`升级验证没通过：${errorMessage(error)}`)
   }
 }
+
 </script>
 
 <template>

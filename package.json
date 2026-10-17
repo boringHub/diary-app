@@ -23,7 +23,13 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "cap:sync": "npm run build && cap sync android",
-    "android": "npm run cap:sync && cap open android"
+    "android": "npm run cap:sync && cap open android",
+    "android:build:stable": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Channel stable",
+    "android:build:internal": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Channel internal",
+    "android:publish:internal": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/publish-internal.ps1",
+    "release:validate": "node scripts/release-channel.mjs validate",
+    "release:notes:stable": "node scripts/release-channel.mjs stable-notes",
+    "release:notes:internal": "node scripts/release-channel.mjs internal-notes"
   },
   "dependencies": {
     "@capacitor-community/sqlite": "^8.1.1",

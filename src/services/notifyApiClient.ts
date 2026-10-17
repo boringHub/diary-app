@@ -1,9 +1,17 @@
 import type { DiaryCreatedEvent } from './diaryEventQueue'
+import { deviceKeyAuth } from './deviceKeyAuth'
 
-export const NOTIFY_API_URL = 'https://api.304766.xyz/v1/events'
+export const NOTIFY_API_ORIGIN = 'https://api.304766.xyz'
+export const NOTIFY_API_URL = `${NOTIFY_API_ORIGIN}/v1/events`
 const REQUEST_TIMEOUT_MS = 15_000
 const EVENT_TYPES = new Set(['diary_created', 'diary_updated', 'diary_favorited'])
 const MOODS = new Set(['calm', 'happy', 'low', 'tired', 'hopeful'])
+
+export interface DeviceIdentity {
+  deviceId: string
+  publicKey: string
+  alias: string
+}
 
 export class NotifyApiError extends Error {
   constructor(message: string, readonly retryable: boolean) {
@@ -12,46 +20,116 @@ export class NotifyApiError extends Error {
   }
 }
 
+export interface DeviceSigner {
+  sign(alias: string, dataBase64: string): Promise<string>
+}
+
 export async function sendDiaryCreatedEvent(
   event: DiaryCreatedEvent,
-  credential: string,
+  identity: DeviceIdentity,
   request: typeof fetch = fetch,
+  signer: DeviceSigner = deviceKeyAuth,
 ) {
   const payload = toAllowedPayload(event)
-  let response: Response
+  if (payload.deviceId !== identity.deviceId) throw new NotifyApiError('device_id_mismatch', false)
+  const body = JSON.stringify(payload)
+  return sendSignedRequest({ method: 'POST', path: '/v1/events', body, identity, request, signer, expectedEventId: event.eventId })
+}
+
+export async function registerDevice(
+  identity: DeviceIdentity,
+  appVersion: string,
+  request: typeof fetch = fetch,
+) {
+  const body = JSON.stringify({ deviceId: identity.deviceId, publicKey: identity.publicKey, platform: 'android', appVersion })
+  const response = await requestWithTimeout(request, `${NOTIFY_API_ORIGIN}/v1/device/register`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body,
+  })
+  const result = await readResponse(response)
+  if (response.status === 201 || response.status === 200) return result
+  throw apiError(result, response.status)
+}
+
+export async function getDeviceStatus(
+  identity: DeviceIdentity,
+  request: typeof fetch = fetch,
+  signer: DeviceSigner = deviceKeyAuth,
+) {
+  return sendSignedRequest({ method: 'GET', path: '/v1/device/status', body: '', identity, request, signer })
+}
+
+async function sendSignedRequest(options: {
+  method: string
+  path: string
+  body: string
+  identity: DeviceIdentity
+  request: typeof fetch
+  signer: DeviceSigner
+  expectedEventId?: string
+}) {
+  const timestamp = Math.floor(Date.now() / 1_000).toString()
+  const nonce = crypto.randomUUID()
+  const bodyHash = await sha256Hex(options.body)
+  const canonical = ['v1', options.method.toUpperCase(), options.path, options.identity.deviceId, timestamp, nonce, bodyHash].join('\n')
+  let signature: string
+  try {
+    signature = await options.signer.sign(options.identity.alias, encodeBase64(canonical))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new NotifyApiError(message, isTransientKeyError(message))
+  }
+
+  const response = await requestWithTimeout(options.request, `${NOTIFY_API_ORIGIN}${options.path}`, {
+    method: options.method,
+    headers: {
+      ...(options.body ? { 'content-type': 'application/json' } : {}),
+      'x-device-id': options.identity.deviceId,
+      'x-timestamp': timestamp,
+      'x-nonce': nonce,
+      'x-signature': signature,
+    },
+    ...(options.body ? { body: options.body } : {}),
+  })
+  const result = await readResponse(response)
+  if ((response.status === 202 && result.status === 'accepted') || (response.status === 200 && result.status === 'duplicate')) {
+    if (options.expectedEventId !== undefined && result.eventId !== options.expectedEventId) {
+      throw new NotifyApiError('event_id_mismatch', false)
+    }
+    return result
+  }
+  if (response.status >= 200 && response.status < 300) return result
+  throw apiError(result, response.status)
+}
+
+async function requestWithTimeout(request: typeof fetch, url: string, init: RequestInit) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
   try {
-    response = await request(NOTIFY_API_URL, {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${credential}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    })
-  } catch {
-    throw new NotifyApiError('network_unavailable', true)
+    return await request(url, { ...init, signal: controller.signal })
+  } catch (error) {
+    throw new NotifyApiError(error instanceof Error && error.name === 'AbortError' ? 'request_timeout' : 'network_unavailable', true)
   } finally {
     clearTimeout(timeout)
   }
+}
 
-  let result: unknown
+async function readResponse(response: Response): Promise<Record<string, any>> {
   try {
-    result = await response.json()
+    const result: unknown = await response.json()
+    return result && typeof result === 'object' ? result as Record<string, any> : {}
   } catch {
     throw new NotifyApiError('invalid_server_response', response.status >= 500)
   }
-  const body = result && typeof result === 'object' ? result as Record<string, unknown> : {}
-  if ((response.status === 202 && body.status === 'accepted') || (response.status === 200 && body.status === 'duplicate')) {
-    if (body.eventId !== event.eventId) throw new NotifyApiError('event_id_mismatch', false)
-    return 'accepted' as const
-  }
+}
 
-  const error = typeof body.error === 'string' ? body.error : `http_${response.status}`
-  const retryable = response.status === 408 || response.status === 429 || response.status >= 500
-  throw new NotifyApiError(error, retryable)
+function apiError(body: Record<string, any>, status: number) {
+  return new NotifyApiError(typeof body.error === 'string' ? body.error : `http_${status}`, status === 408 || status === 429 || status >= 500)
+}
+
+function isTransientKeyError(message: string) {
+  return message === 'KEYSTORE_UNAVAILABLE' || message === 'SIGN_FAILED'
 }
 
 function toAllowedPayload(event: DiaryCreatedEvent): DiaryCreatedEvent {
@@ -71,4 +149,16 @@ function toAllowedPayload(event: DiaryCreatedEvent): DiaryCreatedEvent {
     mood: event.mood,
     deviceId: event.deviceId,
   }
+}
+
+export async function sha256Hex(value: string) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+function encodeBase64(value: string) {
+  const bytes = new TextEncoder().encode(value)
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary)
 }

@@ -78,8 +78,10 @@ public class AppUpdatePlugin extends Plugin {
 
         Long expectedVersionCode = getOptionalLong(call, "expectedVersionCode");
         String expectedSha256 = call.getString("expectedSha256");
+        String primaryFormat = normalizeFormat(call.getString("format"));
+        String primarySource = normalizeSource(call.getString("source"));
         String fallbackUrl = call.getString("fallbackUrl");
-        String fallbackFormat = call.getString("fallbackFormat");
+        String fallbackFormat = normalizeFormat(call.getString("fallbackFormat"));
         if (fallbackUrl != null && !fallbackUrl.startsWith("https://")) {
             call.reject("备用更新地址无效，仅允许 HTTPS 下载", "INVALID_FALLBACK_URL");
             return;
@@ -92,7 +94,7 @@ public class AppUpdatePlugin extends Plugin {
             File updateApk = new File(updateDirectory, "shiguangjian-update.apk");
 
             try {
-                String activeSource = "github";
+                String activeSource = primarySource;
                 if (!updateDirectory.exists() && !updateDirectory.mkdirs()) {
                     throw new UpdateException("无法创建更新缓存目录", "CACHE_CREATE_FAILED");
                 }
@@ -100,7 +102,7 @@ public class AppUpdatePlugin extends Plugin {
                 deleteIfPresent(temporaryApk);
                 deleteIfPresent(temporaryArchive);
                 try {
-                    downloadFile(downloadUrl, temporaryApk, "github", MAX_APK_SIZE);
+                    downloadUpdate(downloadUrl, primaryFormat, primarySource, temporaryApk, temporaryArchive);
                 } catch (UpdateException primaryException) {
                     if (fallbackUrl == null || fallbackUrl.isBlank()) {
                         throw primaryException;
@@ -108,13 +110,7 @@ public class AppUpdatePlugin extends Plugin {
                     activeSource = "aliyun";
                     deleteIfPresent(temporaryApk);
                     emitProgress("switching", "aliyun", 0, -1);
-                    if ("zip".equalsIgnoreCase(fallbackFormat)) {
-                        downloadFile(fallbackUrl, temporaryArchive, "aliyun", MAX_ARCHIVE_SIZE);
-                        extractApk(temporaryArchive, temporaryApk);
-                        deleteIfPresent(temporaryArchive);
-                    } else {
-                        downloadFile(fallbackUrl, temporaryApk, "aliyun", MAX_APK_SIZE);
-                    }
+                    downloadUpdate(fallbackUrl, fallbackFormat, "aliyun", temporaryApk, temporaryArchive);
                 }
                 emitProgress("verifying", activeSource, 0, -1);
                 verifyApk(temporaryApk, expectedVersionCode, expectedSha256);
@@ -135,6 +131,24 @@ public class AppUpdatePlugin extends Plugin {
                 call.reject("更新包下载或安装失败", "UPDATE_FAILED", exception);
             }
         });
+    }
+
+    private void downloadUpdate(
+        String url,
+        String format,
+        String source,
+        File temporaryApk,
+        File temporaryArchive
+    ) throws UpdateException {
+        deleteIfPresent(temporaryApk);
+        deleteIfPresent(temporaryArchive);
+        if ("zip".equals(format)) {
+            downloadFile(url, temporaryArchive, source, MAX_ARCHIVE_SIZE);
+            extractApk(temporaryArchive, temporaryApk, source);
+            deleteIfPresent(temporaryArchive);
+            return;
+        }
+        downloadFile(url, temporaryApk, source, MAX_APK_SIZE);
     }
 
     @PluginMethod
@@ -233,8 +247,8 @@ public class AppUpdatePlugin extends Plugin {
         }
     }
 
-    private void extractApk(File archive, File destination) throws UpdateException {
-        emitProgress("extracting", "aliyun", 0, archive.length());
+    private void extractApk(File archive, File destination, String source) throws UpdateException {
+        emitProgress("extracting", source, 0, archive.length());
         int apkEntries = 0;
         long extractedBytes = 0;
         byte[] buffer = new byte[BUFFER_SIZE];
@@ -250,11 +264,11 @@ public class AppUpdatePlugin extends Plugin {
                     continue;
                 }
                 if (!entry.getName().toLowerCase(Locale.US).endsWith(".apk")) {
-                    throw new UpdateException("备用更新压缩包包含非 APK 文件", "INVALID_UPDATE_ARCHIVE");
+                    throw new UpdateException("更新压缩包包含非 APK 文件", "INVALID_UPDATE_ARCHIVE");
                 }
                 apkEntries += 1;
                 if (apkEntries > 1) {
-                    throw new UpdateException("备用更新压缩包必须只包含一个 APK", "INVALID_UPDATE_ARCHIVE");
+                    throw new UpdateException("更新压缩包必须只包含一个 APK", "INVALID_UPDATE_ARCHIVE");
                 }
 
                 int bytesRead;
@@ -271,12 +285,20 @@ public class AppUpdatePlugin extends Plugin {
         } catch (UpdateException exception) {
             throw exception;
         } catch (IOException exception) {
-            throw new UpdateException("无法解压阿里云备用更新包", "ARCHIVE_EXTRACT_FAILED", exception);
+            throw new UpdateException("无法解压更新包", "ARCHIVE_EXTRACT_FAILED", exception);
         }
 
         if (apkEntries != 1 || extractedBytes == 0) {
-            throw new UpdateException("备用更新压缩包中没有有效 APK", "INVALID_UPDATE_ARCHIVE");
+            throw new UpdateException("更新压缩包中没有有效 APK", "INVALID_UPDATE_ARCHIVE");
         }
+    }
+
+    private static String normalizeFormat(String value) {
+        return "zip".equalsIgnoreCase(value) ? "zip" : "apk";
+    }
+
+    private static String normalizeSource(String value) {
+        return "aliyun".equalsIgnoreCase(value) ? "aliyun" : "github";
     }
 
     private void emitProgress(String status, String source, long downloadedBytes, long totalBytes) {

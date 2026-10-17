@@ -43,6 +43,8 @@ D1 中的 device identity public key
 
 ## 3. 设备身份生命周期
 
+App 在安装或覆盖更新后的首次联网启动时确保设备身份存在并完成服务端注册，不以邮件提醒开关作为注册前提。邮件提醒开关只控制通知事件是否入队及发送。
+
 ### 3.1 首次启动
 
 1. 从 SQLite app_settings 读取 device_id。

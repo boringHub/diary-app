@@ -1,6 +1,6 @@
 import initSqlJs, { type Database } from 'sql.js'
 import { describe, expect, it } from 'vitest'
-import { DATABASE_VERSION, MIGRATION_V2, MIGRATION_V3 } from './sqliteSchema'
+import { DATABASE_UPGRADES, DATABASE_VERSION, MIGRATION_V2, MIGRATION_V3 } from './sqliteSchema'
 
 const V1_SCHEMA = `
 PRAGMA foreign_keys = ON;
@@ -72,6 +72,31 @@ CREATE TABLE event_queue (
 `
 
 describe('SQLite schema migrations', () => {
+  it('creates every required table and index when opening a fresh database', async () => {
+    const SQL = await initSqlJs({ locateFile: (file) => `node_modules/sql.js/dist/${file}` })
+    const db = new SQL.Database()
+
+    for (const upgrade of DATABASE_UPGRADES) {
+      for (const statement of upgrade.statements) db.run(statement)
+      db.run(`PRAGMA user_version = ${upgrade.toVersion}`)
+    }
+
+    expect(tableNames(db)).toEqual(expect.arrayContaining([
+      'diaries',
+      'diary_blocks',
+      'diary_assets',
+      'diary_layouts',
+      'themes',
+      'theme_assets',
+      'app_settings',
+      'event_queue',
+    ]))
+    expect(readRows(db, "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_event_queue_retry'")).toHaveLength(1)
+    expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(DATABASE_VERSION)
+    expect(readRows(db, 'PRAGMA foreign_key_check')).toEqual([])
+    db.close()
+  })
+
   it('migrates a populated V1 database to V2 without changing existing data', async () => {
     const SQL = await initSqlJs({ locateFile: (file) => `node_modules/sql.js/dist/${file}` })
     const db = new SQL.Database()
@@ -110,6 +135,30 @@ describe('SQLite schema migrations', () => {
     db.run('PRAGMA user_version = 3')
 
     expect(readRows(db, 'SELECT * FROM event_queue ORDER BY id')).toEqual(queuedBefore)
+    expect(readRows(db, "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_event_queue_retry'")).toHaveLength(1)
+    expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(3)
+    db.close()
+  })
+
+  it('repairs a partial V2 database left by a failed fresh install', async () => {
+    const SQL = await initSqlJs({ locateFile: (file) => `node_modules/sql.js/dist/${file}` })
+    const db = new SQL.Database()
+    for (const statement of MIGRATION_V2) db.run(statement)
+    db.run('PRAGMA user_version = 2')
+
+    for (const statement of MIGRATION_V3) db.run(statement)
+    db.run('PRAGMA user_version = 3')
+
+    expect(tableNames(db)).toEqual(expect.arrayContaining([
+      'diaries',
+      'diary_blocks',
+      'diary_assets',
+      'diary_layouts',
+      'themes',
+      'theme_assets',
+      'app_settings',
+      'event_queue',
+    ]))
     expect(readRows(db, "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_event_queue_retry'")).toHaveLength(1)
     expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(3)
     db.close()

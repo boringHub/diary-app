@@ -2,9 +2,10 @@
 
 ## 版本与发布
 
-- 涉及版本号、Android APK、应用内更新、Git 标签或 GitHub Release 的任务，开始前必须先阅读 `RELEASE.md` 和 `CHANGELOG.md`。
+- 涉及版本号、Android APK、应用内更新、Git 标签或 GitHub Release 的任务，开始前必须先阅读 `RELEASE.md`、`docs/RELEASE_CHANNELS.md`、`CHANGELOG.md` 和 `INTERNAL_CHANGELOG.md`。
 - `RELEASE.md` 是发布流程、当前版本基线、签名要求和发布历史索引的唯一维护入口。
 - `CHANGELOG.md` 是功能新增、优化、修复以及数据兼容性变化的累计记录。
+- `INTERNAL_CHANGELOG.md` 只记录测试版测试目标、临时诊断、已知问题和验证结果，不得作为 GitHub 正式版公告来源。
 - 开发期间把用户可感知的变化追加到 `CHANGELOG.md` 的“未发布”部分；正式发布时将这些内容整理到新的版本标题下。
 - 每次发布必须同步 Android `versionCode`、`versionName`、Web 工程版本、`WEB_VERSION`、发布 APK 和 `release/update.json`。
 - 每次发布必须同时创建 GitHub Release 并运行 `scripts/publish-oss.ps1` 同步阿里云 OSS；任何一侧未上传或未完成公开下载校验都不算发布完成。
@@ -13,12 +14,20 @@
 - 更新检查和下载必须保持 GitHub 优先；GitHub 明确失败时立即切换，连接或读取连续 30 秒无响应时切换 OSS。不得在未更新文档和测试的情况下改变此策略。
 - 发布完成后必须更新 `RELEASE.md` 的“当前发布基线”和“发布历史索引”。
 - 不得修改包名 `xyz.shiguangjian.app`，不得更换签名后声称支持覆盖升级，不得把卸载旧版作为更新步骤。
+- 正式版构建必须通过 `STABLE_KEYSTORE_FILE` 使用证书 SHA-256 为 `c6ef39d7955b402a7bfce9e9e9ce3a1a1bbcfa87c2cca4356c29eec7e9845d01` 的历史密钥；当前默认 Debug 密钥不能用于正式版。
+- 测试版固定使用包名 `xyz.shiguangjian.app.debug` 和 OSS `internal/` 更新通道；不得把测试清单或 APK 发布到正式版 `releases/` 路径。
+- 测试版当前签名证书 SHA-256 固定为 `a490f52e123093f27b88d3c53b4a363798868f5d9808f366b134d1d13a29553c`，更换开发设备时必须恢复同一测试密钥。
+- 测试版签名密钥默认路径为 `%USERPROFILE%\.android\diary-internal.keystore`，不得删除、重新生成或提交仓库。
+- 内部测试发布使用 `scripts/publish-internal.ps1` 自动生成递增构建号，禁止手工复用已安装测试版的 `versionCode`。
+- 正式发布前必须运行 `npm run release:validate`，并用 `npm run release:notes:stable -- X.Y.Z` 从指定正式版本生成 GitHub 公告；禁止手工从内部测试日志拼接公告。
+- 内部发布默认从 `INTERNAL_CHANGELOG.md` 的“未发布”生成更新说明，OSS 校验成功后自动按实际内部版本归档。
 - 任何数据库结构调整都必须保留已有 SQLite 日记，并在 `CHANGELOG.md` 的“数据与兼容性”中说明迁移影响。
 
 ## 发布前最低验证
 
 - 运行 `npm test` 和 `npm run build`。
-- 运行 `npm run cap:sync`，然后在 `android` 目录执行 `.\gradlew.bat clean assembleDebug`。
+- 运行 `npm run release:validate`，确认正式与测试日志、清单和资源路径没有串用。
+- 运行 `npm run cap:sync`，然后分别验证 `.\gradlew.bat assembleRelease` 与带内部版本参数的 `assembleDebug`。
 - 校验最终 APK 的包名、版本号、签名证书和 SHA-256。
 - 校验 GitHub Release 中的 APK 与 `update.json` 可公开访问且内容一致。
 - 校验 OSS `releases/latest/update.json` 和 ZIP 可公开下载，解压后 APK 的 SHA-256 与清单一致。

@@ -123,19 +123,27 @@ function toNotificationMood(mood: Mood): DiaryCreatedEvent['mood'] {
   }
 }
 
-async function getOrCreateDeviceId(db: SQLiteDBConnection) {
+export async function getOrCreateDeviceId(db: SQLiteDBConnection) {
   const setting = await db.query("SELECT value_json FROM app_settings WHERE key = 'device_id' LIMIT 1")
   const existing = setting.values?.[0]?.value_json
   if (typeof existing === 'string') {
     try {
       const deviceId: unknown = JSON.parse(existing)
-      if (typeof deviceId === 'string' && deviceId.length > 0) return deviceId
+      if (typeof deviceId === 'string' && /^dvc_[\w-]{1,124}$/.test(deviceId)) return deviceId
+
+      // Legacy UUID identities never had a matching Keystore key. Keep their queued
+      // events local but terminal so a new identity cannot sign them as the old one.
+      await db.run(
+        "UPDATE event_queue SET status = 'failed', last_error = 'legacy_device_identity' WHERE status = 'pending' AND json_extract(payload_json, '$.deviceId') = ?",
+        [deviceId],
+        false,
+      )
     } catch {
       // Replace an invalid legacy value with a new identifier.
     }
   }
 
-  const deviceId = crypto.randomUUID()
+  const deviceId = `dvc_${crypto.randomUUID()}`
   await db.run(
     `INSERT INTO app_settings (key, value_json, updated_at) VALUES ('device_id', ?, ?)
      ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at`,
