@@ -283,12 +283,20 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 - OSS ZIP 解压后与 GitHub APK 执行相同的 HTTPS、大小、包名、递增版本号、预期版本、签名和 SHA-256 校验。
 - 更改超时、对象路径、清单字段或来源优先级时，必须同时更新测试、`update.example.json`、本文件和 `AGENTS.md`。
 
+## 1.4.2 发布验证 - 2026-10-18
+
+- 正式版本为 `1.4.2`，Android `versionCode` 为 `8`，发布提交为 `7ec0b4f`，`main` 和 `v1.4.2` 标签已推送。正式公告由 `CHANGELOG.md` 对应版本生成。
+- 最终 APK 大小为 `12563401` 字节，SHA-256 为 `97b9304640743af3c46ab214789829b6cc9dcbc4a9cfde49df2cbd2c9caec5d0`；包名和历史正式证书校验通过，正式 APK 内包含星球样式修正。
+- GitHub 正式 Release 已公开并设为最新版本；OSS 已同步 `releases/v1.4.2/` 与 `releases/latest/` 的 APK、ZIP 和清单，公开下载清单与 ZIP、解压后的 APK 哈希校验通过。
+- App 16 个测试文件、103 项测试，Web 构建、Capacitor 同步、正式 Android 构建、签名校验、发布渠道校验以及 320/390/1366 宽度的星球页面与转场浏览器检查通过。
+- 本机未连接 Android 设备，真实手机覆盖安装与星球界面验收待用户完成。
+
 ## 1.4.1 发布验证 - 2026-10-18
 
 - 正式版本为 `1.4.1`，Android `versionCode` 为 `7`，发布提交为 `882d385`，`main` 和 `v1.4.1` 标签已推送。正式公告由 `CHANGELOG.md` 对应版本生成。
 - 最终 APK 大小为 `12563369` 字节，SHA-256 为 `719ca823150f1aace741af5379cd6964c878a061b742d3238934460fd2770758`；包名和历史正式证书校验通过。内部构建与固定测试证书校验也通过，仅作本地验证，未发布测试通道。
 - GitHub 最新正式 Release、清单与 APK 已匿名下载复核；OSS 版本目录和 latest 目录已同步，公开下载清单和 ZIP、解压后的 APK 哈希校验通过，两端资源一致。
-- App 16 个测试文件、103 项测试，Worker 2 个测试文件、61 项测试，Worker 类型检查、Web 构建、Capacitor 同步及发布渠道校验通过。星球样式的独立工作区改动未纳入发布包。
+- App 16 个测试文件、103 项测试，Worker 2 个测试文件、61 项测试，Worker 类型检查、Web 构建、Capacitor 同步及发布渠道校验通过。
 - 反馈迁移 `0007_create_feedback.sql` 已应用，Worker 版本为 `b661043c-3573-478c-b736-160176d62087`。真实签名反馈首次与相同编号重试均返回 `202 accepted`；D1 记录为 `sent`、仅一次发送尝试、存在 provider ID，发送后的内容密文已清除。测试时本机网络出现间歇性连接超时，固定 IPv4 地址后完成业务验证，未更改 App 的域名配置。
 - 发布脚本显式使用 UTF-8 解析中文更新清单，兼容 Windows PowerShell。
 - 本机未连接 Android 设备，真实日记覆盖安装、手机分享超时场景与反馈输入体验待用户验收；发布验证未确认实际收件箱可见性。
@@ -308,9 +316,9 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新版本 | `1.4.1` |
-| Android `versionCode` | `7` |
-| Git 标签 | `v1.4.1` |
+| 最新版本 | `1.4.2` |
+| Android `versionCode` | `8` |
+| Git 标签 | `v1.4.2` |
 | 分支 | `main` |
 | 包名 | `xyz.shiguangjian.app` |
 | APK 资源名 | `shiguangjian-android.apk` |
@@ -323,7 +331,7 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 | 测试版包名 | `xyz.shiguangjian.app.debug` |
 | 测试版 APK SHA-256 | `3712aef0b09f72672ee2f7b9d6a427520c63d0bc059c766888b2a8fa976d65fa` |
 | 测试版最新清单 | <https://diary-app.oss-cn-hangzhou.aliyuncs.com/internal/latest/update.json> |
-| v1.4.1 APK SHA-256 | `719ca823150f1aace741af5379cd6964c878a061b742d3238934460fd2770758` |
+| v1.4.2 APK SHA-256 | `97b9304640743af3c46ab214789829b6cc9dcbc4a9cfde49df2cbd2c9caec5d0` |
 | 最新 Release | <https://github.com/boringHub/diary-app/releases/latest> |
 | OSS 最新清单 | <https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/update.json> |
 
@@ -361,6 +369,7 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 
 | 版本 | versionCode | 日期 | APK SHA-256 | 主要内容 |
 | --- | ---: | --- | --- | --- |
+| `1.4.2` | 8 | 2026-10-18 | `97b9304640743af3c46ab214789829b6cc9dcbc4a9cfde49df2cbd2c9caec5d0` | 修正星球画布与光晕、波纹转场的边界残影；继承 1.4.1 的反馈建议、邮件状态提示和顶部消息顺序排列；103 项测试、正式签名构建和双源发布校验通过，手机覆盖升级待验收 |
 | `1.4.1` | 7 | 2026-10-18 | `719ca823150f1aace741af5379cd6964c878a061b742d3238934460fd2770758` | 新增反馈建议和本机草稿、修复邮件请求正文超时等待、顶部提示顺序排列；App 103 项和 Worker 61 项测试、双渠道构建及正式双源公网校验通过，真实反馈队列发送与去重验证通过，手机覆盖升级待验收 |
 | `1.4.0` | 6 | 2026-10-18 | `ca479a2d042cb300dccc9d5c410f07200ca3a64f612675151466c37dc6c5c882` | 全屏星球缩放、连续抽纸与流星光晕转场、可选日记分享与回执、独立邮箱验证、SQLite V3/V4 保留数据迁移；89 项测试、双渠道构建和正式双源公网校验通过，真实手机覆盖升级待验收 |
 | `1.3.1` | 5 | 2026-09-24 | `7228582e23beaf727e343322dd0b0758ca3a6270a82625832097fccc6dae5fe2` | GitHub 优先、30 秒无响应切换 OSS、下载进度和双平台发布脚本 |
