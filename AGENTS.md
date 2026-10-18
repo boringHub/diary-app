@@ -24,6 +24,7 @@
 - 发布完成后必须更新 `RELEASE.md` 的“当前发布基线”和“发布历史索引”。
 - 不得修改包名 `xyz.shiguangjian.app`，不得更换签名后声称支持覆盖升级，不得把卸载旧版作为更新步骤。
 - 正式版构建必须通过 `STABLE_KEYSTORE_FILE` 使用证书 SHA-256 为 `c6ef39d7955b402a7bfce9e9e9ce3a1a1bbcfa87c2cca4356c29eec7e9845d01` 的历史密钥；当前默认 Debug 密钥不能用于正式版。
+- 本机历史正式密钥已恢复至 `%USERPROFILE%\.android\diary-stable.keystore`，用户级 `STABLE_KEYSTORE_FILE` 已指向该文件；后续正式版本沿用此私钥，不得删除、重新生成或提交仓库。
 - 测试版固定使用包名 `xyz.shiguangjian.app.debug` 和 OSS `internal/` 更新通道；不得把测试清单或 APK 发布到正式版 `releases/` 路径。
 - 测试版当前签名证书 SHA-256 固定为 `a490f52e123093f27b88d3c53b4a363798868f5d9808f366b134d1d13a29553c`，更换开发设备时必须恢复同一测试密钥。
 - 测试版签名密钥默认路径为 `%USERPROFILE%\.android\diary-internal.keystore`，不得删除、重新生成或提交仓库。

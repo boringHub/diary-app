@@ -1,11 +1,11 @@
 {
-  "versionCode": 5,
-  "versionName": "1.3.1",
+  "versionCode": 6,
+  "versionName": "1.4.0",
   "apk": "shiguangjian-android.apk",
-  "apkSize": 13944323,
-  "sha256": "7228582e23beaf727e343322dd0b0758ca3a6270a82625832097fccc6dae5fe2",
-  "githubUrl": "https://github.com/boringHub/diary-app/releases/download/v1.3.1/shiguangjian-android.apk",
-  "ossUrl": "https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/v1.3.1/shiguangjian-android.zip",
+  "apkSize": 12550190,
+  "sha256": "ca479a2d042cb300dccc9d5c410f07200ca3a64f612675151466c37dc6c5c882",
+  "githubUrl": "https://github.com/boringHub/diary-app/releases/download/v1.4.0/shiguangjian-android.apk",
+  "ossUrl": "https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/v1.4.0/shiguangjian-android.zip",
   "ossFormat": "zip",
-  "releaseNotes": "GitHub 下载失败或连续 30 秒无响应时自动切换阿里云 OSS；更新弹窗新增来源、阶段、百分比和下载大小进度；发布流程同步上传 GitHub 与 OSS。"
+  "releaseNotes": "优化全屏记忆星球与缩放交互；新建日记采用连续抽纸转场，星星进入详情及返回时配合流星尾迹和圆形光晕；新增可选日记分享、发送与已读状态，完善邮箱验证和回执同步；覆盖更新保留已有日记与图片，请勿先卸载。"
 }

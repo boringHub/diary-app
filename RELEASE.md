@@ -222,10 +222,12 @@
 
 ## 签名密钥保管
 
-当前已发布 APK 使用历史 Android Debug 密钥，但当前设备的 `%USERPROFILE%\.android\debug.keystore` 已不是同一把密钥。正式版构建前必须从备份或原设备恢复旧密钥，并配置：
+当前已发布 APK 使用历史 Android Debug 密钥，当前设备的 `%USERPROFILE%\.android\debug.keystore` 已不是同一把密钥。2026-10-18 已从另一台设备恢复原正式密钥，固定保存为 `%USERPROFILE%\.android\diary-stable.keystore`，并将 Windows 用户级 `STABLE_KEYSTORE_FILE` 指向此文件。后续正式版本继续使用这份私钥，测试版继续使用 `diary-internal.keystore`。
+
+恢复后的文件 SHA-256 为 `0a623e71d4acb150b6804a67ae20252e8d98e19095e791c3c620bbf14e993d1a`，已确认包含 `PrivateKeyEntry`，证书 SHA-256 与历史正式版一致。换设备时应安全复制原文件并配置以下变量，不能重新生成密钥：
 
 ```text
-STABLE_KEYSTORE_FILE        必填，旧密钥绝对路径
+STABLE_KEYSTORE_FILE        必填，本机为 %USERPROFILE%\.android\diary-stable.keystore 的绝对路径
 STABLE_KEYSTORE_PASSWORD    可选，默认 android
 STABLE_KEY_ALIAS            可选，默认 androiddebugkey
 STABLE_KEY_PASSWORD         可选，默认 android
@@ -283,10 +285,10 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 
 ## 1.4.0 发布准备 - 2026-10-18
 
-- 代码版本已更新为 `1.4.0`，正式 Android `versionCode` 预留为 `6`；完整用户变更已归档至 `CHANGELOG.md`，正式公告由 `npm run release:notes:stable -- 1.4.0` 生成。
-- 当前设备未配置 `STABLE_KEYSTORE_FILE`，本机找到的密钥均为测试证书，无法生成与历史正式版签名一致的覆盖更新包。需要恢复证书 SHA-256 为 `c6ef39d7955b402a7bfce9e9e9ce3a1a1bbcfa87c2cca4356c29eec7e9845d01` 的原密钥后继续。
-- 正式 APK、`release/update.json`、GitHub 正式标签和 OSS 正式通道维持 `1.3.1`，不得在新 APK 签名及公开下载校验完成前更新当前发布基线。GitHub 可先保存 `1.4.0` 公告草稿，草稿不代表已发布。
-- 本次代码验证：14 个测试文件、89 项测试、Web 生产构建、Capacitor 同步、发布渠道校验和差异格式检查通过；内部 Android 构建及包名、版本和固定测试签名校验通过，仅用于本地构建验证，未发布测试包。正式构建因缺少历史密钥被脚本拒绝。
+- 代码版本已更新为 `1.4.0`，正式 Android `versionCode` 为 `6`；完整用户变更已归档至 `CHANGELOG.md`，正式公告由 `npm run release:notes:stable -- 1.4.0` 生成。
+- 原正式密钥已从另一台设备恢复至 `%USERPROFILE%\.android\diary-stable.keystore`，文件哈希、私钥条目及历史正式证书指纹均已核验，用户级 `STABLE_KEYSTORE_FILE` 已配置。使用恢复的密钥完成正式 Release 构建，最终 APK 的包名、版本及历史签名校验通过。
+- 最终正式 APK 和 `release/update.json` 已准备为 `1.4.0`，大小为 `12550190` 字节，SHA-256 为 `ca479a2d042cb300dccc9d5c410f07200ca3a64f612675151466c37dc6c5c882`。GitHub 正式发布、OSS 同步及公开下载校验待完成，完成前当前发布基线仍为 `1.3.1`。
+- 本次代码验证：14 个测试文件、89 项测试、Web 生产构建、Capacitor 同步、发布渠道校验和差异格式检查通过；正式与内部 Android 构建及包名、版本和各自固定签名校验通过，内部构建仅用于本地验证，未发布测试包。
 - 本机未连接 Android 设备，真实日记覆盖安装与升级验证待完成。
 
 ## 当前发布基线
