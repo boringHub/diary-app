@@ -73,7 +73,7 @@ if ($script:AccessKeySecret -notmatch '^[A-Za-z0-9]{24,64}$' -or $script:AccessK
 if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)) { throw "Manifest not found: $ManifestPath" }
 if (-not (Test-Path -LiteralPath $ApkPath -PathType Leaf)) { throw "APK not found: $ApkPath" }
 
-$manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json
+$manifest = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $version = [string]$manifest.versionName
 if ([string]::IsNullOrWhiteSpace($version) -or [string]$manifest.apk -ne 'shiguangjian-android.apk') {
     throw 'release/update.json is missing a valid versionName or APK file name.'
@@ -112,7 +112,7 @@ try {
     $downloadedApks = @(Get-ChildItem -LiteralPath $extractedRoot -File -Recurse -Filter '*.apk')
     if ($downloadedApks.Count -ne 1) { throw 'OSS ZIP verification expected exactly one APK.' }
     $downloadedHash = (Get-FileHash -LiteralPath $downloadedApks[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-    $publicManifest = Get-Content -LiteralPath $downloadedManifest -Raw | ConvertFrom-Json
+    $publicManifest = Get-Content -LiteralPath $downloadedManifest -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($downloadedHash -ne $actualHash -or [string]$publicManifest.sha256 -ne $actualHash) {
         throw 'Public OSS artifact verification failed: APK hash mismatch.'
     }
