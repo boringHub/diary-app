@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  MAX_PLANET_ZOOM,
+  MIN_PLANET_ZOOM,
+  clampPlanetZoom,
   conjugateQuaternion,
   identityQuaternion,
   multiplyQuaternions,
+  planetZoomFromPinch,
   pointOnTrackball,
   quaternionBetweenVectors,
   rotateVector,
@@ -42,5 +46,22 @@ describe('virtual trackball', () => {
     expect(first).not.toEqual(second)
     expect(Math.abs(rotation.w)).toBeLessThan(1)
     expectVectorClose(rotateVector(first, rotation), second)
+  })
+})
+
+describe('planet zoom', () => {
+  it('scales from the distance between two pointers', () => {
+    expect(planetZoomFromPinch(1, 100, 145)).toBeCloseTo(1.45)
+    expect(planetZoomFromPinch(1.2, 120, 60)).toBe(MIN_PLANET_ZOOM)
+  })
+
+  it('clamps zoom to the supported visual range', () => {
+    expect(clampPlanetZoom(0.1)).toBe(MIN_PLANET_ZOOM)
+    expect(clampPlanetZoom(4)).toBe(MAX_PLANET_ZOOM)
+    expect(planetZoomFromPinch(1, 100, 500)).toBe(MAX_PLANET_ZOOM)
+  })
+
+  it('keeps the current zoom when pinch geometry is invalid', () => {
+    expect(planetZoomFromPinch(1.2, 0, 150)).toBe(1.2)
   })
 })

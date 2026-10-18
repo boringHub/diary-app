@@ -66,7 +66,8 @@ h1 { margin-bottom: 0; color: var(--sj-ink); font-size: 34px; font-weight: 740; 
 .starfield-screen::before { position: absolute; z-index: -3; inset: 0; content: ''; background: radial-gradient(circle at 50% 40%, #173b4d 0, #0b2032 31%, #07131f 68%, #050c16 100%); }
 .starfield-screen::after { position: absolute; z-index: -2; inset: 0; opacity: .3; content: ''; background-image: radial-gradient(rgba(181, 221, 226, .25) .7px, transparent .7px), radial-gradient(rgba(181, 221, 226, .16) .6px, transparent .6px); background-position: 0 0, 17px 23px; background-size: 61px 61px, 89px 89px; pointer-events: none; }
 .starfield-noise { position: absolute; z-index: -1; inset: 0; opacity: .12; background: repeating-linear-gradient(115deg, transparent 0, transparent 3px, rgba(255,255,255,.04) 4px, transparent 5px); mix-blend-mode: screen; pointer-events: none; }
-.starfield-header, .starfield-stage, .starfield-hint { position: relative; z-index: 1; width: min(100%, 820px); margin-right: auto; margin-left: auto; }
+.starfield-header, .starfield-hint { position: relative; z-index: 2; width: min(100%, 820px); margin-right: auto; margin-left: auto; }
+.starfield-stage { position: absolute; z-index: 1; inset: 0; width: auto; height: auto; margin: 0; }
 .starfield-header { display: flex; align-items: flex-start; justify-content: flex-end; gap: 8px; min-height: 42px; padding: 8px 2px 0; }
 .starfield-tools { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .starfield-tool { display: grid; place-items: center; width: 42px; height: 42px; padding: 0; border: 1px solid rgba(167, 219, 219, .2); border-radius: 50%; background: rgba(35, 79, 93, .35); color: #b6e5d6; font-size: 19px; transition: transform .2s ease, background .2s ease, border-color .2s ease; }
@@ -79,9 +80,9 @@ h1 { margin-bottom: 0; color: var(--sj-ink); font-size: 34px; font-weight: 740; 
 .starfield-search input::-webkit-calendar-picker-indicator { filter: invert(86%) sepia(13%) saturate(427%) hue-rotate(125deg); opacity: .7; }
 .starfield-search button { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(129, 211, 189, .13); color: #9ee0ca; font-size: 16px; }
 .starfield-search button:disabled { opacity: .35; }
-.starfield-stage { height: clamp(300px, calc(100vh - var(--app-safe-top) - var(--app-safe-bottom) - 220px), 650px); height: clamp(300px, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 220px), 650px); min-height: 300px; margin-top: 4px; }
-.starfield-stage canvas { display: block; width: 100%; height: 100%; min-height: 300px; touch-action: none; cursor: grab; }
+.starfield-stage canvas { display: block; width: 100%; height: 100%; min-height: 100%; touch-action: none; cursor: grab; }
 .starfield-stage.dragging canvas { cursor: grabbing; }
+.starfield-stage.zooming canvas { cursor: zoom-in; }
 .arriving-memory-star { --arrival-x: 50%; --arrival-y: 48%; --focus-x: 50%; --focus-y: 48%; --arrival-color: #81d3bd; position: absolute; z-index: 4; top: 0; left: 0; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--arrival-color); box-shadow: 0 0 8px var(--arrival-color), 0 0 24px var(--arrival-color), 0 0 44px color-mix(in srgb, var(--arrival-color) 55%, transparent); pointer-events: none; will-change: transform, opacity; }
 .arriving-memory-star::after { position: absolute; inset: -8px; content: ''; border: 1px solid color-mix(in srgb, var(--arrival-color) 58%, transparent); border-radius: 50%; opacity: .65; }
 .arriving-memory-star.is-falling { animation: new-star-fall .76s cubic-bezier(.16,.7,.2,1) both; }
@@ -104,7 +105,7 @@ h1 { margin-bottom: 0; color: var(--sj-ink); font-size: 34px; font-weight: 740; 
   55% { opacity: .95; transform: translate3d(var(--focus-x), var(--focus-y), 0) scale(1.45); }
   100% { opacity: 0; transform: translate3d(var(--focus-x), var(--focus-y), 0) scale(.72); }
 }
-@media (min-width: 700px) { .starfield-screen { padding-top: calc(42px + var(--app-safe-top)); }.starfield-stage { height: clamp(340px, calc(100vh - var(--app-safe-top) - var(--app-safe-bottom) - 210px), 690px); height: clamp(340px, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 210px), 690px); } }
+@media (min-width: 700px) { .starfield-screen { padding-top: calc(42px + var(--app-safe-top)); } }
 @media (max-width: 430px) { .starfield-screen { padding-right: calc(15px + var(--app-safe-right)); padding-left: calc(15px + var(--app-safe-left)); }.starfield-search { width: min(156px, calc(100vw - var(--app-safe-left) - var(--app-safe-right) - 150px)); min-width: 118px; } }
 
 /* Shared night surfaces for writing, reading, settings, and theme pages. */
@@ -236,7 +237,7 @@ h1 { margin-bottom: 0; color: var(--sj-ink); font-size: 34px; font-weight: 740; 
 @keyframes floating-nav-editor-fade { 0%, 18% { opacity: 1; } 100% { opacity: 0; } }
 @media (max-width: 430px) { .night-page { padding-right: calc(15px + var(--app-safe-right)); padding-left: calc(15px + var(--app-safe-left)); }.page-title-kicker { max-width: 150px; }.editor-paper { padding-right: 17px; padding-left: 17px; }.editor-paper .title-input { font-size: 27px; }.editor-paper .body-input { min-height: clamp(220px, calc(100vh - var(--app-safe-top) - var(--app-safe-bottom) - 390px), 300px); min-height: clamp(220px, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 390px), 300px); }.section-heading { display: grid; gap: 4px; }.detail-paper h1 { font-size: 29px; }.themes-screen .theme-preview { width: 76px; height: 96px; }.settings-screen, .themes-screen { padding-bottom: calc(190px + var(--app-safe-bottom)); } }
 @media (max-width: 360px) { .page-title-kicker { max-width: 105px; }.page-title strong { font-size: 14px; }.page-subbar .actions { gap: 2px; }.page-subbar .icon-button { width: 40px; height: 40px; }.save-button { min-width: 48px; padding-right: 9px; padding-left: 9px; }.starfield-tools { gap: 5px; }.starfield-tool { width: 40px; height: 40px; }.starfield-search { width: calc(100vw - var(--app-safe-left) - var(--app-safe-right) - 137px); min-width: 112px; padding-left: 9px; } }
-@media (max-height: 620px) { .starfield-stage { height: clamp(260px, calc(100vh - var(--app-safe-top) - var(--app-safe-bottom) - 180px), 390px); height: clamp(260px, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 180px), 390px); min-height: 260px; }.starfield-stage canvas { min-height: 260px; }.editor-paper .body-input { min-height: 220px; } }
+@media (max-height: 620px) { .editor-paper .body-input { min-height: 220px; } }
 
 /* The selected theme colors every screen in the active app shell. */
 .app-theme,

@@ -8,9 +8,13 @@ import { moodLabels } from '../types/diary'
 import type { Diary, Mood } from '../types/diary'
 import { createStarEnterAnimation } from '../animations'
 import {
+  MAX_PLANET_ZOOM,
+  MIN_PLANET_ZOOM,
+  clampPlanetZoom,
   identityQuaternion,
   interpolateQuaternions,
   multiplyQuaternions,
+  planetZoomFromPinch,
   pointOnTrackball,
   quaternionBetweenVectors,
   quaternionFromAxisAngle,
@@ -19,7 +23,7 @@ import {
   type Vector3,
 } from '../utils/trackball'
 
-type Star = { diary?: Diary; x: number; y: number; z: number; size: number; phase: number; color: string; brightness: number; decorative?: boolean }
+type Star = { diary?: Diary; x: number; y: number; z: number; size: number; phase: number; color: string; brightness: number; decorative?: boolean; revealZoom?: number }
 type ClusterItem = { diary: Diary; color: string; x: number; y: number }
 
 const ionRouter = useIonRouter()
@@ -31,7 +35,9 @@ const searchDate = ref('')
 const searchOpen = ref(false)
 const isSearching = ref(false)
 const isDragging = ref(false)
+const isZooming = ref(false)
 const isSettling = ref(false)
+const planetZoom = ref(1)
 const selectedDiaryId = ref<string | null>(null)
 const cluster = ref<ClusterItem[]>([])
 const focusVisible = ref(false)
@@ -63,6 +69,13 @@ let lastTime = 0
 let pointerDown = false
 let moved = false
 let pointerStart = { x: 0, y: 0 }
+const activePointers = new Map<number, { x: number; y: number }>()
+let pinchStartDistance = 0
+let pinchStartZoom = 1
+let pinchStartCenter = { x: 0, y: 0 }
+let pinchStartAngle = 0
+let pinchStartOrientation = identityQuaternion()
+let pinchStartCenterVector: Vector3 | null = null
 let settleToken = 0
 let resizeObserver: ResizeObserver | null = null
 let arrivalTimer = 0
@@ -80,11 +93,17 @@ function createStars() {
     return { diary, x: Math.sin(phi) * Math.cos(theta), y: Math.cos(phi), z: Math.sin(phi) * Math.sin(theta), size: (diary.isFavorite ? 3.5 : 2.7) + seededUnit(index, 2) * 1.3, phase: index * 0.73, color: moodColors[diary.mood], brightness: .72 + seededUnit(index, 3) * .28 }
   })
   const decorativeColors = ['#b6e8ee', '#d4e7ff', '#a8c6db', '#f7ddba']
-  const decorative: Star[] = Array.from({ length: Math.max(110, store.diaries.length * 10) }, (_, index) => {
+  const baseDecorativeCount = Math.max(110, store.diaries.length * 10)
+  const decorativeCount = Math.max(baseDecorativeCount + 220, 420)
+  const decorative: Star[] = Array.from({ length: decorativeCount }, (_, index) => {
     const unit = seededUnit(index, 5)
     const phi = Math.acos(1 - 2 * unit)
     const theta = Math.PI * 2 * seededUnit(index, 7)
-    return { x: Math.sin(phi) * Math.cos(theta), y: Math.cos(phi), z: Math.sin(phi) * Math.sin(theta), size: 0.55 + seededUnit(index, 8) * 1.55, phase: index * 1.17, color: decorativeColors[index % decorativeColors.length], brightness: .48 + seededUnit(index, 9) * .52, decorative: true }
+    const extraStarProgress = baseDecorativeCount === decorativeCount ? 1 : (index - baseDecorativeCount) / (decorativeCount - baseDecorativeCount)
+    const revealZoom = index < baseDecorativeCount
+      ? MIN_PLANET_ZOOM
+      : 1 + Math.max(0, Math.min(1, extraStarProgress)) * (MAX_PLANET_ZOOM - 1)
+    return { x: Math.sin(phi) * Math.cos(theta), y: Math.cos(phi), z: Math.sin(phi) * Math.sin(theta), size: 0.55 + seededUnit(index, 8) * 1.55, phase: index * 1.17, color: decorativeColors[index % decorativeColors.length], brightness: .48 + seededUnit(index, 9) * .52, decorative: true, revealZoom }
   })
   stars = [...realStars, ...decorative]
 }
@@ -104,36 +123,44 @@ function resizeCanvas() {
 
 function rotatePoint(star: Star) { return rotateVector(star, orientation) }
 
+function planetRadius(width = canvasSize.value.width, height = canvasSize.value.height) {
+  return Math.min(width, height) * (width < 560 ? 0.39 : 0.34) * planetZoom.value
+}
+
+function trackballRadius(width = canvasSize.value.width, height = canvasSize.value.height) {
+  return Math.max(width, height) * 0.58
+}
+
 function project(star: Star, index: number, now: number) {
   const point = rotatePoint(star)
   const width = canvasSize.value.width, height = canvasSize.value.height
-  const radius = Math.min(width, height) * (width < 560 ? 0.39 : 0.34)
+  const radius = planetRadius(width, height)
   const depth = (point.z + 1) / 2
   const scale = 0.78 + depth * 0.45
-  return { x: width / 2 + point.x * radius * scale, y: height * 0.48 + point.y * radius * scale, z: point.z, size: star.size * scale * (1 + Math.sin(now * 0.0012 + star.phase) * 0.08), opacity: star.decorative ? 0.18 + depth * 0.36 : 0.36 + depth * 0.64, index }
+  return { x: width / 2 + point.x * radius * scale, y: height * 0.48 + point.y * radius * scale, z: point.z, size: star.size * scale * planetZoom.value * (1 + Math.sin(now * 0.0012 + star.phase) * 0.08), opacity: star.decorative ? 0.18 + depth * 0.36 : 0.36 + depth * 0.64, index }
+}
+
+function decorativeRevealOpacity(star: Star) {
+  if (!star.decorative || star.revealZoom === undefined || star.revealZoom <= planetZoom.value) return 1
+  return Math.max(0, Math.min(1, 1 - (star.revealZoom - planetZoom.value) / .08))
 }
 
 function draw(now: number) {
   if (!context) return
   const width = canvasSize.value.width, height = canvasSize.value.height
   context.clearRect(0, 0, width, height)
-  const centerX = width / 2, centerY = height * 0.48, radius = Math.min(width, height) * (width < 560 ? 0.39 : 0.34)
-  const glow = context.createRadialGradient(centerX, centerY, radius * 0.22, centerX, centerY, radius * 1.16)
-  glow.addColorStop(0, 'rgba(45, 91, 107, .1)'); glow.addColorStop(.68, 'rgba(21, 53, 70, .07)'); glow.addColorStop(1, 'rgba(8, 17, 32, 0)')
-  context.fillStyle = glow; context.beginPath(); context.arc(centerX, centerY, radius * 1.18, 0, Math.PI * 2); context.fill()
-  const equatorAxis = rotateVector({ x: 1, y: 0, z: 0 }, orientation)
-  const orbitAngle = Math.atan2(equatorAxis.y, equatorAxis.x)
-  context.strokeStyle = 'rgba(137, 193, 205, .09)'; context.lineWidth = 1
-  for (const scale of [1, .78, .55]) { context.beginPath(); context.ellipse(centerX, centerY, radius * scale, radius * scale * .29, orbitAngle, 0, Math.PI * 2); context.stroke() }
+  const centerX = width / 2, centerY = height * 0.48
   const projected = stars.map((star, index) => ({ star, point: project(star, index, now) })).sort((a, b) => a.point.z - b.point.z)
   for (const { star, point } of projected) {
     if (star.decorative && point.z < -0.35) continue
+    const revealOpacity = decorativeRevealOpacity(star)
+    if (revealOpacity <= 0) continue
     if (star.diary && star.diary.id === arrivingStar.value?.diaryId) continue
     if (clusterMode.value && star.diary && cluster.value.some((item) => item.diary.id === star.diary?.id)) continue
     const selected = star.diary?.id === selectedDiaryId.value
-    context.globalAlpha = point.opacity * star.brightness * (selected ? .42 : .16); context.fillStyle = star.color; context.beginPath(); context.arc(point.x, point.y, point.size * (selected ? 8 : 4), 0, Math.PI * 2); context.fill()
-    context.globalAlpha = point.opacity * star.brightness; context.beginPath(); context.arc(point.x, point.y, point.size * (selected ? 1.35 : 1), 0, Math.PI * 2); context.fill()
-    if (star.diary?.isFavorite) { context.globalAlpha = point.opacity * star.brightness * .58; context.strokeStyle = star.color; context.beginPath(); context.arc(point.x, point.y, point.size * 3, 0, Math.PI * 2); context.stroke() }
+    context.globalAlpha = point.opacity * star.brightness * revealOpacity * (selected ? .2 : .16); context.fillStyle = star.color; context.beginPath(); context.arc(point.x, point.y, point.size * (selected ? 3.2 : 4), 0, Math.PI * 2); context.fill()
+    context.globalAlpha = point.opacity * star.brightness * revealOpacity; context.beginPath(); context.arc(point.x, point.y, point.size * (selected ? 1.35 : 1), 0, Math.PI * 2); context.fill()
+    if (star.diary?.isFavorite) { context.globalAlpha = point.opacity * star.brightness * revealOpacity * .58; context.strokeStyle = star.color; context.beginPath(); context.arc(point.x, point.y, point.size * 3, 0, Math.PI * 2); context.stroke() }
   }
   if (clusterMode.value) {
     for (const item of cluster.value) {
@@ -158,7 +185,7 @@ function getProjectedRealStars(now = performance.now()) { return stars.map((star
 function updateFocusedStar() {
   if (!canvasSize.value.width || clusterMode.value) return
   const centerX = canvasSize.value.width / 2, centerY = canvasSize.value.height * .48
-  const radius = Math.min(canvasSize.value.width, canvasSize.value.height) * (canvasSize.value.width < 560 ? .39 : .34)
+  const radius = planetRadius()
   const focusDistance = Math.max(30, radius * .19)
   const nearest = getProjectedRealStars().sort((a, b) => Math.hypot(a.point.x - centerX, a.point.y - centerY) - Math.hypot(b.point.x - centerX, b.point.y - centerY))[0]
   const distance = nearest ? Math.hypot(nearest.point.x - centerX, nearest.point.y - centerY) : Infinity
@@ -271,22 +298,105 @@ function toggleSearch() {
 function pointerTrackballPosition(event: PointerEvent) {
   const rect = canvas.value?.getBoundingClientRect()
   if (!rect) return null
-  const radius = Math.min(rect.width, rect.height) * (rect.width < 560 ? .39 : .34)
+  const radius = trackballRadius(rect.width, rect.height)
   return pointOnTrackball(event.clientX - rect.left - rect.width / 2, event.clientY - rect.top - rect.height * .48, radius)
 }
 
-function onPointerDown(event: PointerEvent) {
-  pointerDown = true; moved = false; isDragging.value = false
-  pointerStart = { x: event.clientX, y: event.clientY }
+function pointerDistance() {
+  const [first, second] = [...activePointers.values()]
+  return first && second ? Math.hypot(second.x - first.x, second.y - first.y) : 0
+}
+
+function pointerCenter() {
+  const [first, second] = [...activePointers.values()]
+  return first && second ? { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 } : null
+}
+
+function pointerAngle() {
+  const [first, second] = [...activePointers.values()]
+  return first && second ? Math.atan2(second.y - first.y, second.x - first.x) : 0
+}
+
+function shortestAngleDelta(start: number, current: number) {
+  let delta = current - start
+  while (delta > Math.PI) delta -= Math.PI * 2
+  while (delta < -Math.PI) delta += Math.PI * 2
+  return delta
+}
+
+function trackballVectorAt(point: { x: number; y: number }) {
+  const rect = canvas.value?.getBoundingClientRect()
+  return rect
+    ? pointOnTrackball(point.x - rect.left - rect.width / 2, point.y - rect.top - rect.height * .48, trackballRadius(rect.width, rect.height))
+    : null
+}
+
+function clearPlanetFocus() {
+  selectedDiaryId.value = null
+  focusVisible.value = false
+  cluster.value = []
+}
+
+function beginPinch() {
+  pinchStartDistance = pointerDistance()
+  pinchStartZoom = planetZoom.value
+  pinchStartCenter = pointerCenter() ?? pinchStartCenter
+  pinchStartAngle = pointerAngle()
+  pinchStartOrientation = orientation
+  pinchStartCenterVector = trackballVectorAt(pinchStartCenter)
+  moved = true
+  isDragging.value = false
+  isZooming.value = true
+  clearPlanetFocus()
+  hint.value = '双指缩放或旋转，探索星球呀'
+}
+
+function beginDragFromPointer(pointer: { x: number; y: number }) {
+  pointerStart = pointer
   targetOrientation = orientation
   dragStartOrientation = orientation
-  dragStartVector = pointerTrackballPosition(event)
-  canvas.value?.setPointerCapture(event.pointerId)
+  const rect = canvas.value?.getBoundingClientRect()
+  dragStartVector = rect
+    ? pointOnTrackball(pointer.x - rect.left - rect.width / 2, pointer.y - rect.top - rect.height * .48, trackballRadius(rect.width, rect.height))
+    : null
+}
+
+function settleAfterGesture(delay = 320) {
+  isSettling.value = true
+  const token = ++settleToken
+  window.setTimeout(() => { if (token === settleToken) isSettling.value = false }, delay)
+}
+
+function onPointerDown(event: PointerEvent) {
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+  pointerDown = true
+  try { canvas.value?.setPointerCapture(event.pointerId) } catch { /* Some synthetic touch events have no capturable pointer. */ }
+  if (activePointers.size === 1) {
+    moved = false
+    isDragging.value = false
+    beginDragFromPointer({ x: event.clientX, y: event.clientY })
+  } else if (activePointers.size === 2) {
+    beginPinch()
+  }
 }
 function onPointerMove(event: PointerEvent) {
-  if (!pointerDown) return
+  if (!activePointers.has(event.pointerId)) return
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+  if (activePointers.size >= 2) {
+    planetZoom.value = planetZoomFromPinch(pinchStartZoom, pinchStartDistance, pointerDistance())
+    const center = pointerCenter()
+    const centerVector = center ? trackballVectorAt(center) : null
+    const centerRotation = pinchStartCenterVector && centerVector
+      ? quaternionBetweenVectors(pinchStartCenterVector, centerVector)
+      : identityQuaternion()
+    const twistRotation = quaternionFromAxisAngle({ x: 0, y: 0, z: 1 }, shortestAngleDelta(pinchStartAngle, pointerAngle()))
+    targetOrientation = multiplyQuaternions(twistRotation, multiplyQuaternions(centerRotation, pinchStartOrientation))
+    orientation = targetOrientation
+    return
+  }
+  if (!pointerDown || isZooming.value) return
   const total = Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y)
-  if (total > 6) { moved = true; isDragging.value = true; selectedDiaryId.value = null; focusVisible.value = false; cluster.value = []; hint.value = '松手，让最近的星星停在中间哦' }
+  if (total > 6) { moved = true; isDragging.value = true; clearPlanetFocus(); hint.value = '松手，让最近的星星停在中间哦' }
   const currentVector = pointerTrackballPosition(event)
   if (dragStartVector && currentVector) {
     const dragRotation = quaternionBetweenVectors(dragStartVector, currentVector)
@@ -294,10 +404,32 @@ function onPointerMove(event: PointerEvent) {
     orientation = targetOrientation
   }
 }
-function onPointerUp(event: PointerEvent) {
-  if (!pointerDown) return
-  pointerDown = false; isDragging.value = false; dragStartVector = null; canvas.value?.releasePointerCapture(event.pointerId)
-  if (moved) { isSettling.value = true; const token = ++settleToken; window.setTimeout(() => { if (token === settleToken) isSettling.value = false }, 320); return }
+function finishPointer(event: PointerEvent, cancelled = false) {
+  if (!activePointers.has(event.pointerId)) return
+  const wasZooming = isZooming.value
+  activePointers.delete(event.pointerId)
+  if (canvas.value?.hasPointerCapture(event.pointerId)) canvas.value.releasePointerCapture(event.pointerId)
+
+  if (activePointers.size >= 2) {
+    beginPinch()
+    return
+  }
+  if (activePointers.size === 1) {
+    isZooming.value = false
+    pinchStartCenterVector = null
+    beginDragFromPointer([...activePointers.values()][0])
+    return
+  }
+
+  pointerDown = false
+  isDragging.value = false
+  isZooming.value = false
+  dragStartVector = null
+  pinchStartCenterVector = null
+  if (cancelled || moved || wasZooming) {
+    settleAfterGesture(wasZooming ? 220 : 320)
+    return
+  }
   const rect = canvas.value?.getBoundingClientRect(); if (!rect) return
   const x = event.clientX - rect.left, y = event.clientY - rect.top
   if (clusterMode.value) {
@@ -311,6 +443,22 @@ function onPointerUp(event: PointerEvent) {
   }
   const hit = getProjectedRealStars().sort((a, b) => b.point.z - a.point.z).find(({ point }) => Math.hypot(point.x - x, point.y - y) < Math.max(14, point.size * 4))
   if (hit?.star.diary) hit.star.diary.id === selectedDiaryId.value && focusVisible.value ? openDiary(hit.star.diary) : setFocusForDiary(hit.star.diary)
+}
+function onPointerUp(event: PointerEvent) { finishPointer(event) }
+function onPointerCancel(event: PointerEvent) { finishPointer(event, true) }
+function onWheel(event: WheelEvent) {
+  const previousZoom = planetZoom.value
+  const delta = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+    ? event.deltaY * 16
+    : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+      ? event.deltaY * canvasSize.value.height
+      : event.deltaY
+  planetZoom.value = clampPlanetZoom(previousZoom * Math.exp(-delta * 0.0015))
+  if (planetZoom.value === previousZoom) return
+  moved = true
+  clearPlanetFocus()
+  hint.value = '滚动缩放，看看星球的远近呀'
+  settleAfterGesture(180)
 }
 function onResize() { resizeCanvas() }
 
@@ -339,6 +487,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
   resizeObserver?.disconnect()
   resizeObserver = null
+  activePointers.clear()
   window.clearTimeout(arrivalTimer)
 })
 </script>
@@ -359,8 +508,8 @@ onBeforeUnmount(() => {
             <button class="starfield-tool" aria-label="随机回望一段记忆" title="随机回望一段记忆" @click="randomFocus"><IonIcon :icon="sparklesOutline" /></button>
           </div>
         </header>
-        <div class="starfield-stage" :class="{ dragging: isDragging, settling: isSettling }">
-          <canvas ref="canvas" aria-label="可拖动的记忆星球" @pointerdown="onPointerDown" @pointermove="onPointerMove" @pointerup="onPointerUp" @pointercancel="onPointerUp"></canvas>
+        <div class="starfield-stage" :class="{ dragging: isDragging, zooming: isZooming, settling: isSettling }">
+          <canvas ref="canvas" aria-label="可拖动、双指或滚轮缩放的记忆星球" @pointerdown="onPointerDown" @pointermove="onPointerMove" @pointerup="onPointerUp" @pointercancel="onPointerCancel" @wheel.prevent="onWheel"></canvas>
           <span
             v-if="arrivingStar"
             class="arriving-memory-star"

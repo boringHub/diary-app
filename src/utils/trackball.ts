@@ -1,6 +1,20 @@
 export type Vector3 = { x: number; y: number; z: number }
 export type Quaternion = { x: number; y: number; z: number; w: number }
 
+export const MIN_PLANET_ZOOM = 0.65
+export const MAX_PLANET_ZOOM = 1.75
+
+export function clampPlanetZoom(zoom: number): number {
+  return Math.min(MAX_PLANET_ZOOM, Math.max(MIN_PLANET_ZOOM, zoom))
+}
+
+export function planetZoomFromPinch(startZoom: number, startDistance: number, currentDistance: number): number {
+  if (!Number.isFinite(startDistance) || startDistance <= 0 || !Number.isFinite(currentDistance)) {
+    return clampPlanetZoom(startZoom)
+  }
+  return clampPlanetZoom(startZoom * currentDistance / startDistance)
+}
+
 export const identityQuaternion = (): Quaternion => ({ x: 0, y: 0, z: 0, w: 1 })
 
 export function normalizeVector(vector: Vector3): Vector3 {
