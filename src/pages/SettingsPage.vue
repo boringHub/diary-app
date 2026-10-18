@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { alertController, IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillEnter, toastController, useIonRouter } from '@ionic/vue'
-import { checkmarkCircleOutline, chevronForward, cloudDownloadOutline, closeOutline, colorPaletteOutline, mailOutline, shieldCheckmarkOutline, sparklesOutline } from 'ionicons/icons'
+import { checkmarkCircleOutline, chevronForward, cloudDownloadOutline, closeOutline, colorPaletteOutline, mailOutline, notificationsOutline, shieldCheckmarkOutline, sparklesOutline } from 'ionicons/icons'
 import { diaryRepository } from '../repositories/diaryRepository'
 import { settingsRepository } from '../repositories/settingsRepository'
 import { isNotificationServiceConfigured, type VerificationChallenge } from '../services/notifyApiClient'
@@ -27,6 +27,8 @@ const currentTheme = ref(getCurrentTheme())
 const notificationLoading = ref(false)
 const pendingChallenge = ref<VerificationChallenge | null>(readStoredChallenge())
 const notificationServiceConfigured = isNotificationServiceConfigured()
+
+const diaryShareNotificationModeLabel = computed(() => ({ notify: '通知', ask: '询问', never: '不通知' }[settings.value.diaryShareNotificationMode]))
 
 const notificationStatus = computed(() => {
   if (!notificationServiceConfigured) return '当前版本未接入邮件服务'
@@ -85,6 +87,24 @@ async function toggleNotification() {
   } finally {
     notificationLoading.value = false
   }
+}
+
+async function chooseDiaryShareNotificationMode() {
+  const alert = await alertController.create({
+    header: '创建日记通知',
+    message: '选择创建新日记后的分享方式。已分享的日记不会因为编辑再次发送。',
+    buttons: [
+      { text: '通知', role: 'notify' },
+      { text: '询问', role: 'ask' },
+      { text: '不通知', role: 'never' },
+      { text: '取消', role: 'cancel' },
+    ],
+  })
+  await alert.present()
+  const result = await alert.onDidDismiss()
+  const role = result.role
+  if (role !== 'notify' && role !== 'ask' && role !== 'never') return
+  settings.value = settingsRepository.update({ diaryShareNotificationMode: role })
 }
 
 async function editEmail() {
@@ -400,7 +420,7 @@ async function verifyUpgrade() {
             </div>
             <button class="setting-row setting-button" @click="editEmail">
               <span class="setting-icon muted"><span>@</span></span>
-              <div><strong>收件邮箱</strong><p>{{ emailStatus }}</p></div>
+              <div><strong>我的收件邮箱</strong><p>{{ emailStatus }}</p></div>
               <IonIcon class="row-chevron" :icon="chevronForward" />
             </button>
           </div>
@@ -408,7 +428,11 @@ async function verifyUpgrade() {
         <div class="settings-group">
           <p class="section-label">放心收好</p>
           <div class="settings-card">
-            <div class="setting-row"><span class="setting-icon"><IonIcon :icon="shieldCheckmarkOutline" /></span><div><strong>只放在本地</strong><p>日记正文和图片只留在这台设备里</p></div><span class="status-dot"></span></div>
+            <button class="setting-row setting-button" @click="chooseDiaryShareNotificationMode">
+              <span class="setting-icon"><IonIcon :icon="notificationsOutline" /></span>
+              <div><strong>创建日记通知</strong><p>{{ diaryShareNotificationModeLabel }}</p></div>
+              <IonIcon class="row-chevron" :icon="chevronForward" />
+            </button>
           </div>
         </div>
         <div class="settings-group">

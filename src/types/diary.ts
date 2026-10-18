@@ -1,5 +1,7 @@
 export type Mood = 'calm' | 'happy' | 'sad' | 'tired' | 'excited'
 
+export type DiaryShareStatus = 'none' | 'pending' | 'queued' | 'processing' | 'sent' | 'read' | 'failed' | 'cancelled' | 'expired'
+
 export const MAX_DIARY_IMAGES = 5
 
 export type DiaryBlockType = 'text' | 'image'
@@ -82,6 +84,10 @@ export interface Diary {
   blocks: DiaryBlock[]
   assets: DiaryAsset[]
   layout: DiaryLayout
+  shareStatus: DiaryShareStatus
+  shareId?: string
+  shareReadAt?: number
+  shareError?: string
 }
 
 export const moodLabels: Record<Mood, string> = {

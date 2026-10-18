@@ -1,15 +1,50 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { alertController, IonContent, IonIcon, IonPage, useIonRouter } from '@ionic/vue'
-import { chevronBack, createOutline, heart, heartOutline, imageOutline } from 'ionicons/icons'
+import { alertController, IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillEnter, toastController, useIonRouter } from '@ionic/vue'
+import { checkmarkDoneOutline, chevronBack, createOutline, heart, heartOutline, imageOutline, refreshOutline, shareSocialOutline, timeOutline } from 'ionicons/icons'
 import { useDiaryStore } from '../stores/diaryStore'
 import type { DiaryBlock } from '../types/diary'
 import { moodLabels } from '../types/diary'
 import { createStarReturnAnimation } from '../animations'
+import { diaryShareSyncState, refreshDiaryShareStatus } from '../services/notificationSync'
 const route = useRoute(); const ionRouter = useIonRouter(); const store = useDiaryStore()
+const shareLoading = ref(false)
+const diaryId = ref(String(route.params.id))
+onIonViewWillEnter(() => {
+  if (typeof route.params.id === 'string') diaryId.value = route.params.id
+  void store.refresh().catch(() => undefined)
+})
 void store.ensureLoaded().catch(() => undefined)
-const diary = computed(() => store.get(String(route.params.id)))
+const diary = computed(() => store.get(diaryId.value))
+const awaitingReceipt = computed(() => ['queued', 'processing', 'sent'].includes(diary.value?.shareStatus ?? ''))
+const receiptErrorText = computed(() => {
+  if (!awaitingReceipt.value || !diaryShareSyncState.error) return ''
+  switch (diaryShareSyncState.error) {
+    case 'cloudflare_challenge': return '状态未更新：请求被 Cloudflare 验证拦截'
+    case 'network_unavailable': return '状态未更新：暂时无法连接服务器'
+    case 'request_timeout': return '状态未更新：连接超时'
+    case 'invalid_server_response': return '状态未更新：服务器响应异常'
+    case 'local_sync_failed': return '状态未更新：本机回执保存失败'
+    default: return '状态未更新：服务器暂时无法提供回执'
+  }
+})
+const shareStatusText = computed(() => {
+  switch (diary.value?.shareStatus) {
+    case 'pending': return '等待发送'
+    case 'queued':
+    case 'processing': return '已提交，等待发送结果'
+    case 'sent': return '已发送，等待对方确认'
+    case 'read': return '对方已看到'
+    case 'failed': return '发送失败，可以重试'
+    case 'cancelled': return '分享已取消'
+    case 'expired': return '已发送，回执链接已过期'
+    default: return '这篇日记还没有分享'
+  }
+})
+const shareStatusIcon = computed(() => diary.value?.shareStatus === 'read'
+  ? checkmarkDoneOutline
+  : diary.value?.shareStatus === 'failed' ? refreshOutline : diary.value?.shareStatus === 'none' ? shareSocialOutline : timeOutline)
 function textFor(block: DiaryBlock) {
   return 'text' in block.content ? block.content.text : ''
 }
@@ -37,6 +72,71 @@ async function remove() {
     ],
   })
   await alert.present()
+}
+
+async function share() {
+  const current = diary.value
+  if (!current || shareLoading.value) return
+  shareLoading.value = true
+  try {
+    if (current.shareStatus === 'failed') {
+      await store.retryDiaryShare(current.id)
+      await showToast('已经重新提交发送')
+      return
+    }
+    const alert = await alertController.create({
+      header: '分享这篇日记？',
+      message: '这篇日记的标题和纯文本正文会发送到已配置的固定分享邮箱。图片不会发送。',
+      buttons: [{ text: '先不分享', role: 'cancel' }, { text: '确认分享', role: 'confirm' }],
+    })
+    await alert.present()
+    const result = await alert.onDidDismiss()
+    if (result.role !== 'confirm') return
+    await store.shareDiary(current.id)
+    await showToast('日记已经提交发送')
+  } catch (error) {
+    await store.refresh().catch(() => undefined)
+    await showToast(shareErrorMessage(error))
+  } finally {
+    shareLoading.value = false
+  }
+}
+
+function shareErrorMessage(error: unknown) {
+  const code = error instanceof Error ? error.message : String(error)
+  const messages: Record<string, string> = {
+    share_disabled: '日记分享服务暂未开启',
+    share_authorization_required: '当前设备的分享权限已被停用，请联系维护者',
+    diary_already_shared: '这篇日记已经分享过了',
+    share_id_conflict: '分享内容与首次提交不一致，请联系维护者',
+    invalid_diary_share: '标题或正文不符合分享要求',
+    rate_limited: '分享操作有点频繁，请稍后再试',
+    network_unavailable: '现在连不上服务器，稍后可以重试',
+    request_timeout: '连接超时了，稍后可以重试',
+    notification_service_unconfigured: '当前版本未接入分享服务',
+  }
+  return messages[code] ?? '这次没有发送成功，稍后可以重试'
+}
+
+async function showToast(message: string) {
+  const toast = await toastController.create({ message, duration: 2400, position: 'top' })
+  await toast.present()
+}
+
+async function refreshShareStatus() {
+  const previousCheck = diaryShareSyncState.checkedAt
+  await refreshDiaryShareStatus()
+  await store.refresh().catch(() => undefined)
+  if (diaryShareSyncState.checkedAt !== previousCheck) {
+    await showToast('分享状态已更新')
+  } else if (receiptErrorText.value) {
+    await showToast(receiptErrorText.value)
+  } else if (diaryShareSyncState.nextCheckAt && diaryShareSyncState.nextCheckAt > Date.now()) {
+    const time = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit' }).format(diaryShareSyncState.nextCheckAt)
+    await showToast(`下次状态查询时间：${time}`)
+  } else {
+    await showToast('已显示本机最新状态，稍后自动查询回执')
+  }
 }
 </script>
 
@@ -66,6 +166,19 @@ async function remove() {
             </template>
           </div>
         </article>
+        <section class="diary-share-panel" aria-live="polite">
+          <span class="diary-share-icon"><IonIcon :icon="shareStatusIcon" /></span>
+          <div><strong>日记分享</strong><p>{{ shareStatusText }}</p><p v-if="receiptErrorText" role="status">{{ receiptErrorText }}</p></div>
+          <button v-if="awaitingReceipt" class="icon-button" aria-label="更新分享状态" title="更新分享状态" :disabled="diaryShareSyncState.checking" @click="refreshShareStatus">
+            <IonSpinner v-if="diaryShareSyncState.checking" name="crescent" />
+            <IonIcon v-else :icon="refreshOutline" />
+          </button>
+          <button v-if="diary.shareStatus === 'none' || diary.shareStatus === 'failed'" class="diary-share-action" :disabled="shareLoading" @click="share">
+            <IonSpinner v-if="shareLoading" name="crescent" />
+            <IonIcon v-else :icon="diary.shareStatus === 'failed' ? refreshOutline : shareSocialOutline" />
+            <span>{{ diary.shareStatus === 'failed' ? '重试' : '分享' }}</span>
+          </button>
+        </section>
         <button class="delete-button" @click="remove">删掉这篇日记</button>
       </section>
       <section v-else-if="store.loading || !store.loaded" class="empty-state"><h2>正在把这颗星找回来…</h2></section>

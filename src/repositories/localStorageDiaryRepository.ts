@@ -1,4 +1,5 @@
 import type { Diary } from '../types/diary'
+import type { DiaryShareRecipient } from '../services/notifyApiClient'
 import type { DiaryRepository, SaveDiaryInput } from './diaryRepository'
 import type { DiaryAsset, DiaryBlock, DiaryImageInput, SaveDiaryImageInput } from '../types/diary'
 import { diaryAssetStorage, type StoredDiaryAsset } from '../services/diaryAssetStorage'
@@ -26,6 +27,7 @@ const seed: Diary[] = [
     boardPackId: DEFAULT_DIARY_BOARD_PACK.id,
     boardPackVersion: DEFAULT_DIARY_BOARD_PACK.version,
     layoutId: 'layout-default',
+    shareStatus: 'none',
     blocks: [{ id: 'welcome:text:0', diaryId: 'welcome', blockType: 'text', sortOrder: 0, content: { text: '欢迎来到拾光笺呀~\n\n先记下一点此刻的心情吧，日记只会留在这台设备里。' } }],
     assets: [],
     layout: createFixedLayout([{ id: 'welcome:text:0', blockType: 'text' }]),
@@ -70,6 +72,7 @@ export class LocalStorageDiaryRepository implements DiaryRepository {
           boardPackId: DEFAULT_DIARY_BOARD_PACK.id,
           boardPackVersion: DEFAULT_DIARY_BOARD_PACK.version,
           layoutId: 'layout-default',
+          shareStatus: 'none',
           blocks,
           assets: images,
           layout: createFixedLayout(blocks),
@@ -124,6 +127,20 @@ export class LocalStorageDiaryRepository implements DiaryRepository {
     throw new Error('native_device_required')
   }
 
+  async getDiaryShareRecipient(): Promise<DiaryShareRecipient> {
+    return { enabled: false, authorized: false, recipientName: null, recipientEmail: null, consentVersion: 'diary-share-v1' }
+  }
+
+  async ensureDiaryShareAuthorization(): Promise<DiaryShareRecipient> {
+    return { enabled: false, authorized: false, recipientName: null, recipientEmail: null, consentVersion: 'diary-share-v1' }
+  }
+
+  async redeemDiarySharePairing(): Promise<void> { throw new Error('native_device_required') }
+  async shareDiary(): Promise<never> { throw new Error('native_device_required') }
+  async retryDiaryShare(): Promise<never> { throw new Error('native_device_required') }
+  async syncPendingDiaryShares(): Promise<void> { }
+  async syncDiaryShareReceipts() { return { notices: [], checked: false, nextCheckAt: null } }
+
   private read(): Diary[] {
     const value = this.getStorage().getItem(DIARY_STORAGE_KEY)
     if (!value) return this.restoreSeed()
@@ -162,6 +179,7 @@ export class LocalStorageDiaryRepository implements DiaryRepository {
       blocks,
       assets,
       layout,
+      shareStatus: item.shareStatus ?? 'none',
     }
   }
 

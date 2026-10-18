@@ -16,7 +16,8 @@ vi.mock('./deviceKeyAuth', () => ({
   },
 }))
 
-import { ensureDeviceIdentity, ensureRegisteredDevice } from './deviceIdentity'
+import { ensureDeviceIdentity, ensureRegisteredDevice, withRegisteredDevice } from './deviceIdentity'
+import { NotifyApiError } from './notifyApiClient'
 
 describe('device identity', () => {
   beforeEach(() => {
@@ -39,6 +40,28 @@ describe('device identity', () => {
 
     expect(request).not.toHaveBeenCalled()
     db.close()
+  })
+
+  it('uses the business response without a device status preflight', async () => {
+    const { db, database } = await createDatabase({
+      device_id: 'dvc_existing', device_public_key: 'stable-public-key', device_registration_status: 'registered',
+    })
+    keyAuth.ensureKey.mockResolvedValue({ publicKey: 'stable-public-key' })
+    const request = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', request)
+    try {
+      const action = vi.fn(async () => ({ status: 'queued' }))
+      await expect(withRegisteredDevice(database, action)).resolves.toEqual({ status: 'queued' })
+      expect(action).toHaveBeenCalledOnce()
+      expect(request).not.toHaveBeenCalled()
+      const refused = vi.fn(async () => { throw new NotifyApiError('share_authorization_required', false) })
+      await expect(withRegisteredDevice(database, refused)).rejects.toThrow('share_authorization_required')
+      expect(refused).toHaveBeenCalledOnce()
+      expect(request).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
+      db.close()
+    }
   })
 
   it('does not retry network recovery after identity recovery reaches a terminal state', async () => {

@@ -3,7 +3,6 @@ import type { SQLiteDBConnection } from '@capacitor-community/sqlite'
 import { diaryAssetStorage, type StoredDiaryAsset } from '../services/diaryAssetStorage'
 import { validateDiaryImageInputs } from '../services/diaryImageValidation'
 import {
-  enqueueDiaryCreatedEvent,
   listReadyDiaryEvents,
   markDiaryEventAttempt,
   markDiaryEventFailed,
@@ -12,15 +11,21 @@ import {
 } from '../services/diaryEventQueue'
 import {
   confirmNotificationEmail,
+  createDiaryShare,
   deleteNotificationEmail,
+  DIARY_SHARE_CONSENT_VERSION,
+  getDiaryShareReceipts,
+  getDiaryShareRecipient,
+  ensureDiaryShareAuthorization,
   getNotificationSettings,
   isNotificationServiceConfigured,
   NotifyApiError,
+  redeemDiarySharePairing,
   requestNotificationEmailVerification,
   sendDiaryCreatedEvent,
   setNotificationEmailEnabled,
 } from '../services/notifyApiClient'
-import { ensureActiveRegisteredDevice } from '../services/deviceIdentity'
+import { withRegisteredDevice } from '../services/deviceIdentity'
 import { settingsRepository } from './settingsRepository'
 import {
   createFixedLayout,
@@ -35,17 +40,27 @@ import type {
   DiaryBlock,
   DiaryImageInput,
   DiaryLayout,
+  DiaryShareStatus,
   Mood,
   SaveDiaryImageInput,
 } from '../types/diary'
-import type { DiaryRepository, SaveDiaryInput } from './diaryRepository'
+import type { DiaryRepository, DiaryShareReadNotice, DiaryShareReceiptSync, SaveDiaryInput } from './diaryRepository'
 import { DATABASE_NAME, DATABASE_SCHEMA, DATABASE_UPGRADES, DATABASE_VERSION } from './sqliteSchema'
 
 type Row = Record<string, unknown>
 
+const DIARY_SHARE_AUTHORIZATION_CACHE_MS = 60_000
+const SHARE_RECEIPT_INTERVAL_MS = 5 * 60_000
+const SHARE_RETRY_DELAY_MS = 30_000
+const MAX_SHARE_RETRY_DELAY_MS = 30 * 60_000
+let diaryShareAuthorizationCache: { recipient: Awaited<ReturnType<typeof ensureDiaryShareAuthorization>>; expiresAt: number } | undefined
+
 export class SQLiteDiaryRepository implements DiaryRepository {
   private readonly sqlite = new SQLiteConnection(CapacitorSQLite)
   private connectionPromise?: Promise<SQLiteDBConnection>
+  private nextShareRetryAt = 0
+  private shareRetryDelay = SHARE_RETRY_DELAY_MS
+  private receiptSyncPromise?: Promise<DiaryShareReceiptSync>
 
   async list(): Promise<Diary[]> {
     const db = await this.connection()
@@ -78,12 +93,6 @@ export class SQLiteDiaryRepository implements DiaryRepository {
     const removed = (existing?.assets ?? []).filter(
       (asset) => !resolved.assets.some((next) => next.id === asset.id),
     )
-    const notificationSettings = settingsRepository.get()
-    const shouldQueueNotification = !existing &&
-      isNotificationServiceConfigured() &&
-      notificationSettings.notificationEnabled &&
-      notificationSettings.notificationEmailVerified
-
     let transactionStarted = false
     try {
       await db.beginTransaction()
@@ -167,9 +176,6 @@ export class SQLiteDiaryRepository implements DiaryRepository {
       throw error
     }
 
-    if (shouldQueueNotification) {
-      await enqueueDiaryCreatedEvent(db, input.mood, now).catch(() => undefined)
-    }
     await Promise.all(removed.map((asset) => diaryAssetStorage.remove(asset)))
     return this.hydrate(db, {
       id,
@@ -206,17 +212,11 @@ export class SQLiteDiaryRepository implements DiaryRepository {
     const notificationSettings = settingsRepository.get()
     if (!notificationSettings.notificationEnabled || !notificationSettings.notificationEmailVerified) return
     const db = await this.connection()
-    let identity
-    try {
-      identity = await ensureActiveRegisteredDevice(db)
-    } catch {
-      return
-    }
     const events = await listReadyDiaryEvents(db)
     for (const event of events) {
       await markDiaryEventAttempt(db, event.id)
       try {
-        await sendDiaryCreatedEvent(event.payload, identity)
+        await withRegisteredDevice(db, (identity) => sendDiaryCreatedEvent(event.payload, identity))
         await markDiaryEventSent(db, event.id)
       } catch (error) {
         if (error instanceof NotifyApiError && !error.retryable) {
@@ -233,39 +233,39 @@ export class SQLiteDiaryRepository implements DiaryRepository {
     const local = settingsRepository.get()
     if (!local.notificationSyncPending || !local.notificationEmailVerified) return
     const db = await this.connection()
-    await setNotificationEmailEnabled(local.notificationEnabled, await ensureActiveRegisteredDevice(db))
+    await withRegisteredDevice(db, (identity) => setNotificationEmailEnabled(local.notificationEnabled, identity))
     settingsRepository.update({ notificationSyncPending: false })
   }
 
   async getNotificationSettings() {
     this.requireNotificationService()
     const db = await this.connection()
-    return getNotificationSettings(await ensureActiveRegisteredDevice(db))
+    return withRegisteredDevice(db, getNotificationSettings)
   }
 
   async requestNotificationEmailVerification(email: string) {
     this.requireNotificationService()
     const db = await this.connection()
-    return requestNotificationEmailVerification(email, await ensureActiveRegisteredDevice(db))
+    return withRegisteredDevice(db, (identity) => requestNotificationEmailVerification(email, identity))
   }
 
   async confirmNotificationEmail(challengeId: string, code: string) {
     this.requireNotificationService()
     const db = await this.connection()
-    await confirmNotificationEmail(challengeId, code, await ensureActiveRegisteredDevice(db))
+    await withRegisteredDevice(db, (identity) => confirmNotificationEmail(challengeId, code, identity))
   }
 
   async setNotificationEmailEnabled(enabled: boolean) {
     this.requireNotificationService()
     const db = await this.connection()
-    await setNotificationEmailEnabled(enabled, await ensureActiveRegisteredDevice(db))
+    await withRegisteredDevice(db, (identity) => setNotificationEmailEnabled(enabled, identity))
     settingsRepository.update({ notificationSyncPending: false })
   }
 
   async deleteNotificationEmail() {
     this.requireNotificationService()
     const db = await this.connection()
-    await deleteNotificationEmail(await ensureActiveRegisteredDevice(db))
+    await withRegisteredDevice(db, deleteNotificationEmail)
     settingsRepository.update({
       notificationEnabled: false,
       notificationEmail: '',
@@ -276,6 +276,164 @@ export class SQLiteDiaryRepository implements DiaryRepository {
       notificationChallengeResendAvailableAt: 0,
       notificationSyncPending: false,
     })
+  }
+
+  async getDiaryShareRecipient() {
+    this.requireNotificationService()
+    const db = await this.connection()
+    return withRegisteredDevice(db, getDiaryShareRecipient)
+  }
+
+  async ensureDiaryShareAuthorization() {
+    this.requireNotificationService()
+    const cached = diaryShareAuthorizationCache
+    if (cached && cached.expiresAt > Date.now()) return cached.recipient
+    const db = await this.connection()
+    const recipient = await withRegisteredDevice(db, ensureDiaryShareAuthorization)
+    diaryShareAuthorizationCache = { recipient, expiresAt: Date.now() + DIARY_SHARE_AUTHORIZATION_CACHE_MS }
+    return recipient
+  }
+
+  async redeemDiarySharePairing(code: string) {
+    this.requireNotificationService()
+    const db = await this.connection()
+    await withRegisteredDevice(db, (identity) => redeemDiarySharePairing(code.trim().toUpperCase(), identity))
+    diaryShareAuthorizationCache = undefined
+  }
+
+  async shareDiary(id: string): Promise<Diary> {
+    this.requireNotificationService()
+    const db = await this.connection()
+    const diary = await this.get(id)
+    if (!diary) throw new NotifyApiError('diary_not_found', false)
+    if (diary.shareStatus !== 'none') throw new NotifyApiError('diary_already_shared', false)
+
+    const shareId = `dsh_${crypto.randomUUID()}`
+    const now = Date.now()
+    await db.run(
+      `INSERT INTO diary_share_states (
+        diary_id, share_id, status, consent_version, shared_title, shared_body, shared_occurred_at,
+        created_at, updated_at, read_at, notified_at, last_error
+      ) VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)`,
+      [id, shareId, DIARY_SHARE_CONSENT_VERSION, diary.title, diary.body, now, now, now],
+    )
+    return this.sendDiaryShare(db, diary.id, {
+      shareId,
+      occurredAt: now,
+      title: diary.title,
+      body: diary.body,
+      consentVersion: DIARY_SHARE_CONSENT_VERSION,
+    })
+  }
+
+  async retryDiaryShare(id: string): Promise<Diary> {
+    this.requireNotificationService()
+    const db = await this.connection()
+    const diary = await this.get(id)
+    if (!diary) throw new NotifyApiError('diary_not_found', false)
+    const state = await this.getShareState(db, id)
+    if (!state || this.mapShareStatus(state.status) !== 'failed') {
+      throw new NotifyApiError('diary_share_not_retryable', false)
+    }
+    await this.updateShareState(db, id, 'pending', null)
+    return this.sendDiaryShare(db, diary.id, this.sharePayload(state))
+  }
+
+  async syncPendingDiaryShares(): Promise<void> {
+    if (!isNotificationServiceConfigured() || Date.now() < this.nextShareRetryAt) return
+    const db = await this.connection()
+    const result = await db.query(
+      `SELECT s.diary_id, s.share_id, s.consent_version, s.shared_title, s.shared_body, s.shared_occurred_at
+       FROM diary_share_states s
+       JOIN diaries d ON d.id = s.diary_id
+       WHERE s.status = 'pending' AND d.is_deleted = 0 AND s.updated_at <= ?
+       ORDER BY s.updated_at ASC`,
+      [Date.now() - SHARE_RETRY_DELAY_MS],
+    )
+    if (!result.values?.length) return
+    this.nextShareRetryAt = Date.now() + this.shareRetryDelay
+    let retryNeeded = false
+    for (const row of result.values ?? []) {
+      try {
+        const response = await withRegisteredDevice(db, (identity) => createDiaryShare(this.sharePayload(row as Row), identity))
+        await this.updateShareState(db, String(row.diary_id), this.mapShareStatus(response.status), null)
+      } catch (error) {
+        const status = this.failureStatus(error)
+        await this.updateShareState(db, String(row.diary_id), status, this.errorMessage(error))
+        if (status === 'pending') {
+          retryNeeded = true
+          break
+        }
+      }
+    }
+    this.shareRetryDelay = retryNeeded ? Math.min(this.shareRetryDelay * 2, MAX_SHARE_RETRY_DELAY_MS) : SHARE_RETRY_DELAY_MS
+    this.nextShareRetryAt = Date.now() + this.shareRetryDelay
+  }
+
+  syncDiaryShareReceipts(): Promise<DiaryShareReceiptSync> {
+    this.receiptSyncPromise ??= this.syncShareReceipts().finally(() => { this.receiptSyncPromise = undefined })
+    return this.receiptSyncPromise
+  }
+
+  private async syncShareReceipts(): Promise<DiaryShareReceiptSync> {
+    const skipped: DiaryShareReceiptSync = { notices: [], checked: false, nextCheckAt: null }
+    if (!isNotificationServiceConfigured()) return skipped
+    const db = await this.connection()
+    const pending = await db.query(
+      `SELECT s.share_id FROM diary_share_states s JOIN diaries d ON d.id = s.diary_id
+       WHERE s.status IN ('queued', 'processing', 'sent') AND d.is_deleted = 0 LIMIT 1`,
+    )
+    if (!pending.values?.length) return skipped
+    const lastCheck = await db.query("SELECT value_json FROM app_settings WHERE key = 'diary_share_receipt_last_check' LIMIT 1")
+    const lastCheckedAt = Number(lastCheck.values?.[0]?.value_json ?? 0)
+    const checkedAt = Date.now()
+    if (Number.isFinite(lastCheckedAt) && lastCheckedAt <= checkedAt && checkedAt - lastCheckedAt < SHARE_RECEIPT_INTERVAL_MS) {
+      return { ...skipped, nextCheckAt: lastCheckedAt + SHARE_RECEIPT_INTERVAL_MS }
+    }
+    // Persist the attempt time so restarting or losing the network cannot bypass the request interval.
+    await db.run(
+      `INSERT INTO app_settings (key, value_json, updated_at) VALUES ('diary_share_receipt_last_check', ?, ?)
+       ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at`,
+      [JSON.stringify(checkedAt), checkedAt],
+    )
+
+    const notices: DiaryShareReadNotice[] = []
+    let cursor: string | null = null
+    do {
+      const page = await withRegisteredDevice(db, (identity) => getDiaryShareReceipts(identity, cursor))
+      for (const receipt of page.items) {
+        const local = await db.query(
+          `SELECT s.diary_id, s.status, s.notified_at, d.title
+           FROM diary_share_states s
+           JOIN diaries d ON d.id = s.diary_id
+           WHERE s.share_id = ? LIMIT 1`,
+          [receipt.shareId],
+        )
+        const row = local.values?.[0]
+        if (!row) continue
+        const status = this.mapShareStatus(receipt.status)
+        const readAt = status === 'read' ? receipt.readAt ?? Date.now() : null
+        const firstRead = status === 'read' && row.notified_at == null
+        const now = Date.now()
+        await db.run(
+          `UPDATE diary_share_states
+           SET status = ?, read_at = ?, notified_at = CASE WHEN ? THEN ? ELSE notified_at END,
+               last_error = CASE WHEN ? IN ('failed', 'cancelled', 'expired') THEN last_error ELSE NULL END,
+               updated_at = ?
+           WHERE share_id = ?`,
+          [status, readAt, firstRead ? 1 : 0, now, status, now, receipt.shareId],
+        )
+        if (firstRead) {
+          notices.push({ diaryId: String(row.diary_id), title: String(row.title ?? ''), readAt: readAt! })
+        }
+      }
+      cursor = page.nextCursor
+    } while (cursor)
+    const outstanding = await db.query(
+      `SELECT s.share_id FROM diary_share_states s JOIN diaries d ON d.id = s.diary_id
+       WHERE s.status IN ('queued', 'processing', 'sent') AND d.is_deleted = 0 LIMIT 1`,
+    )
+    return { notices, checked: true, nextCheckAt: outstanding.values?.length ? checkedAt + SHARE_RECEIPT_INTERVAL_MS : null }
   }
 
   private async connection(): Promise<SQLiteDBConnection> {
@@ -357,16 +515,18 @@ export class SQLiteDiaryRepository implements DiaryRepository {
 
   private async hydrate(db: SQLiteDBConnection, row: Row): Promise<Diary> {
     const id = String(row.id)
-    const [blockRows, assetRows, layoutRows] = await Promise.all([
+    const [blockRows, assetRows, layoutRows, shareRows] = await Promise.all([
       db.query('SELECT * FROM diary_blocks WHERE diary_id = ? ORDER BY sort_order', [id]),
       db.query('SELECT * FROM diary_assets WHERE diary_id = ? ORDER BY created_at', [id]),
       db.query('SELECT layout_json FROM diary_layouts WHERE id = ? LIMIT 1', [String(row.layout_id)]),
+      db.query('SELECT * FROM diary_share_states WHERE diary_id = ? LIMIT 1', [id]),
     ])
     const blocks = (blockRows.values ?? []).map((value) => this.mapBlock(value as Row))
     const assets = await Promise.all((assetRows.values ?? []).map((value) => this.mapAsset(value as Row)))
     const bodyContent = blocks.find((block) => block.blockType === 'text')?.content
     const body = bodyContent && 'text' in bodyContent ? String(bodyContent.text ?? '') : ''
     const boardPack = getDiaryBoardPack(String(row.theme_id), String(row.theme_version))
+    const share = shareRows.values?.[0]
 
     return {
       id,
@@ -384,7 +544,82 @@ export class SQLiteDiaryRepository implements DiaryRepository {
       blocks,
       assets,
       layout: this.readLayout(layoutRows.values?.[0]?.layout_json, boardPack, blocks),
+      shareStatus: share ? this.mapShareStatus(share.status) : 'none',
+      shareId: share ? String(share.share_id) : undefined,
+      shareReadAt: share?.read_at == null ? undefined : Number(share.read_at),
+      shareError: share?.last_error == null ? undefined : String(share.last_error),
     }
+  }
+
+  private async sendDiaryShare(
+    db: SQLiteDBConnection,
+    diaryId: string,
+    payload: { shareId: string; occurredAt: number; title: string; body: string; consentVersion: string },
+  ): Promise<Diary> {
+    try {
+      const response = await withRegisteredDevice(db, (identity) => createDiaryShare(payload, identity))
+      await this.updateShareState(db, diaryId, this.mapShareStatus(response.status), null)
+    } catch (error) {
+      await this.updateShareState(db, diaryId, this.failureStatus(error), this.errorMessage(error))
+      throw error
+    }
+    return (await this.get(diaryId))!
+  }
+
+  private sharePayload(row: Row) {
+    return {
+      shareId: String(row.share_id),
+      occurredAt: Number(row.shared_occurred_at),
+      title: String(row.shared_title ?? ''),
+      body: String(row.shared_body ?? ''),
+      consentVersion: String(row.consent_version),
+    }
+  }
+
+  private async getShareState(db: SQLiteDBConnection, diaryId: string): Promise<Row | undefined> {
+    const result = await db.query('SELECT * FROM diary_share_states WHERE diary_id = ? LIMIT 1', [diaryId])
+    return result.values?.[0] as Row | undefined
+  }
+
+  private async updateShareState(
+    db: SQLiteDBConnection,
+    diaryId: string,
+    status: DiaryShareStatus,
+    error: string | null,
+  ) {
+    await db.run(
+      'UPDATE diary_share_states SET status = ?, last_error = ?, updated_at = ? WHERE diary_id = ?',
+      [status, error, Date.now(), diaryId],
+    )
+  }
+
+  private mapShareStatus(value: unknown): DiaryShareStatus {
+    switch (value) {
+      case 'pending':
+      case 'pending_enqueue':
+      case 'retry_scheduled':
+        return 'pending'
+      case 'queued':
+      case 'processing':
+      case 'sent':
+      case 'read':
+      case 'cancelled':
+      case 'expired':
+        return value
+      case 'failed':
+      case 'terminal_failed':
+        return 'failed'
+      default:
+        return 'failed'
+    }
+  }
+
+  private errorMessage(error: unknown) {
+    return error instanceof Error ? error.message : String(error)
+  }
+
+  private failureStatus(error: unknown): DiaryShareStatus {
+    return error instanceof NotifyApiError && error.retryable ? 'pending' : 'failed'
   }
 
   private mapBlock(row: Row): DiaryBlock {

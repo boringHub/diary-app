@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   confirmNotificationEmail,
+  createDiaryShare,
   deleteNotificationEmail,
   getNotifyApiOrigin,
   getNotificationSettings,
+  getDiaryShareReceipts,
   isNotificationServiceConfigured,
   NotifyApiError,
   requestNotificationEmailVerification,
@@ -175,6 +177,50 @@ describe('notify API client', () => {
 
     await expect(getNotificationSettings(identity, request, { sign: vi.fn(async () => 'signature') }))
       .rejects.toThrow('invalid_server_response')
+  })
+
+  it('sends only the five diary share fields', async () => {
+    const request = vi.fn<typeof fetch>(async () => Response.json({ ok: true, shareId: 'dsh_1', status: 'queued' }, { status: 202 }))
+    const input = {
+      shareId: 'dsh_1',
+      occurredAt: 1_790_000_000_000,
+      title: '今天',
+      body: '只发送纯文本正文',
+      consentVersion: 'diary-share-v1',
+      to: 'attacker@example.com',
+      images: ['private.jpg'],
+    }
+
+    await createDiaryShare(input, identity, request, { sign: vi.fn(async () => 'signature') })
+
+    expect(JSON.parse(String(request.mock.calls[0]?.[1]?.body))).toEqual({
+      shareId: input.shareId,
+      occurredAt: input.occurredAt,
+      title: input.title,
+      body: input.body,
+      consentVersion: input.consentVersion,
+    })
+  })
+
+  it('signs receipt GET requests including the cursor and preserves the read timestamp', async () => {
+    const readAt = 1_790_000_000_000
+    const request = vi.fn<typeof fetch>(async () => Response.json({
+      items: [{ shareId: 'dsh_test', status: 'read', readAt, reaction: 'seen' }], nextCursor: null,
+    }))
+    const sign = vi.fn(async () => 'signature')
+    await expect(getDiaryShareReceipts(identity, 'cursor_123', request, { sign })).resolves.toEqual({
+      items: [{ shareId: 'dsh_test', status: 'read', readAt, reaction: 'seen' }], nextCursor: null,
+    })
+    await expectCanonical(sign, request, 'GET', '/v1/diary-share-receipts?cursor=cursor_123', '')
+    expect(request.mock.calls[0]?.[1]?.body).toBeUndefined()
+  })
+
+  it('identifies a Cloudflare challenge response separately from invalid JSON', async () => {
+    const request = vi.fn<typeof fetch>(async () => new Response('<html>Just a moment...</html>', {
+      status: 403, headers: { 'content-type': 'text/html', 'cf-mitigated': 'challenge' },
+    }))
+    await expect(getDiaryShareReceipts(identity, null, request, { sign: vi.fn(async () => 'signature') }))
+      .rejects.toMatchObject({ message: 'cloudflare_challenge', retryable: true })
   })
 })
 

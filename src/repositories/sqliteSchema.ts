@@ -1,5 +1,5 @@
 export const DATABASE_NAME = 'shiguangjian'
-export const DATABASE_VERSION = 3
+export const DATABASE_VERSION = 4
 
 export const DATABASE_SCHEMA = `
 PRAGMA foreign_keys = ON;
@@ -101,11 +101,28 @@ CREATE TABLE IF NOT EXISTS event_queue (
   last_error TEXT
 );
 
+CREATE TABLE IF NOT EXISTS diary_share_states (
+  diary_id TEXT PRIMARY KEY NOT NULL,
+  share_id TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL DEFAULT 'pending',
+  consent_version TEXT NOT NULL,
+  shared_title TEXT NOT NULL,
+  shared_body TEXT NOT NULL,
+  shared_occurred_at INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  read_at INTEGER,
+  notified_at INTEGER,
+  last_error TEXT,
+  FOREIGN KEY (diary_id) REFERENCES diaries(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_diaries_timeline ON diaries(is_deleted, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_diary_blocks_diary ON diary_blocks(diary_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_diary_assets_diary ON diary_assets(diary_id);
 CREATE INDEX IF NOT EXISTS idx_event_queue_status ON event_queue(status, created_at);
 CREATE INDEX IF NOT EXISTS idx_event_queue_retry ON event_queue(status, last_attempt_at, created_at);
+CREATE INDEX IF NOT EXISTS idx_diary_share_states_status ON diary_share_states(status, updated_at);
 `
 
 export const MIGRATION_V1 = [
@@ -212,8 +229,28 @@ export const MIGRATION_V3 = [
   `CREATE INDEX IF NOT EXISTS idx_event_queue_retry ON event_queue(status, last_attempt_at, created_at);`,
 ]
 
+export const MIGRATION_V4 = [
+  `CREATE TABLE IF NOT EXISTS diary_share_states (
+    diary_id TEXT PRIMARY KEY NOT NULL,
+    share_id TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'pending',
+    consent_version TEXT NOT NULL,
+    shared_title TEXT NOT NULL,
+    shared_body TEXT NOT NULL,
+    shared_occurred_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    read_at INTEGER,
+    notified_at INTEGER,
+    last_error TEXT,
+    FOREIGN KEY (diary_id) REFERENCES diaries(id) ON DELETE CASCADE
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_diary_share_states_status ON diary_share_states(status, updated_at);`,
+]
+
 export const DATABASE_UPGRADES = [
   { toVersion: 1, statements: MIGRATION_V1 },
   { toVersion: 2, statements: MIGRATION_V2 },
   { toVersion: 3, statements: MIGRATION_V3 },
+  { toVersion: 4, statements: MIGRATION_V4 },
 ]

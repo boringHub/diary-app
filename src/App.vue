@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDiaryStore } from './stores/diaryStore'
 import { IonApp, IonIcon, IonRouterOutlet, useIonRouter } from '@ionic/vue'
@@ -24,6 +24,13 @@ const nav = [
 
 const isNewDiaryRoute = computed(() => route.path === '/diary/new')
 const showTabBar = computed(() => !route.path.startsWith('/diary/') || isNewDiaryRoute.value)
+
+function refreshSharedDiaries() {
+  void store.refresh().catch(() => undefined)
+}
+
+onMounted(() => window.addEventListener('diary-share-updated', refreshSharedDiaries))
+onUnmounted(() => window.removeEventListener('diary-share-updated', refreshSharedDiaries))
 
 function switchRoot(path: '/timeline' | '/settings') {
   if (route.path === path) return

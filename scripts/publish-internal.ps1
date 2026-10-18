@@ -148,7 +148,16 @@ try {
     $downloadedApks = @(Get-ChildItem -LiteralPath $extractedRoot -File -Recurse -Filter '*.apk')
     if ($downloadedApks.Count -ne 1) { throw 'Internal OSS ZIP verification expected exactly one APK.' }
     $downloadedHash = Get-Sha256Hex -FilePath $downloadedApks[0].FullName
-    $publicManifest = Get-Content -LiteralPath $downloadedManifest -Raw | ConvertFrom-Json
+    $publicManifest = $null
+    for ($attempt = 1; $attempt -le 5 -and $null -eq $publicManifest; $attempt++) {
+        try {
+            $publicManifest = [IO.File]::ReadAllText($downloadedManifest, [Text.Encoding]::UTF8) | ConvertFrom-Json
+        } catch {
+            if ($attempt -eq 5) { throw }
+            Start-Sleep -Seconds 2
+            Invoke-WebRequest -Uri (ConvertTo-OssObjectUrl -BaseUrl $script:PublicBaseUrl -ObjectKey "$latestPrefix/update.json") -OutFile $downloadedManifest -UseBasicParsing
+        }
+    }
     if ($downloadedHash -ne $sha256 -or [string]$publicManifest.sha256 -ne $sha256) {
         throw 'Public internal OSS artifact verification failed: APK hash mismatch.'
     }

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useIonRouter } from '@ionic/vue'
-import { IonContent, IonIcon, IonPage, onIonViewDidEnter } from '@ionic/vue'
+import { IonContent, IonIcon, IonPage, onIonViewDidEnter, onIonViewDidLeave, onIonViewWillEnter, onIonViewWillLeave } from '@ionic/vue'
 import { calendarOutline, closeOutline, searchOutline, sparklesOutline } from 'ionicons/icons'
 import { useDiaryStore } from '../stores/diaryStore'
 import { moodLabels } from '../types/diary'
 import type { Diary, Mood } from '../types/diary'
-import { createStarEnterAnimation } from '../animations'
+import { createStarEnterAnimation, type StarTransitionOrigin } from '../animations'
 import {
   MAX_PLANET_ZOOM,
   MIN_PLANET_ZOOM,
@@ -79,6 +79,8 @@ let pinchStartCenterVector: Vector3 | null = null
 let settleToken = 0
 let resizeObserver: ResizeObserver | null = null
 let arrivalTimer = 0
+let pageActive = true
+let openingDiary = false
 
 function seededUnit(index: number, salt: number) {
   const value = Math.sin((index + 1) * (9283.17 + salt * 71.11)) * 43758.5453
@@ -156,6 +158,7 @@ function draw(now: number) {
     const revealOpacity = decorativeRevealOpacity(star)
     if (revealOpacity <= 0) continue
     if (star.diary && star.diary.id === arrivingStar.value?.diaryId) continue
+    if (star.diary && star.diary.id === canvas.value?.dataset.transitionStarId) continue
     if (clusterMode.value && star.diary && cluster.value.some((item) => item.diary.id === star.diary?.id)) continue
     const selected = star.diary?.id === selectedDiaryId.value
     context.globalAlpha = point.opacity * star.brightness * revealOpacity * (selected ? .2 : .16); context.fillStyle = star.color; context.beginPath(); context.arc(point.x, point.y, point.size * (selected ? 3.2 : 4), 0, Math.PI * 2); context.fill()
@@ -164,6 +167,7 @@ function draw(now: number) {
   }
   if (clusterMode.value) {
     for (const item of cluster.value) {
+      if (item.diary.id === canvas.value?.dataset.transitionStarId) continue
       const x = centerX + item.x
       const y = centerY + item.y
       context.globalAlpha = .18
@@ -202,11 +206,12 @@ function updateFocusedStar() {
 
 function loop(now: number) {
   const delta = Math.min((now - lastTime) / 1000 || 0, .05); lastTime = now
-  if (!pointerDown && !isSettling.value && !selectedDiaryId.value) {
+  const canMove = pageActive && !openingDiary && !canvas.value?.dataset.transitionStarId
+  if (canMove && !pointerDown && !isSettling.value && !selectedDiaryId.value) {
     targetOrientation = multiplyQuaternions(quaternionFromAxisAngle({ x: 0, y: 1, z: 0 }, delta * .035), targetOrientation)
   }
-  orientation = interpolateQuaternions(orientation, targetOrientation, Math.min(delta * 8, 1))
-  draw(now); if (!clusterMode.value && !isSearching.value && !isSettling.value && !pointerDown) updateFocusedStar(); animationFrame = requestAnimationFrame(loop)
+  if (canMove) orientation = interpolateQuaternions(orientation, targetOrientation, Math.min(delta * 8, 1))
+  draw(now); if (canMove && !clusterMode.value && !isSearching.value && !isSettling.value && !pointerDown) updateFocusedStar(); animationFrame = requestAnimationFrame(loop)
 }
 
 function setFocusForDiary(diary: Diary) {
@@ -268,12 +273,6 @@ function focusCluster(items: Diary[]) {
   selectedDiaryId.value = items[0]?.id ?? null; focusVisible.value = true; hint.value = `${formatShortDate(items[0].createdAt)} · 找到 ${items.length} 段记忆啦`
 }
 
-function selectClusterDiary(diary: Diary) {
-  selectedDiaryId.value = diary.id
-  focusVisible.value = true
-  hint.value = `选中啦：${diary.title || '还没取名字'}`
-}
-
 function searchByDate() {
   if (!searchDate.value) return
   isSearching.value = true
@@ -289,7 +288,22 @@ function randomFocus() {
   if (!diary) return
   searchDate.value = ''; setFocusForDiary(diary); hint.value = '随机回望一段记忆呀'
 }
-function openDiary(diary: Diary) { ionRouter.navigate(`/diary/${diary.id}`, 'forward', 'push', createStarEnterAnimation) }
+function openDiary(diary: Diary, point: { x: number; y: number; size: number }) {
+  if (openingDiary) return
+  const rect = canvas.value?.getBoundingClientRect()
+  if (!rect) return
+  openingDiary = true
+  selectedDiaryId.value = diary.id
+  ionRouter.navigate(`/diary/${diary.id}`, 'forward', 'push', createStarEnterAnimation({
+    diaryId: diary.id,
+    x: rect.left + point.x,
+    y: rect.top + point.y,
+    size: point.size,
+    color: moodColors[diary.mood],
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }))
+}
 function toggleSearch() {
   searchOpen.value = !searchOpen.value
   if (searchOpen.value) nextTick(() => searchInput.value?.showPicker?.())
@@ -368,6 +382,7 @@ function settleAfterGesture(delay = 320) {
 }
 
 function onPointerDown(event: PointerEvent) {
+  if (openingDiary || !pageActive) return
   activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
   pointerDown = true
   try { canvas.value?.setPointerCapture(event.pointerId) } catch { /* Some synthetic touch events have no capturable pointer. */ }
@@ -436,13 +451,12 @@ function finishPointer(event: PointerEvent, cancelled = false) {
     const centerX = canvasSize.value.width / 2, centerY = canvasSize.value.height * .48
     const clusterHit = cluster.value.find((item) => Math.hypot(centerX + item.x - x, centerY + item.y - y) < 24)
     if (clusterHit) {
-      if (clusterHit.diary.id === selectedDiaryId.value) openDiary(clusterHit.diary)
-      else selectClusterDiary(clusterHit.diary)
+      openDiary(clusterHit.diary, { x: centerX + clusterHit.x, y: centerY + clusterHit.y, size: 4.5 })
       return
     }
   }
   const hit = getProjectedRealStars().sort((a, b) => b.point.z - a.point.z).find(({ point }) => Math.hypot(point.x - x, point.y - y) < Math.max(14, point.size * 4))
-  if (hit?.star.diary) hit.star.diary.id === selectedDiaryId.value && focusVisible.value ? openDiary(hit.star.diary) : setFocusForDiary(hit.star.diary)
+  if (hit?.star.diary) openDiary(hit.star.diary, hit.point)
 }
 function onPointerUp(event: PointerEvent) { finishPointer(event) }
 function onPointerCancel(event: PointerEvent) { finishPointer(event, true) }
@@ -461,9 +475,41 @@ function onWheel(event: WheelEvent) {
   settleAfterGesture(180)
 }
 function onResize() { resizeCanvas() }
+function updateTransitionStar(event: Event) {
+  const origin = (event as CustomEvent<StarTransitionOrigin | undefined>).detail
+  const rect = canvas.value?.getBoundingClientRect()
+  if (origin && rect) {
+    resizeCanvas()
+    const clusterStar = clusterMode.value ? cluster.value.find((item) => item.diary.id === origin.diaryId) : undefined
+    const projected = getProjectedRealStars().find((item) => item.star.diary?.id === origin.diaryId)?.point
+    const point = clusterStar
+      ? { x: canvasSize.value.width / 2 + clusterStar.x, y: canvasSize.value.height * .48 + clusterStar.y, size: 4.5 }
+      : projected
+    if (point) Object.assign(origin, {
+      x: rect.left + point.x, y: rect.top + point.y,
+      size: origin.width === window.innerWidth && origin.height === window.innerHeight ? origin.size : point.size,
+      width: window.innerWidth, height: window.innerHeight,
+    })
+  }
+  draw(performance.now())
+}
+
+onIonViewWillLeave(() => { pageActive = false })
+onIonViewDidLeave(() => {
+  cancelAnimationFrame(animationFrame)
+  animationFrame = 0
+  lastTime = 0
+})
+onIonViewWillEnter(async () => {
+  await nextTick()
+  resizeCanvas()
+  if (!animationFrame) animationFrame = requestAnimationFrame(loop)
+})
 
 watch(() => store.diaries, async () => { await nextTick(); createStars(); resizeCanvas(); if (!selectedDiaryId.value && store.diaries[0]) randomFocus() }, { deep: true })
 onIonViewDidEnter(async () => {
+  pageActive = true
+  openingDiary = false
   await storeReady
   await nextTick()
   resizeCanvas()
@@ -480,7 +526,7 @@ onMounted(async () => {
   resizeObserver = new ResizeObserver(() => resizeCanvas())
   if (canvas.value) resizeObserver.observe(canvas.value)
   if (store.diaries.length) randomFocus()
-  animationFrame = requestAnimationFrame(loop)
+  if (!animationFrame) animationFrame = requestAnimationFrame(loop)
 })
 onBeforeUnmount(() => {
   cancelAnimationFrame(animationFrame)
@@ -509,7 +555,7 @@ onBeforeUnmount(() => {
           </div>
         </header>
         <div class="starfield-stage" :class="{ dragging: isDragging, zooming: isZooming, settling: isSettling }">
-          <canvas ref="canvas" aria-label="可拖动、双指或滚轮缩放的记忆星球" @pointerdown="onPointerDown" @pointermove="onPointerMove" @pointerup="onPointerUp" @pointercancel="onPointerCancel" @wheel.prevent="onWheel"></canvas>
+          <canvas ref="canvas" aria-label="可拖动、双指或滚轮缩放的记忆星球" @pointerdown="onPointerDown" @pointermove="onPointerMove" @pointerup="onPointerUp" @pointercancel="onPointerCancel" @wheel.prevent="onWheel" @memory-transition-update="updateTransitionStar"></canvas>
           <span
             v-if="arrivingStar"
             class="arriving-memory-star"

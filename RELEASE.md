@@ -281,6 +281,14 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 - OSS ZIP 解压后与 GitHub APK 执行相同的 HTTPS、大小、包名、递增版本号、预期版本、签名和 SHA-256 校验。
 - 更改超时、对象路径、清单字段或来源优先级时，必须同时更新测试、`update.example.json`、本文件和 `AGENTS.md`。
 
+## 1.4.0 发布准备 - 2026-10-18
+
+- 代码版本已更新为 `1.4.0`，正式 Android `versionCode` 预留为 `6`；完整用户变更已归档至 `CHANGELOG.md`，正式公告由 `npm run release:notes:stable -- 1.4.0` 生成。
+- 当前设备未配置 `STABLE_KEYSTORE_FILE`，本机找到的密钥均为测试证书，无法生成与历史正式版签名一致的覆盖更新包。需要恢复证书 SHA-256 为 `c6ef39d7955b402a7bfce9e9e9ce3a1a1bbcfa87c2cca4356c29eec7e9845d01` 的原密钥后继续。
+- 正式 APK、`release/update.json`、GitHub 正式标签和 OSS 正式通道维持 `1.3.1`，不得在新 APK 签名及公开下载校验完成前更新当前发布基线。GitHub 可先保存 `1.4.0` 公告草稿，草稿不代表已发布。
+- 本次代码验证：14 个测试文件、89 项测试、Web 生产构建、Capacitor 同步、发布渠道校验和差异格式检查通过；内部 Android 构建及包名、版本和固定测试签名校验通过，仅用于本地构建验证，未发布测试包。正式构建因缺少历史密钥被脚本拒绝。
+- 本机未连接 Android 设备，真实日记覆盖安装与升级验证待完成。
+
 ## 当前发布基线
 
 后续发布开始前，先以此表和 GitHub 最新 Release 交叉确认，不要仅凭记忆推断当前版本。
@@ -297,6 +305,11 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 | 签名类型 | Android Debug 签名，当前仅用于开发测试 |
 | 签名证书 SHA-256 | `c6ef39d7955b402a7bfce9e9e9ce3a1a1bbcfa87c2cca4356c29eec7e9845d01` |
 | 当前测试版签名证书 SHA-256 | `a490f52e123093f27b88d3c53b4a363798868f5d9808f366b134d1d13a29553c` |
+| 最新测试版本 | `1.3.1-internal.20261018.192835` |
+| 测试版 Android `versionCode` | `1792322914` |
+| 测试版包名 | `xyz.shiguangjian.app.debug` |
+| 测试版 APK SHA-256 | `3712aef0b09f72672ee2f7b9d6a427520c63d0bc059c766888b2a8fa976d65fa` |
+| 测试版最新清单 | <https://diary-app.oss-cn-hangzhou.aliyuncs.com/internal/latest/update.json> |
 | v1.3.1 APK SHA-256 | `7228582e23beaf727e343322dd0b0758ca3a6270a82625832097fccc6dae5fe2` |
 | 最新 Release | <https://github.com/boringHub/diary-app/releases/latest> |
 | OSS 最新清单 | <https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/update.json> |
@@ -323,6 +336,15 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 ## 发布历史索引
 
 详细功能变化以 [CHANGELOG.md](CHANGELOG.md) 为准。此表用于快速定位版本、构建编号、发布资源和升级重点。
+
+内部测试版本的详细验证记录以 [INTERNAL_CHANGELOG.md](INTERNAL_CHANGELOG.md) 为准。
+
+| 测试版本 | versionCode | 日期 | APK SHA-256 | 主要内容 |
+| --- | ---: | --- | --- | --- |
+| `1.3.1-internal.20261018.192835` | 1792322914 | 2026-10-18 | `3712aef0b09f72672ee2f7b9d6a427520c63d0bc059c766888b2a8fa976d65fa` | 修复回执查询定时调度、合并并发请求，增加详情刷新与失败提示；89 项测试、三种宽度浏览器检查、内部 Android 构建及公网哈希校验通过，原手机异常原因与覆盖更新验收待确认 |
+| `1.3.1-internal.20261018.185359` | 1792320839 | 2026-10-18 | `b48730c64debbcf6e5a1bb9ee7374338f49c49a4aae6c75f3d16bd9be423cf3b` | 修复设置弹窗输入框对比度并跟随当前主题；80 项测试、三套主题及三种宽度的浏览器检查、内部 Android 构建与公网哈希校验通过，手机验收待完成 |
+| `1.3.1-internal.20261018.172113` | 1792315272 | 2026-10-18 | `3b79ad5d29c61d59465e235e441e10ac053870298e0d8ab1722543d774b347c1` | 使用者邮箱与固定分享邮箱解耦、移除权限检测、空队列不联网、回执至少五分钟及失败退避；App 80 项和 Worker 51 项测试通过，构建及公网校验通过，手机验收待完成 |
+| `1.3.1-internal.20261018.155114` | 1792309874 | 2026-10-18 | `ba7eb0e8861ddf0cb2f1edc12a821a76bd542e4655c8a033d02004f2df7da532` | 日记分享 V2、一次性配对、明确分享确认、发送和回执状态、SQLite V4 保留数据迁移；构建及公网校验通过，手机验收待完成 |
 
 | 版本 | versionCode | 日期 | APK SHA-256 | 主要内容 |
 | --- | ---: | --- | --- | --- |

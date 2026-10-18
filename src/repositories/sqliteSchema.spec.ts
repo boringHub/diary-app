@@ -1,6 +1,6 @@
 import initSqlJs, { type Database } from 'sql.js'
 import { describe, expect, it } from 'vitest'
-import { DATABASE_UPGRADES, DATABASE_VERSION, MIGRATION_V2, MIGRATION_V3 } from './sqliteSchema'
+import { DATABASE_UPGRADES, DATABASE_VERSION, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4 } from './sqliteSchema'
 
 const V1_SCHEMA = `
 PRAGMA foreign_keys = ON;
@@ -90,14 +90,16 @@ describe('SQLite schema migrations', () => {
       'theme_assets',
       'app_settings',
       'event_queue',
+      'diary_share_states',
     ]))
     expect(readRows(db, "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_event_queue_retry'")).toHaveLength(1)
+    expect(readRows(db, "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_diary_share_states_status'")).toHaveLength(1)
     expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(DATABASE_VERSION)
     expect(readRows(db, 'PRAGMA foreign_key_check')).toEqual([])
     db.close()
   })
 
-  it('migrates a populated V1 database to V2 without changing existing data', async () => {
+  it('migrates a populated V1 database to the current version without changing existing data', async () => {
     const SQL = await initSqlJs({ locateFile: (file) => `node_modules/sql.js/dist/${file}` })
     const db = new SQL.Database()
     createPopulatedV1Database(db)
@@ -107,6 +109,7 @@ describe('SQLite schema migrations', () => {
     try {
       for (const statement of MIGRATION_V2) db.run(statement)
       for (const statement of MIGRATION_V3) db.run(statement)
+      for (const statement of MIGRATION_V4) db.run(statement)
       // Capacitor SQLite calls setVersion(toVersion) after these statements commit.
       db.run(`PRAGMA user_version = ${DATABASE_VERSION}`)
       db.run('COMMIT')
@@ -116,9 +119,9 @@ describe('SQLite schema migrations', () => {
     }
 
     expect(snapshotV1Data(db)).toEqual(before)
-    expect(tableNames(db)).toEqual(expect.arrayContaining(['themes', 'theme_assets']))
+    expect(tableNames(db)).toEqual(expect.arrayContaining(['themes', 'theme_assets', 'diary_share_states']))
     expect(readRows(db, "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_event_queue_retry'")).toHaveLength(1)
-    expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(3)
+    expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(DATABASE_VERSION)
     expect(readRows(db, 'PRAGMA foreign_key_check')).toEqual([])
     db.close()
   })
@@ -134,9 +137,13 @@ describe('SQLite schema migrations', () => {
     for (const statement of MIGRATION_V3) db.run(statement)
     db.run('PRAGMA user_version = 3')
 
+    for (const statement of MIGRATION_V4) db.run(statement)
+    db.run(`PRAGMA user_version = ${DATABASE_VERSION}`)
+
     expect(readRows(db, 'SELECT * FROM event_queue ORDER BY id')).toEqual(queuedBefore)
     expect(readRows(db, "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_event_queue_retry'")).toHaveLength(1)
-    expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(3)
+    expect(readRows(db, "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'diary_share_states'")).toHaveLength(1)
+    expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(DATABASE_VERSION)
     db.close()
   })
 
@@ -149,6 +156,9 @@ describe('SQLite schema migrations', () => {
     for (const statement of MIGRATION_V3) db.run(statement)
     db.run('PRAGMA user_version = 3')
 
+    for (const statement of MIGRATION_V4) db.run(statement)
+    db.run(`PRAGMA user_version = ${DATABASE_VERSION}`)
+
     expect(tableNames(db)).toEqual(expect.arrayContaining([
       'diaries',
       'diary_blocks',
@@ -158,9 +168,10 @@ describe('SQLite schema migrations', () => {
       'theme_assets',
       'app_settings',
       'event_queue',
+      'diary_share_states',
     ]))
     expect(readRows(db, "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_event_queue_retry'")).toHaveLength(1)
-    expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(3)
+    expect(readRows(db, 'PRAGMA user_version')[0]?.user_version).toBe(DATABASE_VERSION)
     db.close()
   })
 })

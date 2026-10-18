@@ -122,6 +122,16 @@ export async function ensureActiveRegisteredDevice(db: SQLiteDBConnection, reque
   }
 }
 
+export async function withRegisteredDevice<T>(db: SQLiteDBConnection, action: (identity: DeviceIdentity) => Promise<T>): Promise<T> {
+  const identity = await ensureRegisteredDevice(db)
+  try {
+    return await action(identity)
+  } catch (error) {
+    if (!(error instanceof NotifyApiError) || !isRecoverableIdentityError(error.message)) throw error
+    return action(await ensureActiveRegisteredDevice(db))
+  }
+}
+
 export function aliasFor(deviceId: string) {
   return `shiguangjian-device-${deviceId}`
 }

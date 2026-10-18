@@ -6,6 +6,8 @@ import { chevronBack, close, imageOutline } from 'ionicons/icons'
 import { useDiaryStore } from '../stores/diaryStore'
 import { createDiaryPaperExitAnimation, createDiaryToStarAnimation, createEditorSaveAnimation } from '../animations'
 import { MAX_DIARY_IMAGES, type DiaryImageInput, type Mood } from '../types/diary'
+import { isNotificationServiceConfigured } from '../services/notifyApiClient'
+import { settingsRepository } from '../repositories/settingsRepository'
 
 interface EditorImage {
   key: string
@@ -142,6 +144,8 @@ async function save() {
       else if (image.data) imageInputs.push({ name: image.name, mimeType: image.mimeType, data: image.data, width: image.width, height: image.height })
     }
     const item = await store.save({ id: existing.value?.id, title: title.value.trim(), body: body.value.trim(), mood: mood.value, images: imageInputs })
+    let shouldShare = false
+    if (!isEditing) shouldShare = await confirmNewDiarySharing()
     allowLeave.value = true
     if (isEditing) ionRouter.navigate(`/diary/${item.id}`, 'none', 'replace', createEditorSaveAnimation)
     else {
@@ -149,12 +153,39 @@ async function save() {
       if (ionRouter.canGoBack()) ionRouter.navigate('/timeline', 'back', 'pop', createDiaryToStarAnimation)
       else ionRouter.navigate('/timeline', 'none', 'replace', createDiaryToStarAnimation)
     }
+    if (shouldShare) void shareNewDiary(item.id)
   } catch (error) {
     const message = error instanceof Error && error.message ? error.message : '没保存好，再试一次哦'
     const toast = await toastController.create({ message, duration: 2000, position: 'top' })
     await toast.present()
   }
 }
+
+async function confirmNewDiarySharing() {
+  const mode = settingsRepository.get().diaryShareNotificationMode
+  if (mode === 'never' || !isNotificationServiceConfigured()) return false
+  if (mode === 'ask') {
+    const alert = await alertController.create({
+      header: '要分享这篇日记吗？',
+      message: '确认后会把标题和纯文本正文发送给已配置的接收者，图片不会发送。',
+      buttons: [{ text: '暂不分享', role: 'cancel' }, { text: '分享这篇', role: 'confirm' }],
+    })
+    await alert.present()
+    const result = await alert.onDidDismiss()
+    return result.role === 'confirm'
+  }
+  return true
+}
+
+async function shareNewDiary(diaryId: string) {
+  try {
+    // shareDiary creates the local pending snapshot before the network request, so offline saves can retry later.
+    await store.shareDiary(diaryId)
+  } catch {
+    // The diary is already saved locally; background sync can retry transient share failures.
+  }
+}
+
 </script>
 
 <template>

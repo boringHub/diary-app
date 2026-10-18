@@ -1,4 +1,5 @@
 export interface AppSettings {
+  diaryShareNotificationMode: 'notify' | 'ask' | 'never'
   notificationEnabled: boolean
   notificationEmail: string
   notificationPendingEmail: string
@@ -16,6 +17,7 @@ export interface AppSettings {
 const KEY = 'shiguangjian.settings.v1'
 
 const defaults: AppSettings = {
+  diaryShareNotificationMode: 'ask',
   notificationEnabled: false,
   notificationEmail: '',
   notificationPendingEmail: '',
@@ -37,6 +39,9 @@ function read(): AppSettings {
 
   try {
     const settings = { ...defaults, ...JSON.parse(value) } as AppSettings
+    if (!['notify', 'ask', 'never'].includes(settings.diaryShareNotificationMode)) {
+      settings.diaryShareNotificationMode = defaults.diaryShareNotificationMode
+    }
     if (!settings.notificationEmailVerified && settings.notificationEmail && !settings.notificationPendingEmail) {
       settings.notificationEnabled = false
       settings.notificationPendingEmail = settings.notificationEmail

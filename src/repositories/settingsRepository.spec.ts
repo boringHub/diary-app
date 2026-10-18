@@ -27,6 +27,7 @@ describe('settingsRepository', () => {
     }))
 
     expect(settingsRepository.get()).toMatchObject({
+      diaryShareNotificationMode: 'ask',
       notificationEnabled: false,
       notificationEmail: '',
       notificationPendingEmail: 'owner@example.com',
@@ -37,6 +38,7 @@ describe('settingsRepository', () => {
 
   it('defaults email reminders to disabled', () => {
     expect(settingsRepository.get()).toMatchObject({
+      diaryShareNotificationMode: 'ask',
       notificationEnabled: false,
       notificationEmailVerified: false,
       notificationSyncPending: false,

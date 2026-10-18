@@ -58,6 +58,22 @@ export const useDiaryStore = defineStore('diary', () => {
     await refresh()
   }
 
+  async function shareDiary(id: string) {
+    try {
+      return await diaryRepository.shareDiary(id)
+    } finally {
+      await refresh()
+    }
+  }
+
+  async function retryDiaryShare(id: string) {
+    try {
+      return await diaryRepository.retryDiaryShare(id)
+    } finally {
+      await refresh()
+    }
+  }
+
   function get(id: string) {
     return items.value.find((item) => item.id === id)
   }
@@ -65,5 +81,5 @@ export const useDiaryStore = defineStore('diary', () => {
     return { title: '', body: '', mood: 'calm' as Mood }
   }
 
-  return { diaries, loaded, loading, saving, error, ensureLoaded, refresh, save, toggleFavorite, remove, get, createDraft }
+  return { diaries, loaded, loading, saving, error, ensureLoaded, refresh, save, toggleFavorite, remove, shareDiary, retryDiaryShare, get, createDraft }
 })

@@ -23,7 +23,8 @@
 
 ## 当前功能
 
-- 记忆星球时间线，以及拖动、聚焦和入场动画
+- 全屏记忆星球时间线，支持拖动、双指及滚轮缩放、聚焦和流星转场
+- 从添加按钮抽出和收回的新建日记页，详情页光晕展开与返回动画
 - 新建、编辑、查看和软删除日记
 - 五种心情状态与对应星体颜色
 - 收藏日记和按日期搜索
@@ -36,6 +37,8 @@
 - 设置页手动检查更新、APK 下载和系统安装引导
 - GitHub 优先、30 秒无响应自动切换阿里云 OSS 的双源更新下载和可视化进度
 - 更新包包名、版本号、签名和可选 SHA-256 完整性校验
+- 可选的单篇日记分享、发送状态、失败重试、回执同步和首次已读提示
+- 独立的使用者通知邮箱验证与开关，设备公钥认证和本地待办退避重试
 
 ## 技术栈
 
@@ -55,7 +58,7 @@
 - Android 数据库文件名为 `shiguangjianSQLite.db`
 - Android 数据库位于应用私有目录，通常为 `/data/user/0/xyz.shiguangjian.app/databases/`
 
-SQLite V3 包含 `diaries`、`diary_blocks`、`diary_assets`、`diary_layouts`、`themes`、`theme_assets`、`app_settings` 和 `event_queue`。正文和图片分别保存为 `text`、`image` Block，图片文件位于 Capacitor `Directory.Data` 对应的应用私有目录，数据库只保存相对路径。V3 只新增通知队列重试索引。
+SQLite V4 包含 `diaries`、`diary_blocks`、`diary_assets`、`diary_layouts`、`themes`、`theme_assets`、`app_settings`、`event_queue` 和 `diary_share_states`。正文和图片分别保存为 `text`、`image` Block，图片文件位于 Capacitor `Directory.Data` 对应的应用私有目录，数据库只保存相对路径。V3 新增通知队列重试索引，V4 新增分享状态和首次分享快照，迁移保留已有数据。
 
 从 V1 升级到 V2 时只新增主题索引表，不删除或重建已有日记数据。自动迁移测试会先创建 V1 日记、Block、图片和布局，再执行 V2 升级并核对原数据仍可读取。浏览器中的旧版 LocalStorage 文字日记会在读取时补齐 Block 和布局结构。
 
@@ -117,7 +120,7 @@ VITE_NOTIFY_API_ORIGIN=https://your-api.example.com
 
 该值只填写 API Origin，不带路径。必须使用 HTTPS。`VITE_*` 会被 Vite 打包进 APK，因此这里只能放公开的 API 地址，绝不能放 Resend API Key、Cloudflare Secret、私人收件邮箱或其他凭据。留空会生成完全不接入通知服务的本地模式构建。
 
-邮件接入必须保持以下边界：日记先完成本地保存，再尝试生成通知事件；API 未配置、离线或投递失败都不能使日记保存失败。现有 V1 事件只允许发送 `eventId`、`eventType`、`occurredAt`、`mood` 和 `deviceId`，不得发送标题、正文、图片、布局或本地路径。
+邮件接入必须保持以下边界：日记先完成本地保存，API 未配置、离线或投递失败都不能使日记保存失败。创建通知默认询问，选择分享后才建立快照；也可在详情页手动确认分享。分享 V2 发送该篇标题和纯文本正文，不发送图片、布局或本地路径；旧版 V1 事件仍只允许发送 `eventId`、`eventType`、`occurredAt`、`mood` 和 `deviceId` 五项元数据。使用者通知邮箱与固定分享邮箱独立，关闭或解绑小提醒不影响日记分享。
 
 ### 测试与生产构建
 
@@ -126,7 +129,7 @@ npm test
 npm run build
 ```
 
-当前阶段二验收包含 32 项 Vitest 测试，覆盖图片上限、旧 LocalStorage 兼容、主题 manifest、ZIP 包安全校验、SQLite 主题索引和 V1 → V2 数据保留迁移。
+测试覆盖图片上限、旧 LocalStorage 兼容、主题 manifest、ZIP 包安全校验、SQLite 数据保留迁移、设备认证、分享状态、回执去重、请求限频和并发同步。
 
 ### 构建 Android APK
 

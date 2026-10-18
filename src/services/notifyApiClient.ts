@@ -4,6 +4,7 @@ import { deviceKeyAuth } from './deviceKeyAuth'
 const REQUEST_TIMEOUT_MS = 15_000
 const EVENT_TYPES = new Set(['diary_created', 'diary_updated', 'diary_favorited'])
 const MOODS = new Set(['calm', 'happy', 'low', 'tired', 'hopeful'])
+export const DIARY_SHARE_CONSENT_VERSION = 'diary-share-v1'
 
 export interface DeviceIdentity {
   deviceId: string
@@ -34,6 +35,21 @@ export interface VerificationChallenge {
   challengeId: string
   expiresAt: number
   resendAvailableAt: number
+}
+
+export interface DiaryShareRecipient {
+  enabled: boolean
+  authorized: boolean
+  recipientName: string | null
+  recipientEmail: string | null
+  consentVersion: string
+}
+
+export interface DiaryShareReceipt {
+  shareId: string
+  status: string
+  readAt: number | null
+  reaction: string | null
 }
 
 export function getNotifyApiOrigin() {
@@ -174,6 +190,79 @@ export async function deleteNotificationEmail(
   return sendSignedRequest({ method: 'DELETE', path: '/v1/notification-email', body: '', identity, request, signer })
 }
 
+export async function getDiaryShareRecipient(
+  identity: DeviceIdentity,
+  request: typeof fetch = fetch,
+  signer: DeviceSigner = deviceKeyAuth,
+): Promise<DiaryShareRecipient> {
+  const result = await sendSignedRequest({ method: 'GET', path: '/v1/diary-share-recipient', body: '', identity, request, signer })
+  if (typeof result.enabled !== 'boolean' || typeof result.authorized !== 'boolean' ||
+      (result.recipientName !== null && typeof result.recipientName !== 'string') ||
+      (result.recipientEmail !== null && typeof result.recipientEmail !== 'string') ||
+      typeof result.consentVersion !== 'string') throw new NotifyApiError('invalid_server_response', false)
+  return result as DiaryShareRecipient
+}
+
+export async function redeemDiarySharePairing(
+  code: string,
+  identity: DeviceIdentity,
+  request: typeof fetch = fetch,
+  signer: DeviceSigner = deviceKeyAuth,
+) {
+  return sendSignedRequest({ method: 'POST', path: '/v1/diary-share-pairing', body: JSON.stringify({ code }), identity, request, signer })
+}
+
+export async function ensureDiaryShareAuthorization(
+  identity: DeviceIdentity,
+  request: typeof fetch = fetch,
+  signer: DeviceSigner = deviceKeyAuth,
+): Promise<DiaryShareRecipient> {
+  const result = await sendSignedRequest({ method: 'POST', path: '/v1/diary-share-auto-authorize', body: '', identity, request, signer })
+  if (typeof result.enabled !== 'boolean' || typeof result.authorized !== 'boolean' ||
+      (result.recipientName !== null && typeof result.recipientName !== 'string') ||
+      (result.recipientEmail !== null && typeof result.recipientEmail !== 'string') ||
+      typeof result.consentVersion !== 'string') throw new NotifyApiError('invalid_server_response', false)
+  return result as DiaryShareRecipient
+}
+
+export async function createDiaryShare(
+  input: { shareId: string; occurredAt: number; title: string; body: string; consentVersion: string },
+  identity: DeviceIdentity,
+  request: typeof fetch = fetch,
+  signer: DeviceSigner = deviceKeyAuth,
+) {
+  const payload = {
+    shareId: input.shareId,
+    occurredAt: input.occurredAt,
+    title: input.title,
+    body: input.body,
+    consentVersion: input.consentVersion,
+  }
+  const result = await sendSignedRequest({ method: 'POST', path: '/v1/diary-shares', body: JSON.stringify(payload), identity, request, signer })
+  if (typeof result.shareId !== 'string' || typeof result.status !== 'string') throw new NotifyApiError('invalid_server_response', false)
+  return { shareId: result.shareId, status: result.status }
+}
+
+export async function getDiaryShareReceipts(
+  identity: DeviceIdentity,
+  cursor: string | null = null,
+  request: typeof fetch = fetch,
+  signer: DeviceSigner = deviceKeyAuth,
+): Promise<{ items: DiaryShareReceipt[]; nextCursor: string | null }> {
+  const path = cursor ? `/v1/diary-share-receipts?cursor=${encodeURIComponent(cursor)}` : '/v1/diary-share-receipts'
+  const result = await sendSignedRequest({ method: 'GET', path, body: '', identity, request, signer })
+  if (!Array.isArray(result.items) || (result.nextCursor !== null && typeof result.nextCursor !== 'string')) throw new NotifyApiError('invalid_server_response', false)
+  return {
+    items: result.items.filter((item: any) => typeof item?.shareId === 'string' && typeof item?.status === 'string').map((item: any) => ({
+      shareId: item.shareId,
+      status: item.status,
+      readAt: Number.isSafeInteger(item.readAt) ? item.readAt : null,
+      reaction: typeof item.reaction === 'string' ? item.reaction : null,
+    })),
+    nextCursor: result.nextCursor,
+  }
+}
+
 async function sendSignedRequest(options: {
   method: string
   path: string
@@ -237,6 +326,9 @@ async function requestWithTimeout(request: typeof fetch, url: string, init: Requ
 }
 
 async function readResponse(response: Response): Promise<Record<string, any>> {
+  if (response.headers.get('cf-mitigated') === 'challenge') {
+    throw new NotifyApiError('cloudflare_challenge', true)
+  }
   try {
     const result: unknown = await response.json()
     return result && typeof result === 'object' ? result as Record<string, any> : {}
