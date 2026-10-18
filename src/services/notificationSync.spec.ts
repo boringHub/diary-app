@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
   shares: vi.fn(),
   receipts: vi.fn(),
   toast: vi.fn(),
-  present: vi.fn(),
 }))
 
 vi.mock('@capacitor/core', async (importOriginal) => ({
@@ -20,7 +19,7 @@ vi.mock('@capacitor/core', async (importOriginal) => ({
 }))
 vi.mock('@capacitor/app', () => ({ App: { addListener: mocks.appListener } }))
 vi.mock('@capacitor/network', () => ({ Network: { addListener: mocks.networkListener, getStatus: mocks.getStatus } }))
-vi.mock('@ionic/vue', () => ({ toastController: { create: mocks.toast } }))
+vi.mock('./appToast', () => ({ showAppToast: mocks.toast }))
 vi.mock('./notifyApiClient', async (importOriginal) => ({
   ...await importOriginal<typeof import('./notifyApiClient')>(),
   isNotificationServiceConfigured: mocks.configured,
@@ -48,7 +47,6 @@ describe('notification sync scheduling', () => {
     mocks.events.mockResolvedValue(undefined)
     mocks.shares.mockResolvedValue(undefined)
     mocks.receipts.mockResolvedValue({ notices: [], checked: false, nextCheckAt: null })
-    mocks.toast.mockResolvedValue({ present: mocks.present })
   })
 
   afterEach(() => {
@@ -166,7 +164,6 @@ describe('notification sync scheduling', () => {
     expect(diaryShareSyncState.checkedAt).toBe(Date.now())
     expect(diaryShareSyncState.error).toBe('')
     expect(window.dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'diary-share-updated' }))
-    expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ message: '对方看到《今天》啦' }))
-    expect(mocks.present).toHaveBeenCalledOnce()
+    expect(mocks.toast).toHaveBeenCalledWith('对方看到《今天》啦', 2600)
   })
 })

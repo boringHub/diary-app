@@ -9,6 +9,7 @@ const queueMocks = vi.hoisted(() => ({
 }))
 const apiMocks = vi.hoisted(() => ({
   createDiaryShare: vi.fn(),
+  submitFeedback: vi.fn(),
   getDiaryShareReceipts: vi.fn(),
   withRegisteredDevice: vi.fn(async (_db, action) => action({ deviceId: 'dvc_test', alias: 'test', publicKey: 'test' })),
 }))
@@ -17,6 +18,7 @@ vi.mock('../services/deviceIdentity', () => ({ withRegisteredDevice: apiMocks.wi
 vi.mock('../services/notifyApiClient', async (importOriginal) => ({
   ...await importOriginal<typeof import('../services/notifyApiClient')>(),
   createDiaryShare: apiMocks.createDiaryShare,
+  submitFeedback: apiMocks.submitFeedback,
   getDiaryShareReceipts: apiMocks.getDiaryShareReceipts,
 }))
 
@@ -60,6 +62,29 @@ describe('SQLiteDiaryRepository notification isolation', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllEnvs()
+  })
+
+  it('submits feedback without a notification email and leaves diary data untouched', async () => {
+    vi.mocked(settingsRepository.get).mockReturnValue({ notificationEnabled: false, notificationEmailVerified: false } as ReturnType<typeof settingsRepository.get>)
+    apiMocks.submitFeedback.mockResolvedValue(undefined)
+    const db = createDatabase()
+    const repository = withDatabase(new SQLiteDiaryRepository(), db)
+    const input = { feedbackId: 'fb_test', content: '一个想法' }
+
+    await repository.submitFeedback(input)
+
+    expect(apiMocks.submitFeedback).toHaveBeenCalledExactlyOnceWith(input, expect.objectContaining({ deviceId: 'dvc_test' }))
+    expect(db.run).not.toHaveBeenCalled()
+    expect(queueMocks.enqueueDiaryCreatedEvent).not.toHaveBeenCalled()
+  })
+
+  it('does not register or send feedback in a local-only build', async () => {
+    vi.stubEnv('VITE_NOTIFY_API_ORIGIN', '')
+    const repository = withDatabase(new SQLiteDiaryRepository(), createDatabase())
+
+    await expect(repository.submitFeedback({ feedbackId: 'fb_test', content: '一个想法' })).rejects.toThrow('notification_service_unconfigured')
+    expect(apiMocks.withRegisteredDevice).not.toHaveBeenCalled()
+    expect(apiMocks.submitFeedback).not.toHaveBeenCalled()
   })
 
   it('persists read receipts in SQLite and exposes them when the diary is reloaded', async () => {

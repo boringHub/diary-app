@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { IonContent, IonIcon, IonPage, toastController, useIonRouter } from '@ionic/vue'
+import { IonContent, IonIcon, IonPage, useIonRouter } from '@ionic/vue'
 import { chevronBack, chevronForward, cloudUploadOutline } from 'ionicons/icons'
 import { listThemeManifests, selectTheme } from '../services/themeService'
 import { installThemePackage } from '../services/themePackageService'
 import { settingsRepository } from '../repositories/settingsRepository'
+import { showAppToast } from '../services/appToast'
 
 const current = ref(settingsRepository.get())
 const themes = ref(listThemeManifests())
@@ -20,8 +21,7 @@ function goBack() {
 async function chooseTheme(theme: (typeof themes.value)[number]) {
   selectTheme(theme.id, theme.version)
   current.value = settingsRepository.get()
-  const toast = await toastController.create({ message: `已切换为 ${theme.name}，整个界面会立即更新`, duration: 1800, position: 'top' })
-  await toast.present()
+  showAppToast(`已切换为 ${theme.name}，整个界面会立即更新`, 1800)
 }
 
 function chooseManifest() {
@@ -37,12 +37,10 @@ async function importManifest(event: Event) {
   try {
     const manifest = await installThemePackage(file)
     themes.value = listThemeManifests()
-    const toast = await toastController.create({ message: `${manifest.name} ${manifest.version} 已收好啦`, duration: 2200, position: 'top' })
-    await toast.present()
+    showAppToast(`${manifest.name} ${manifest.version} 已收好啦`, 2200)
   } catch (error) {
     const message = error instanceof Error ? error.message : '主题清单格式不对哦'
-    const toast = await toastController.create({ message, duration: 2200, position: 'top' })
-    await toast.present()
+    showAppToast(message, 2200)
   } finally {
     importing.value = false
   }

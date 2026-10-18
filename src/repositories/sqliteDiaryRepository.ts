@@ -24,6 +24,8 @@ import {
   requestNotificationEmailVerification,
   sendDiaryCreatedEvent,
   setNotificationEmailEnabled,
+  submitFeedback,
+  type FeedbackInput,
 } from '../services/notifyApiClient'
 import { withRegisteredDevice } from '../services/deviceIdentity'
 import { settingsRepository } from './settingsRepository'
@@ -276,6 +278,12 @@ export class SQLiteDiaryRepository implements DiaryRepository {
       notificationChallengeResendAvailableAt: 0,
       notificationSyncPending: false,
     })
+  }
+
+  async submitFeedback(input: FeedbackInput): Promise<void> {
+    this.requireNotificationService()
+    const db = await this.connection()
+    await withRegisteredDevice(db, (identity) => submitFeedback(input, identity))
   }
 
   async getDiaryShareRecipient() {

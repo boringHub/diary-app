@@ -5,7 +5,7 @@ const OSS_MANIFEST_URL = 'https://diary-app.oss-cn-hangzhou.aliyuncs.com/release
 const INTERNAL_OSS_MANIFEST_URL = 'https://diary-app.oss-cn-hangzhou.aliyuncs.com/internal/latest/update.json'
 const NETWORK_TIMEOUT_MS = 30_000
 const PREFERRED_APK_NAMES = ['shiguangjian-android.apk', 'shiguangjian-android-debug.apk']
-const WEB_VERSION = '1.4.0'
+const WEB_VERSION = '1.4.1'
 
 interface NativeVersionInfo {
   versionName: string

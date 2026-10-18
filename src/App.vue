@@ -6,6 +6,7 @@ import { IonApp, IonIcon, IonRouterOutlet, useIonRouter } from '@ionic/vue'
 import { add, planetOutline, settingsOutline } from 'ionicons/icons'
 import { createDiaryPaperEnterAnimation, createTabSlideAnimation } from './animations'
 import { getThemePresentation, useCurrentTheme } from './services/themeService'
+import AppToastStack from './components/AppToastStack.vue'
 
 const route = useRoute()
 const ionRouter = useIonRouter()
@@ -55,6 +56,7 @@ function createDiary() {
 
 <template>
   <IonApp class="app-theme" :style="appThemeStyle">
+    <AppToastStack />
     <IonRouterOutlet :animated="true" />
     <nav v-if="showTabBar" class="floating-nav" :class="{ 'floating-nav-night': route.path !== '/timeline', 'floating-nav-editor': isNewDiaryRoute }" aria-label="主导航">
       <button class="nav-action" :class="{ active: route.path.startsWith(nav[0].path) }" @click="switchRoot('/timeline')">

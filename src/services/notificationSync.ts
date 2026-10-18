@@ -2,9 +2,9 @@ import { reactive } from 'vue'
 import { App } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { Network } from '@capacitor/network'
-import { toastController } from '@ionic/vue'
 import { diaryRepository } from '../repositories/diaryRepository'
 import { isNotificationServiceConfigured, NotifyApiError } from './notifyApiClient'
+import { showAppToast } from './appToast'
 
 export const diaryShareSyncState = reactive({
   checking: false,
@@ -85,8 +85,7 @@ async function syncWhenOnline() {
         const message = result.notices.length === 1
           ? `对方看到《${notice.title || '未命名日记'}》啦`
           : `有 ${result.notices.length} 篇日记被对方看到啦`
-        await toastController.create({ message, duration: 2600, position: 'top' })
-          .then((toast) => toast.present()).catch(() => undefined)
+        showAppToast(message, 2600)
       }
     } catch (error) {
       diaryShareSyncState.error = error instanceof NotifyApiError ? error.message : 'local_sync_failed'

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { alertController, IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillEnter, toastController, useIonRouter } from '@ionic/vue'
+import { alertController, IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillEnter, useIonRouter } from '@ionic/vue'
 import { checkmarkDoneOutline, chevronBack, createOutline, heart, heartOutline, imageOutline, refreshOutline, shareSocialOutline, timeOutline } from 'ionicons/icons'
 import { useDiaryStore } from '../stores/diaryStore'
 import type { DiaryBlock } from '../types/diary'
 import { moodLabels } from '../types/diary'
 import { createStarReturnAnimation } from '../animations'
 import { diaryShareSyncState, refreshDiaryShareStatus } from '../services/notificationSync'
+import { showAppToast } from '../services/appToast'
 const route = useRoute(); const ionRouter = useIonRouter(); const store = useDiaryStore()
 const shareLoading = ref(false)
 const diaryId = ref(String(route.params.id))
@@ -18,12 +19,13 @@ onIonViewWillEnter(() => {
 void store.ensureLoaded().catch(() => undefined)
 const diary = computed(() => store.get(diaryId.value))
 const awaitingReceipt = computed(() => ['queued', 'processing', 'sent'].includes(diary.value?.shareStatus ?? ''))
+const canRefreshShareStatus = computed(() => ['pending', 'queued', 'processing', 'sent'].includes(diary.value?.shareStatus ?? ''))
 const receiptErrorText = computed(() => {
   if (!awaitingReceipt.value || !diaryShareSyncState.error) return ''
   switch (diaryShareSyncState.error) {
     case 'cloudflare_challenge': return '状态未更新：请求被 Cloudflare 验证拦截'
     case 'network_unavailable': return '状态未更新：暂时无法连接服务器'
-    case 'request_timeout': return '状态未更新：连接超时'
+    case 'request_timeout': return '状态未更新：连接超时，稍后会继续确认'
     case 'invalid_server_response': return '状态未更新：服务器响应异常'
     case 'local_sync_failed': return '状态未更新：本机回执保存失败'
     default: return '状态未更新：服务器暂时无法提供回执'
@@ -31,7 +33,11 @@ const receiptErrorText = computed(() => {
 })
 const shareStatusText = computed(() => {
   switch (diary.value?.shareStatus) {
-    case 'pending': return '等待发送'
+    case 'pending': return diary.value?.shareError === 'request_timeout' || diary.value?.shareError === 'invalid_server_response'
+      ? '请求已保留，正在确认发送状态'
+      : diary.value?.shareError === 'cloudflare_challenge'
+        ? '正在确认发送状态'
+        : diary.value?.shareError === 'network_unavailable' ? '等待联网后发送' : '等待发送'
     case 'queued':
     case 'processing': return '已提交，等待发送结果'
     case 'sent': return '已发送，等待对方确认'
@@ -81,7 +87,7 @@ async function share() {
   try {
     if (current.shareStatus === 'failed') {
       await store.retryDiaryShare(current.id)
-      await showToast('已经重新提交发送')
+      showAppToast('已经重新提交发送')
       return
     }
     const alert = await alertController.create({
@@ -93,10 +99,10 @@ async function share() {
     const result = await alert.onDidDismiss()
     if (result.role !== 'confirm') return
     await store.shareDiary(current.id)
-    await showToast('日记已经提交发送')
+    showAppToast('日记已经提交发送')
   } catch (error) {
     await store.refresh().catch(() => undefined)
-    await showToast(shareErrorMessage(error))
+    showAppToast(shareErrorMessage(error))
   } finally {
     shareLoading.value = false
   }
@@ -111,16 +117,13 @@ function shareErrorMessage(error: unknown) {
     share_id_conflict: '分享内容与首次提交不一致，请联系维护者',
     invalid_diary_share: '标题或正文不符合分享要求',
     rate_limited: '分享操作有点频繁，请稍后再试',
-    network_unavailable: '现在连不上服务器，稍后可以重试',
-    request_timeout: '连接超时了，稍后可以重试',
+    request_timeout: '请求已保留，正在确认发送状态',
+    network_unavailable: '邮件已保存在本机，联网后会继续发送',
+    cloudflare_challenge: '邮件请求已保留，正在确认发送状态',
+    invalid_server_response: '邮件可能已经提交，正在确认发送状态',
     notification_service_unconfigured: '当前版本未接入分享服务',
   }
   return messages[code] ?? '这次没有发送成功，稍后可以重试'
-}
-
-async function showToast(message: string) {
-  const toast = await toastController.create({ message, duration: 2400, position: 'top' })
-  await toast.present()
 }
 
 async function refreshShareStatus() {
@@ -128,14 +131,14 @@ async function refreshShareStatus() {
   await refreshDiaryShareStatus()
   await store.refresh().catch(() => undefined)
   if (diaryShareSyncState.checkedAt !== previousCheck) {
-    await showToast('分享状态已更新')
+    showAppToast('分享状态已更新')
   } else if (receiptErrorText.value) {
-    await showToast(receiptErrorText.value)
+    showAppToast(receiptErrorText.value)
   } else if (diaryShareSyncState.nextCheckAt && diaryShareSyncState.nextCheckAt > Date.now()) {
     const time = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit' }).format(diaryShareSyncState.nextCheckAt)
-    await showToast(`下次状态查询时间：${time}`)
+    showAppToast(`下次状态查询时间：${time}`)
   } else {
-    await showToast('已显示本机最新状态，稍后自动查询回执')
+    showAppToast('已显示本机最新状态，稍后自动查询回执')
   }
 }
 </script>
@@ -169,7 +172,7 @@ async function refreshShareStatus() {
         <section class="diary-share-panel" aria-live="polite">
           <span class="diary-share-icon"><IonIcon :icon="shareStatusIcon" /></span>
           <div><strong>日记分享</strong><p>{{ shareStatusText }}</p><p v-if="receiptErrorText" role="status">{{ receiptErrorText }}</p></div>
-          <button v-if="awaitingReceipt" class="icon-button" aria-label="更新分享状态" title="更新分享状态" :disabled="diaryShareSyncState.checking" @click="refreshShareStatus">
+          <button v-if="canRefreshShareStatus" class="icon-button" aria-label="更新分享状态" title="更新分享状态" :disabled="diaryShareSyncState.checking" @click="refreshShareStatus">
             <IonSpinner v-if="diaryShareSyncState.checking" name="crescent" />
             <IonIcon v-else :icon="refreshOutline" />
           </button>

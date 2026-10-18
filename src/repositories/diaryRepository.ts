@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import type { Diary, DiaryImageInput, Mood } from '../types/diary'
-import type { DiaryShareRecipient, NotificationSettings, VerificationChallenge } from '../services/notifyApiClient'
+import type { DiaryShareRecipient, FeedbackInput, NotificationSettings, VerificationChallenge } from '../services/notifyApiClient'
 import { LocalStorageDiaryRepository } from './localStorageDiaryRepository'
 
 export interface SaveDiaryInput {
@@ -36,6 +36,7 @@ export interface DiaryRepository {
   confirmNotificationEmail(challengeId: string, code: string): Promise<void>
   setNotificationEmailEnabled(enabled: boolean): Promise<void>
   deleteNotificationEmail(): Promise<void>
+  submitFeedback(input: FeedbackInput): Promise<void>
   getDiaryShareRecipient(): Promise<DiaryShareRecipient>
   ensureDiaryShareAuthorization(): Promise<DiaryShareRecipient>
   redeemDiarySharePairing(code: string): Promise<void>
@@ -93,6 +94,9 @@ export const diaryRepository: DiaryRepository = {
   },
   async getDiaryShareRecipient() {
     return (await resolveRepository()).getDiaryShareRecipient()
+  },
+  async submitFeedback(input) {
+    return (await resolveRepository()).submitFeedback(input)
   },
   async ensureDiaryShareAuthorization() {
     return (await resolveRepository()).ensureDiaryShareAuthorization()

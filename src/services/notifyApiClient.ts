@@ -5,6 +5,12 @@ const REQUEST_TIMEOUT_MS = 15_000
 const EVENT_TYPES = new Set(['diary_created', 'diary_updated', 'diary_favorited'])
 const MOODS = new Set(['calm', 'happy', 'low', 'tired', 'hopeful'])
 export const DIARY_SHARE_CONSENT_VERSION = 'diary-share-v1'
+export const FEEDBACK_MAX_LENGTH = 2_000
+
+export interface FeedbackInput {
+  feedbackId: string
+  content: string
+}
 
 export interface DeviceIdentity {
   deviceId: string
@@ -94,12 +100,11 @@ export async function registerDevice(
 ) {
   const origin = requireNotifyApiOrigin()
   const body = JSON.stringify({ deviceId: identity.deviceId, publicKey: identity.publicKey, platform: 'android', appVersion })
-  const response = await requestWithTimeout(request, `${origin}/v1/device/register`, {
+  const { response, result } = await requestJsonWithTimeout(request, `${origin}/v1/device/register`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body,
   })
-  const result = await readResponse(response)
   if (response.status === 201 || response.status === 200) return result
   throw apiError(result, response.status)
 }
@@ -263,6 +268,22 @@ export async function getDiaryShareReceipts(
   }
 }
 
+export async function submitFeedback(
+  input: FeedbackInput,
+  identity: DeviceIdentity,
+  request: typeof fetch = fetch,
+  signer: DeviceSigner = deviceKeyAuth,
+) {
+  const content = input.content.replace(/\r\n?/g, '\n').trim()
+  if (!/^fb_[\w-]{1,128}$/.test(input.feedbackId) || !content || Array.from(content).length > FEEDBACK_MAX_LENGTH || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(content)) {
+    throw new NotifyApiError('invalid_feedback', false)
+  }
+  const result = await sendSignedRequest({
+    method: 'POST', path: '/v1/feedback', body: JSON.stringify({ feedbackId: input.feedbackId, content }), identity, request, signer,
+  })
+  if (result.feedbackId !== input.feedbackId || result.status !== 'accepted') throw new NotifyApiError('invalid_server_response', true)
+}
+
 async function sendSignedRequest(options: {
   method: string
   path: string
@@ -285,7 +306,7 @@ async function sendSignedRequest(options: {
     throw new NotifyApiError(message, isTransientKeyError(message))
   }
 
-  const response = await requestWithTimeout(options.request, `${origin}${options.path}`, {
+  const { response, result } = await requestJsonWithTimeout(options.request, `${origin}${options.path}`, {
     method: options.method,
     headers: {
       ...(options.body ? { 'content-type': 'application/json' } : {}),
@@ -296,7 +317,6 @@ async function sendSignedRequest(options: {
     },
     ...(options.body ? { body: options.body } : {}),
   })
-  const result = await readResponse(response)
   if ((response.status === 202 && result.status === 'accepted') || (response.status === 200 && result.status === 'duplicate')) {
     if (options.expectedEventId !== undefined && result.eventId !== options.expectedEventId) {
       throw new NotifyApiError('event_id_mismatch', false)
@@ -313,12 +333,25 @@ function requireNotifyApiOrigin() {
   return origin
 }
 
-async function requestWithTimeout(request: typeof fetch, url: string, init: RequestInit) {
+async function requestJsonWithTimeout(request: typeof fetch, url: string, init: RequestInit) {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timeout = setTimeout(() => {
+      reject(new NotifyApiError('request_timeout', true))
+      controller.abort()
+    }, REQUEST_TIMEOUT_MS)
+  })
   try {
-    return await request(url, { ...init, signal: controller.signal })
+    return await Promise.race([
+      (async () => {
+        const response = await request(url, { ...init, signal: controller.signal })
+        return { response, result: await readResponse(response) }
+      })(),
+      deadline,
+    ])
   } catch (error) {
+    if (error instanceof NotifyApiError) throw error
     throw new NotifyApiError(error instanceof Error && error.name === 'AbortError' ? 'request_timeout' : 'network_unavailable', true)
   } finally {
     clearTimeout(timeout)
@@ -333,7 +366,7 @@ async function readResponse(response: Response): Promise<Record<string, any>> {
     const result: unknown = await response.json()
     return result && typeof result === 'object' ? result as Record<string, any> : {}
   } catch {
-    throw new NotifyApiError('invalid_server_response', response.status >= 500)
+    throw new NotifyApiError('invalid_server_response', response.ok || response.status >= 500)
   }
 }
 

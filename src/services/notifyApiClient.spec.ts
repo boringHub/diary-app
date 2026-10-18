@@ -12,6 +12,7 @@ import {
   sendDiaryCreatedEvent,
   setNotificationEmailEnabled,
   sha256Hex,
+  submitFeedback,
 } from './notifyApiClient'
 import type { DiaryCreatedEvent } from './diaryEventQueue'
 
@@ -29,6 +30,51 @@ const notifyApiOrigin = 'https://notify.example.com'
 describe('notify API client', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_NOTIFY_API_ORIGIN', notifyApiOrigin)
+  })
+
+  it('signs feedback without a client-selected recipient and requires the matching acceptance', async () => {
+    const input = { feedbackId: 'fb_test', content: '  我有一个想法  ', to: 'ignored@example.com' }
+    const request = vi.fn<typeof fetch>(async () => Response.json({ feedbackId: input.feedbackId, status: 'accepted' }, { status: 202 }))
+    const sign = vi.fn(async () => 'signature')
+    await submitFeedback(input, identity, request, { sign })
+    const body = JSON.stringify({ feedbackId: input.feedbackId, content: '我有一个想法' })
+    expectSignedRequest(request, 'POST', '/v1/feedback', body)
+    await expectCanonical(sign, request, 'POST', '/v1/feedback', body)
+    request.mockResolvedValueOnce(Response.json({ feedbackId: 'fb_other', status: 'accepted' }, { status: 202 }))
+    await expect(submitFeedback(input, identity, request, { sign })).rejects.toMatchObject({ message: 'invalid_server_response', retryable: true })
+  })
+
+  it.each(['', '   ', '字'.repeat(2001), '不能包含\u0000'])('rejects invalid feedback before signing or requesting', async (content) => {
+    const request = vi.fn<typeof fetch>()
+    const sign = vi.fn(async () => 'signature')
+    await expect(submitFeedback({ feedbackId: 'fb_test', content }, identity, request, { sign })).rejects.toThrow('invalid_feedback')
+    expect(request).not.toHaveBeenCalled()
+    expect(sign).not.toHaveBeenCalled()
+  })
+
+  it.each(['headers', 'body'])('bounds a stalled %s response even when fetch does not react to abort', async (stall) => {
+    vi.useFakeTimers()
+    let started!: () => void
+    const ready = new Promise<void>((resolve) => { started = resolve })
+    const request = vi.fn<typeof fetch>(async () => {
+      started()
+      if (stall === 'headers') return new Promise<Response>(() => {})
+      return { ok: true, headers: new Headers(), json: () => new Promise(() => {}) } as Response
+    })
+    try {
+      const input = { feedbackId: 'fb_retry', content: '想法' }
+      const pending = submitFeedback(input, identity, request, { sign: vi.fn(async () => 'signature') })
+      const assertion = expect(pending).rejects.toMatchObject({ message: 'request_timeout', retryable: true })
+      await ready
+      await vi.advanceTimersByTimeAsync(15_000)
+      await assertion
+      expect(request.mock.calls[0]?.[1]?.signal?.aborted).toBe(true)
+      request.mockResolvedValueOnce(Response.json({ feedbackId: input.feedbackId, status: 'accepted' }, { status: 202 }))
+      await submitFeedback(input, identity, request, { sign: vi.fn(async () => 'signature') })
+      expect(request.mock.calls[0]?.[1]?.body).toBe(request.mock.calls[1]?.[1]?.body)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('stays disabled without a valid HTTPS API origin', async () => {

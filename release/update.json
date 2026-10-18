@@ -1,11 +1,11 @@
 {
-  "versionCode": 6,
-  "versionName": "1.4.0",
+  "versionCode": 7,
+  "versionName": "1.4.1",
   "apk": "shiguangjian-android.apk",
-  "apkSize": 12550190,
-  "sha256": "ca479a2d042cb300dccc9d5c410f07200ca3a64f612675151466c37dc6c5c882",
-  "githubUrl": "https://github.com/boringHub/diary-app/releases/download/v1.4.0/shiguangjian-android.apk",
-  "ossUrl": "https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/v1.4.0/shiguangjian-android.zip",
+  "apkSize": 12563369,
+  "sha256": "719ca823150f1aace741af5379cd6964c878a061b742d3238934460fd2770758",
+  "githubUrl": "https://github.com/boringHub/diary-app/releases/download/v1.4.1/shiguangjian-android.apk",
+  "ossUrl": "https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/v1.4.1/shiguangjian-android.zip",
   "ossFormat": "zip",
-  "releaseNotes": "优化全屏记忆星球与缩放交互；新建日记采用连续抽纸转场，星星进入详情及返回时配合流星尾迹和圆形光晕；新增可选日记分享、发送与已读状态，完善邮箱验证和回执同步；覆盖更新保留已有日记与图片，请勿先卸载。"
+  "releaseNotes": "新增设置页反馈建议，修复反馈和日记分享请求超时后的状态提示，顶部消息改为顺序排列；覆盖更新保留已有日记与图片，请勿先卸载。"
 }

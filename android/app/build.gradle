@@ -32,8 +32,8 @@ android {
         applicationId "xyz.shiguangjian.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode isInternalBuild ? internalVersionCode.toInteger() : 6
-        versionName isInternalBuild ? internalVersionName.toString() : "1.4.0"
+        versionCode isInternalBuild ? internalVersionCode.toInteger() : 7
+        versionName isInternalBuild ? internalVersionName.toString() : "1.4.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

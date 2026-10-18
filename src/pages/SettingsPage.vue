@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { alertController, IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillEnter, toastController, useIonRouter } from '@ionic/vue'
-import { checkmarkCircleOutline, chevronForward, cloudDownloadOutline, closeOutline, colorPaletteOutline, mailOutline, notificationsOutline, shieldCheckmarkOutline, sparklesOutline } from 'ionicons/icons'
+import { alertController, IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillEnter, useIonRouter } from '@ionic/vue'
+import { chatbubbleEllipsesOutline, checkmarkCircleOutline, chevronForward, cloudDownloadOutline, closeOutline, colorPaletteOutline, mailOutline, notificationsOutline, shieldCheckmarkOutline, sparklesOutline } from 'ionicons/icons'
+import FeedbackDialog from '../components/FeedbackDialog.vue'
 import { diaryRepository } from '../repositories/diaryRepository'
 import { settingsRepository } from '../repositories/settingsRepository'
 import { isNotificationServiceConfigured, type VerificationChallenge } from '../services/notifyApiClient'
 import { getCurrentTheme } from '../services/themeService'
+import { showAppToast } from '../services/appToast'
 import {
   checkForUpdate,
   formatReleaseNoteLines,
@@ -27,6 +29,7 @@ const currentTheme = ref(getCurrentTheme())
 const notificationLoading = ref(false)
 const pendingChallenge = ref<VerificationChallenge | null>(readStoredChallenge())
 const notificationServiceConfigured = isNotificationServiceConfigured()
+const feedbackOpen = ref(false)
 
 const diaryShareNotificationModeLabel = computed(() => ({ notify: '通知', ask: '询问', never: '不通知' }[settings.value.diaryShareNotificationMode]))
 
@@ -288,8 +291,7 @@ function readStoredChallenge(): VerificationChallenge | null {
 }
 
 async function showToast(message: string) {
-  const toast = await toastController.create({ message, duration: 2200, position: 'top' })
-  await toast.present()
+  showAppToast(message, 2200)
 }
 
 function readableSize(bytes: number) {
@@ -452,7 +454,19 @@ async function verifyUpgrade() {
           </div>
           <p class="update-safety-note">更新时别卸载应用哦。签名、包名或版本不对的安装包会被自动拦住。</p>
         </div>
+        <div class="settings-group">
+          <p class="section-label">一起变好</p>
+          <div class="settings-card">
+            <button class="setting-row setting-button" @click="feedbackOpen = true">
+              <span class="setting-icon"><IonIcon :icon="chatbubbleEllipsesOutline" /></span>
+              <div><strong>反馈建议</strong><p>想和我说的话</p></div>
+              <IonIcon class="row-chevron" :icon="chevronForward" />
+            </button>
+          </div>
+        </div>
       </section>
+
+      <FeedbackDialog :open="feedbackOpen" @close="feedbackOpen = false" />
 
       <Teleport to="body">
         <div v-if="pendingUpdate" class="update-dialog-backdrop" role="presentation" @click.self="closeUpdateDialog">

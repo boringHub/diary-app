@@ -127,6 +127,10 @@ export class LocalStorageDiaryRepository implements DiaryRepository {
     throw new Error('native_device_required')
   }
 
+  async submitFeedback(): Promise<void> {
+    throw new Error('native_device_required')
+  }
+
   async getDiaryShareRecipient(): Promise<DiaryShareRecipient> {
     return { enabled: false, authorized: false, recipientName: null, recipientEmail: null, consentVersion: 'diary-share-v1' }
   }

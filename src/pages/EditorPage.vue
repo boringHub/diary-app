@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute } from 'vue-router'
-import { alertController, IonContent, IonIcon, IonPage, toastController, useIonRouter } from '@ionic/vue'
+import { alertController, IonContent, IonIcon, IonPage, useIonRouter } from '@ionic/vue'
 import { chevronBack, close, imageOutline } from 'ionicons/icons'
 import { useDiaryStore } from '../stores/diaryStore'
 import { createDiaryPaperExitAnimation, createDiaryToStarAnimation, createEditorSaveAnimation } from '../animations'
 import { MAX_DIARY_IMAGES, type DiaryImageInput, type Mood } from '../types/diary'
 import { isNotificationServiceConfigured } from '../services/notifyApiClient'
 import { settingsRepository } from '../repositories/settingsRepository'
+import { showAppToast } from '../services/appToast'
 
 interface EditorImage {
   key: string
@@ -77,11 +78,9 @@ async function onImagesSelected(event: Event) {
   }
   input.value = ''
   if (files.length > remaining) {
-    const toast = await toastController.create({ message: `每篇日记最多放 ${MAX_DIARY_IMAGES} 张图片哦`, duration: 2000, position: 'top' })
-    await toast.present()
+    showAppToast(`每篇日记最多放 ${MAX_DIARY_IMAGES} 张图片哦`, 2000)
   } else if (files.length !== selected.length) {
-    const toast = await toastController.create({ message: '这里只能放图片哦', duration: 1800, position: 'top' })
-    await toast.present()
+    showAppToast('这里只能放图片哦', 1800)
   }
 }
 
@@ -156,8 +155,7 @@ async function save() {
     if (shouldShare) void shareNewDiary(item.id)
   } catch (error) {
     const message = error instanceof Error && error.message ? error.message : '没保存好，再试一次哦'
-    const toast = await toastController.create({ message, duration: 2000, position: 'top' })
-    await toast.present()
+    showAppToast(message, 2000)
   }
 }
 
