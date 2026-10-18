@@ -283,11 +283,12 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 - OSS ZIP 解压后与 GitHub APK 执行相同的 HTTPS、大小、包名、递增版本号、预期版本、签名和 SHA-256 校验。
 - 更改超时、对象路径、清单字段或来源优先级时，必须同时更新测试、`update.example.json`、本文件和 `AGENTS.md`。
 
-## 1.4.0 发布准备 - 2026-10-18
+## 1.4.0 发布验证 - 2026-10-18
 
 - 代码版本已更新为 `1.4.0`，正式 Android `versionCode` 为 `6`；完整用户变更已归档至 `CHANGELOG.md`，正式公告由 `npm run release:notes:stable -- 1.4.0` 生成。
 - 原正式密钥已从另一台设备恢复至 `%USERPROFILE%\.android\diary-stable.keystore`，文件哈希、私钥条目及历史正式证书指纹均已核验，用户级 `STABLE_KEYSTORE_FILE` 已配置。使用恢复的密钥完成正式 Release 构建，最终 APK 的包名、版本及历史签名校验通过。
-- 最终正式 APK 和 `release/update.json` 已准备为 `1.4.0`，大小为 `12550190` 字节，SHA-256 为 `ca479a2d042cb300dccc9d5c410f07200ca3a64f612675151466c37dc6c5c882`。GitHub 正式发布、OSS 同步及公开下载校验待完成，完成前当前发布基线仍为 `1.3.1`。
+- 最终正式 APK 和 `release/update.json` 已发布为 `1.4.0`，大小为 `12550190` 字节，SHA-256 为 `ca479a2d042cb300dccc9d5c410f07200ca3a64f612675151466c37dc6c5c882`。发布资源提交为 `becbcf5`，`v1.4.0` 标签与 `main` 已推送至 GitHub。
+- GitHub 正式 Release 已公开并设为最新版本；匿名下载的更新清单与本地文件逐字节一致，APK 大小与 SHA-256 校验通过。OSS 已同步 `releases/v1.4.0/` 与 `releases/latest/` 的 APK、ZIP 和清单，公开下载 latest 清单与 ZIP、解压后 APK 的 SHA-256 校验通过。
 - 本次代码验证：14 个测试文件、89 项测试、Web 生产构建、Capacitor 同步、发布渠道校验和差异格式检查通过；正式与内部 Android 构建及包名、版本和各自固定签名校验通过，内部构建仅用于本地验证，未发布测试包。
 - 本机未连接 Android 设备，真实日记覆盖安装与升级验证待完成。
 
@@ -297,14 +298,14 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新版本 | `1.3.1` |
-| Android `versionCode` | `5` |
-| Git 标签 | `v1.3.1` |
+| 最新版本 | `1.4.0` |
+| Android `versionCode` | `6` |
+| Git 标签 | `v1.4.0` |
 | 分支 | `main` |
 | 包名 | `xyz.shiguangjian.app` |
 | APK 资源名 | `shiguangjian-android.apk` |
 | 更新清单名 | `update.json` |
-| 签名类型 | Android Debug 签名，当前仅用于开发测试 |
+| 签名类型 | 正式 Release 构建，沿用历史 Android Debug 证书以保持覆盖升级兼容 |
 | 签名证书 SHA-256 | `c6ef39d7955b402a7bfce9e9e9ce3a1a1bbcfa87c2cca4356c29eec7e9845d01` |
 | 当前测试版签名证书 SHA-256 | `a490f52e123093f27b88d3c53b4a363798868f5d9808f366b134d1d13a29553c` |
 | 最新测试版本 | `1.3.1-internal.20261018.192835` |
@@ -312,7 +313,7 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 | 测试版包名 | `xyz.shiguangjian.app.debug` |
 | 测试版 APK SHA-256 | `3712aef0b09f72672ee2f7b9d6a427520c63d0bc059c766888b2a8fa976d65fa` |
 | 测试版最新清单 | <https://diary-app.oss-cn-hangzhou.aliyuncs.com/internal/latest/update.json> |
-| v1.3.1 APK SHA-256 | `7228582e23beaf727e343322dd0b0758ca3a6270a82625832097fccc6dae5fe2` |
+| v1.4.0 APK SHA-256 | `ca479a2d042cb300dccc9d5c410f07200ca3a64f612675151466c37dc6c5c882` |
 | 最新 Release | <https://github.com/boringHub/diary-app/releases/latest> |
 | OSS 最新清单 | <https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/update.json> |
 
@@ -350,6 +351,7 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 
 | 版本 | versionCode | 日期 | APK SHA-256 | 主要内容 |
 | --- | ---: | --- | --- | --- |
+| `1.4.0` | 6 | 2026-10-18 | `ca479a2d042cb300dccc9d5c410f07200ca3a64f612675151466c37dc6c5c882` | 全屏星球缩放、连续抽纸与流星光晕转场、可选日记分享与回执、独立邮箱验证、SQLite V3/V4 保留数据迁移；89 项测试、双渠道构建和正式双源公网校验通过，真实手机覆盖升级待验收 |
 | `1.3.1` | 5 | 2026-09-24 | `7228582e23beaf727e343322dd0b0758ca3a6270a82625832097fccc6dae5fe2` | GitHub 优先、30 秒无响应切换 OSS、下载进度和双平台发布脚本 |
 | `1.3.0` | 4 | 2026-09-24 | `6b0bc9a16c41019460d92bc0380b5ec787167699cf2f04a3169faef96e22f031` | 最多 5 张本地图片、全局界面主题、ZIP 主题导入和日记板素材包数据边界 |
 | `1.2.0` | 3 | 2026-09-24 | `9642c7ab295f4c7a979a3dc95df2f299215c90e1f8fe1b6cb478d8b22516eefe` | 新 App 图标、升级验证、vivo/OriginOS 顶部启动图与安全区修复 |
