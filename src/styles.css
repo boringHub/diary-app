@@ -194,6 +194,7 @@ h1 { margin-bottom: 0; color: var(--sj-ink); font-size: 34px; font-weight: 740; 
 .update-row p { overflow: visible; text-overflow: clip; white-space: normal; line-height: 1.45; }
 .update-spinner { flex: 0 0 auto; width: 19px; height: 19px; color: #9ed8cc; }
 .update-safety-note { margin: 0 4px; color: rgba(151,195,194,.58); font-size: 11px; line-height: 1.65; }
+.notification-spinner { flex: 0 0 auto; width: 22px; height: 22px; color: #72b8aa; }
 .night-page .row-chevron { color: #759fa3; }
 .night-page .switch { background: rgba(104,132,139,.4); }
 .night-page .switch.on { background: #4f9b8e; }

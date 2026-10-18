@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { alertController, IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillEnter, toastController, useIonRouter } from '@ionic/vue'
 import { checkmarkCircleOutline, chevronForward, cloudDownloadOutline, closeOutline, colorPaletteOutline, mailOutline, shieldCheckmarkOutline, sparklesOutline } from 'ionicons/icons'
 import { diaryRepository } from '../repositories/diaryRepository'
 import { settingsRepository } from '../repositories/settingsRepository'
+import { isNotificationServiceConfigured, type VerificationChallenge } from '../services/notifyApiClient'
 import { getCurrentTheme } from '../services/themeService'
 import {
   checkForUpdate,
@@ -23,9 +24,31 @@ const pendingUpdate = ref<AvailableUpdate | null>(null)
 const downloadProgress = ref<DownloadProgress | null>(null)
 const ionRouter = useIonRouter()
 const currentTheme = ref(getCurrentTheme())
+const notificationLoading = ref(false)
+const pendingChallenge = ref<VerificationChallenge | null>(readStoredChallenge())
+const notificationServiceConfigured = isNotificationServiceConfigured()
+
+const notificationStatus = computed(() => {
+  if (!notificationServiceConfigured) return '当前版本未接入邮件服务'
+  if (settings.value.notificationSyncPending) return '本机已关闭 · 正在同步'
+  if (!settings.value.notificationEmailVerified) return settings.value.notificationPendingEmail ? '待验证收件邮箱' : '还没有绑定邮箱'
+  if (settings.value.notificationPendingEmail) return settings.value.notificationEnabled ? '已开启 · 新邮箱待验证' : '已关闭 · 新邮箱待验证'
+  return settings.value.notificationEnabled ? '已验证并开启' : '已验证 · 提醒已关闭'
+})
+
+const emailStatus = computed(() => {
+  const verifiedEmail = settings.value.notificationEmailVerified ? settings.value.notificationEmail : ''
+  if (verifiedEmail && settings.value.notificationPendingEmail) {
+    return `${verifiedEmail} · 新邮箱 ${settings.value.notificationPendingEmail} 待验证`
+  }
+  if (verifiedEmail) return verifiedEmail
+  if (settings.value.notificationPendingEmail) return `${settings.value.notificationPendingEmail} · 待验证`
+  return '还没有设置邮箱哦'
+})
 
 onIonViewWillEnter(() => {
   settings.value = settingsRepository.get()
+  pendingChallenge.value = readStoredChallenge()
   currentTheme.value = getCurrentTheme()
 })
 
@@ -37,32 +60,211 @@ onMounted(async () => {
   }
 })
 
-function toggleNotification() {
-  settings.value = settingsRepository.update({ notificationEnabled: !settings.value.notificationEnabled })
+async function toggleNotification() {
+  if (!notificationServiceConfigured) {
+    await showToast('当前版本未接入邮件服务')
+    return
+  }
+  if (notificationLoading.value) return
+  if (!settings.value.notificationEnabled && !settings.value.notificationEmailVerified) {
+    await editEmail()
+    return
+  }
+  const enabled = !settings.value.notificationEnabled
+  if (!enabled) {
+    settings.value = settingsRepository.update({ notificationEnabled: false, notificationSyncPending: true })
+  }
+  notificationLoading.value = true
+  try {
+    await diaryRepository.setNotificationEmailEnabled(enabled)
+    settings.value = settingsRepository.update({ notificationEnabled: enabled, notificationSyncPending: false })
+    await showToast(enabled ? '邮件提醒已经打开啦' : '邮件提醒已经关闭')
+  } catch (error) {
+    if (enabled) await showToast(notificationErrorMessage(error))
+    else await showToast('本机已经关闭提醒，联网后会继续同步')
+  } finally {
+    notificationLoading.value = false
+  }
 }
 
 async function editEmail() {
+  if (!notificationServiceConfigured) {
+    await showToast('当前版本未接入邮件服务')
+    return
+  }
+  if (pendingChallenge.value && pendingChallenge.value.expiresAt > Date.now()) {
+    await promptForVerificationCode()
+    return
+  }
+  if (settings.value.notificationEmailVerified) {
+    const alert = await alertController.create({
+      header: '收件邮箱',
+      message: settings.value.notificationEmail || '这个邮箱已经验证过啦',
+      buttons: [
+        { text: '取消', role: 'cancel' },
+        { text: '解绑', role: 'destructive', handler: () => { void confirmDeleteEmail() } },
+        { text: '更换邮箱', handler: () => { void promptForEmail() } },
+      ],
+    })
+    await alert.present()
+    return
+  }
+  await promptForEmail()
+}
+
+async function promptForEmail() {
   const alert = await alertController.create({
     header: '收件邮箱',
-    message: '想接收日记提醒的话，写在这里就好啦~',
-    inputs: [{ name: 'email', type: 'email', value: settings.value.notificationEmail, placeholder: 'name@example.com' }],
+    message: '我们会先发一封验证码邮件，确认这是你的邮箱。',
+    inputs: [{
+      name: 'email',
+      type: 'email',
+      value: settings.value.notificationPendingEmail || settings.value.notificationEmail,
+      placeholder: 'name@example.com',
+    }],
     buttons: [
       { text: '取消', role: 'cancel' },
-      {
-        text: '收好',
-        handler: (values) => {
-          const email = String(values.email ?? '').trim()
-          if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            void toastController.create({ message: '这个邮箱地址好像不太对哦，再检查一下吧', duration: 1800, position: 'top' }).then((toast) => toast.present())
-            return false
-          }
-          settings.value = settingsRepository.update({ notificationEmail: email })
-          return true
-        },
-      },
+      { text: '发送验证码', role: 'confirm' },
     ],
   })
   await alert.present()
+  const result = await alert.onDidDismiss()
+  if (result.role !== 'confirm') return
+  const email = String(result.data?.values?.email ?? '').trim()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    await showToast('这个邮箱地址好像不太对哦，再检查一下吧')
+    return
+  }
+  await sendVerificationCode(email)
+}
+
+async function sendVerificationCode(email: string) {
+  notificationLoading.value = true
+  try {
+    pendingChallenge.value = await diaryRepository.requestNotificationEmailVerification(email)
+    settings.value = settingsRepository.update({
+      notificationPendingEmail: email,
+      notificationChallengeId: pendingChallenge.value.challengeId,
+      notificationChallengeExpiresAt: pendingChallenge.value.expiresAt,
+      notificationChallengeResendAvailableAt: pendingChallenge.value.resendAvailableAt,
+    })
+    await showToast('验证码已经发出，请看看收件箱')
+    await promptForVerificationCode()
+  } catch (error) {
+    await showToast(notificationErrorMessage(error))
+  } finally {
+    notificationLoading.value = false
+  }
+}
+
+async function promptForVerificationCode() {
+  const challenge = pendingChallenge.value
+  if (!challenge) return
+  const canResend = challenge.resendAvailableAt <= Date.now()
+  const alert = await alertController.create({
+    header: '输入验证码',
+    message: canResend
+      ? `验证码会在 ${new Date(challenge.expiresAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })} 前有效，没有收到可以重新发送。`
+      : `验证码会在 ${new Date(challenge.expiresAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })} 前有效。`,
+    inputs: [{
+      name: 'code',
+      type: 'text',
+      attributes: { inputmode: 'numeric', maxlength: 6 },
+      placeholder: '6 位数字验证码',
+    }],
+    buttons: [
+      { text: '稍后验证', role: 'cancel' },
+      { text: '换个邮箱', role: 'change' },
+      ...(canResend ? [{ text: '重新发送', role: 'resend' }] : []),
+      { text: '确认', role: 'confirm' },
+    ],
+  })
+  await alert.present()
+  const result = await alert.onDidDismiss()
+  if (result.role === 'change') {
+    await promptForEmail()
+    return
+  }
+  if (result.role === 'resend') {
+    await sendVerificationCode(settings.value.notificationPendingEmail)
+    return
+  }
+  if (result.role !== 'confirm') return
+  const code = String(result.data?.values?.code ?? '').trim()
+  if (!/^\d{6}$/.test(code)) {
+    await showToast('请输入 6 位数字验证码')
+    return
+  }
+  notificationLoading.value = true
+  try {
+    await diaryRepository.confirmNotificationEmail(challenge.challengeId, code)
+    pendingChallenge.value = null
+    const verifiedEmail = settings.value.notificationPendingEmail
+    settings.value = settingsRepository.update({
+      notificationEmail: verifiedEmail,
+      notificationPendingEmail: '',
+      notificationEmailVerified: true,
+      notificationChallengeId: '',
+      notificationChallengeExpiresAt: 0,
+      notificationChallengeResendAvailableAt: 0,
+      notificationEnabled: true,
+      notificationSyncPending: false,
+    })
+    await showToast('邮箱验证好了，提醒已经打开啦')
+  } catch (error) {
+    await showToast(notificationErrorMessage(error))
+  } finally {
+    notificationLoading.value = false
+  }
+}
+
+async function confirmDeleteEmail() {
+  const alert = await alertController.create({
+    header: '解绑这个邮箱吗？',
+    message: '解绑后会关闭提醒，以后重新绑定需要再次验证。',
+    buttons: [{ text: '先留着', role: 'cancel' }, { text: '解绑', role: 'destructive' }],
+  })
+  await alert.present()
+  const result = await alert.onDidDismiss()
+  if (result.role !== 'destructive') return
+  notificationLoading.value = true
+  try {
+    await diaryRepository.deleteNotificationEmail()
+    pendingChallenge.value = null
+    settings.value = settingsRepository.get()
+    await showToast('邮箱已经解绑')
+  } catch (error) {
+    await showToast(notificationErrorMessage(error))
+  } finally {
+    notificationLoading.value = false
+  }
+}
+
+function notificationErrorMessage(error: unknown) {
+  const code = error instanceof Error ? error.message : String(error)
+  const messages: Record<string, string> = {
+    invalid_email: '这个邮箱地址好像不太对哦',
+    invalid_verification_code: '验证码不对，再检查一下吧',
+    verification_expired: '验证码已经过期，请重新发送',
+    verification_already_used: '这个验证码已经用过啦',
+    verification_locked: '尝试次数太多，请重新发送验证码',
+    rate_limited: '操作有点频繁，请稍后再试',
+    verified_email_required: '请先验证收件邮箱',
+    network_unavailable: '现在连不上服务器，请检查网络',
+    request_timeout: '连接超时了，请稍后再试',
+    notification_service_unconfigured: '当前版本未接入邮件服务',
+  }
+  return messages[code] ?? '这次没有同步好，请稍后再试'
+}
+
+function readStoredChallenge(): VerificationChallenge | null {
+  const stored = settingsRepository.get()
+  if (!stored.notificationChallengeId || stored.notificationChallengeExpiresAt <= Date.now()) return null
+  return {
+    challengeId: stored.notificationChallengeId,
+    expiresAt: stored.notificationChallengeExpiresAt,
+    resendAvailableAt: stored.notificationChallengeResendAvailableAt,
+  }
 }
 
 async function showToast(message: string) {
@@ -192,12 +394,13 @@ async function verifyUpgrade() {
           <div class="settings-card">
             <div class="setting-row">
               <span class="setting-icon"><IonIcon :icon="mailOutline" /></span>
-              <div><strong>邮件小提醒</strong><p>记下日记后，发一封轻轻的提醒</p></div>
-              <button class="switch" :class="{ on: settings.notificationEnabled }" :aria-label="settings.notificationEnabled ? '关闭邮件提醒' : '开启邮件提醒'" :aria-pressed="settings.notificationEnabled" @click="toggleNotification"><span></span></button>
+              <div><strong>邮件小提醒</strong><p>{{ notificationStatus }}</p></div>
+              <IonSpinner v-if="notificationLoading" class="notification-spinner" name="crescent" />
+              <button v-else class="switch" :class="{ on: settings.notificationEnabled }" :aria-label="settings.notificationEnabled ? '关闭邮件提醒' : '开启邮件提醒'" :aria-pressed="settings.notificationEnabled" @click="toggleNotification"><span></span></button>
             </div>
             <button class="setting-row setting-button" @click="editEmail">
               <span class="setting-icon muted"><span>@</span></span>
-              <div><strong>收件邮箱</strong><p>{{ settings.notificationEmail || '还没有设置邮箱哦' }}</p></div>
+              <div><strong>收件邮箱</strong><p>{{ emailStatus }}</p></div>
               <IonIcon class="row-chevron" :icon="chevronForward" />
             </button>
           </div>

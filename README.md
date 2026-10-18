@@ -2,7 +2,7 @@
 
 拾光笺是一款本地优先的私人日记 App。日记以“记忆星球”呈现，可以旋转、搜索和聚焦每一段记录，并通过心情颜色区分当天状态。
 
-项目目前处于 Android 开发预览阶段，核心日记流程和本地持久化已经可用。日记正文、标题、图片、布局和本地文件路径不会上传；通知功能仅发送经过允许的事件元数据和设备认证信息。
+项目目前处于 Android 开发预览阶段，核心日记流程和本地持久化已经可用。新建、查看、编辑和删除日记不依赖 API、Cloudflare、Resend 或网络连接。邮件通知属于可选增强；未配置服务端或服务暂时不可用时，日记仍会先在本机正常保存。
 
 ## 维护文档
 
@@ -91,6 +91,34 @@ npm ci
 npm run dev
 ```
 
+Web 预览只使用 LocalStorage，不注册设备、不请求通知 API，也不提供邮箱绑定能力。
+
+### 可选的邮件通知接入
+
+公开仓库不包含当前托管的通知服务端。只需要本地日记功能时，无需准备 Cloudflare 或 Resend，并保持 `VITE_NOTIFY_API_ORIGIN` 为空：
+
+```bash
+cp .env.example .env.local
+```
+
+需要邮件功能的部署者，应自行实现或部署与 App 兼容的设备签名、邮箱验证、通知设置和事件接收 API。推荐基础设施包括：
+
+- Cloudflare Workers：提供 HTTPS API
+- Cloudflare D1：保存设备、邮箱验证和投递状态
+- Cloudflare Queues 与 DLQ：异步投递和失败处理
+- Resend：发送验证邮件和提醒邮件
+- 已在 Resend 验证的发送域名
+
+服务端至少需要配置 `RESEND_API_KEY`、`EMAIL_VERIFICATION_PEPPER` 和 `NOTIFICATION_TOKEN_SECRET` 等 Secrets，并在 App 本地构建配置中设置：
+
+```dotenv
+VITE_NOTIFY_API_ORIGIN=https://your-api.example.com
+```
+
+该值只填写 API Origin，不带路径。必须使用 HTTPS。`VITE_*` 会被 Vite 打包进 APK，因此这里只能放公开的 API 地址，绝不能放 Resend API Key、Cloudflare Secret、私人收件邮箱或其他凭据。留空会生成完全不接入通知服务的本地模式构建。
+
+邮件接入必须保持以下边界：日记先完成本地保存，再尝试生成通知事件；API 未配置、离线或投递失败都不能使日记保存失败。现有 V1 事件只允许发送 `eventId`、`eventType`、`occurredAt`、`mood` 和 `deviceId`，不得发送标题、正文、图片、布局或本地路径。
+
 ### 测试与生产构建
 
 ```bash
@@ -160,7 +188,7 @@ android/             Capacitor Android 工程
 
 ## 开发计划
 
-- 当前阶段：设备公钥认证、自动注册、签名状态校验、最小元数据事件队列、前台/网络恢复重试和 notify-api D1 持久接收均已联调通过；下一阶段实现服务端异步投递、收件人管理和真实邮件通知
+- 当前阶段：可选的设备公钥认证、邮箱验证、最小元数据事件队列和邮件投递已经完成私有环境联调；公开构建未配置 API 时保持纯本地运行
 - 后续个性化：加入独立的日记板素材包安装与编辑器选择，不与全局界面主题混用
 - 数据导出、导入与备份
 - 正式签名的 Android Release 构建

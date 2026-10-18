@@ -1,6 +1,12 @@
 export interface AppSettings {
   notificationEnabled: boolean
   notificationEmail: string
+  notificationPendingEmail: string
+  notificationEmailVerified: boolean
+  notificationChallengeId: string
+  notificationChallengeExpiresAt: number
+  notificationChallengeResendAvailableAt: number
+  notificationSyncPending: boolean
   appearance: 'light'
   themeName: string
   themeId: string
@@ -10,8 +16,14 @@ export interface AppSettings {
 const KEY = 'shiguangjian.settings.v1'
 
 const defaults: AppSettings = {
-  notificationEnabled: true,
+  notificationEnabled: false,
   notificationEmail: '',
+  notificationPendingEmail: '',
+  notificationEmailVerified: false,
+  notificationChallengeId: '',
+  notificationChallengeExpiresAt: 0,
+  notificationChallengeResendAvailableAt: 0,
+  notificationSyncPending: false,
   appearance: 'light',
   themeName: '记忆星空',
   themeId: 'default',
@@ -25,6 +37,12 @@ function read(): AppSettings {
 
   try {
     const settings = { ...defaults, ...JSON.parse(value) } as AppSettings
+    if (!settings.notificationEmailVerified && settings.notificationEmail && !settings.notificationPendingEmail) {
+      settings.notificationEnabled = false
+      settings.notificationPendingEmail = settings.notificationEmail
+      settings.notificationEmail = ''
+      localStorage.setItem(KEY, JSON.stringify(settings))
+    }
     if (settings.themeName === '简约浅色') {
       settings.themeName = defaults.themeName
       localStorage.setItem(KEY, JSON.stringify(settings))

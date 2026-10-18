@@ -100,6 +100,30 @@ export class LocalStorageDiaryRepository implements DiaryRepository {
     // Browser storage does not persist notification events.
   }
 
+  async syncPendingNotificationSettings(): Promise<void> {
+    // Browser previews do not have a registered Android device identity.
+  }
+
+  async getNotificationSettings() {
+    return { email: null, emailVerified: false, emailEnabled: false, consentVersion: null, lastDelivery: null }
+  }
+
+  async requestNotificationEmailVerification(): Promise<never> {
+    throw new Error('native_device_required')
+  }
+
+  async confirmNotificationEmail(): Promise<void> {
+    throw new Error('native_device_required')
+  }
+
+  async setNotificationEmailEnabled(): Promise<void> {
+    throw new Error('native_device_required')
+  }
+
+  async deleteNotificationEmail(): Promise<void> {
+    throw new Error('native_device_required')
+  }
+
   private read(): Diary[] {
     const value = this.getStorage().getItem(DIARY_STORAGE_KEY)
     if (!value) return this.restoreSeed()

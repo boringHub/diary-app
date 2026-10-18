@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import type { Diary, DiaryImageInput, Mood } from '../types/diary'
+import type { NotificationSettings, VerificationChallenge } from '../services/notifyApiClient'
 import { LocalStorageDiaryRepository } from './localStorageDiaryRepository'
 
 export interface SaveDiaryInput {
@@ -17,6 +18,12 @@ export interface DiaryRepository {
   toggleFavorite(id: string): Promise<void>
   remove(id: string): Promise<void>
   syncPendingNotificationEvents(): Promise<void>
+  syncPendingNotificationSettings(): Promise<void>
+  getNotificationSettings(): Promise<NotificationSettings>
+  requestNotificationEmailVerification(email: string): Promise<VerificationChallenge>
+  confirmNotificationEmail(challengeId: string, code: string): Promise<void>
+  setNotificationEmailEnabled(enabled: boolean): Promise<void>
+  deleteNotificationEmail(): Promise<void>
 }
 
 let repositoryPromise: Promise<DiaryRepository> | undefined
@@ -46,5 +53,23 @@ export const diaryRepository: DiaryRepository = {
   },
   async syncPendingNotificationEvents() {
     return (await resolveRepository()).syncPendingNotificationEvents()
+  },
+  async syncPendingNotificationSettings() {
+    return (await resolveRepository()).syncPendingNotificationSettings()
+  },
+  async getNotificationSettings() {
+    return (await resolveRepository()).getNotificationSettings()
+  },
+  async requestNotificationEmailVerification(email) {
+    return (await resolveRepository()).requestNotificationEmailVerification(email)
+  },
+  async confirmNotificationEmail(challengeId, code) {
+    return (await resolveRepository()).confirmNotificationEmail(challengeId, code)
+  },
+  async setNotificationEmailEnabled(enabled) {
+    return (await resolveRepository()).setNotificationEmailEnabled(enabled)
+  },
+  async deleteNotificationEmail() {
+    return (await resolveRepository()).deleteNotificationEmail()
   },
 }

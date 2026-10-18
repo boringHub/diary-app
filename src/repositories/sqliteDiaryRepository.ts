@@ -10,7 +10,16 @@ import {
   markDiaryEventSent,
   markDiaryEventTerminal,
 } from '../services/diaryEventQueue'
-import { NotifyApiError, sendDiaryCreatedEvent } from '../services/notifyApiClient'
+import {
+  confirmNotificationEmail,
+  deleteNotificationEmail,
+  getNotificationSettings,
+  isNotificationServiceConfigured,
+  NotifyApiError,
+  requestNotificationEmailVerification,
+  sendDiaryCreatedEvent,
+  setNotificationEmailEnabled,
+} from '../services/notifyApiClient'
 import { ensureActiveRegisteredDevice } from '../services/deviceIdentity'
 import { settingsRepository } from './settingsRepository'
 import {
@@ -69,6 +78,11 @@ export class SQLiteDiaryRepository implements DiaryRepository {
     const removed = (existing?.assets ?? []).filter(
       (asset) => !resolved.assets.some((next) => next.id === asset.id),
     )
+    const notificationSettings = settingsRepository.get()
+    const shouldQueueNotification = !existing &&
+      isNotificationServiceConfigured() &&
+      notificationSettings.notificationEnabled &&
+      notificationSettings.notificationEmailVerified
 
     let transactionStarted = false
     try {
@@ -145,16 +159,17 @@ export class SQLiteDiaryRepository implements DiaryRepository {
         [layoutId, id, JSON.stringify(layout), createdAt, now],
         false,
       )
-      if (!existing && settingsRepository.get().notificationEnabled) {
-        await enqueueDiaryCreatedEvent(db, input.mood, now)
-      }
       await db.commitTransaction()
+      transactionStarted = false
     } catch (error) {
       if (transactionStarted) await db.rollbackTransaction().catch(() => undefined)
       await Promise.all(resolved.created.map((asset) => diaryAssetStorage.remove(asset)))
       throw error
     }
 
+    if (shouldQueueNotification) {
+      await enqueueDiaryCreatedEvent(db, input.mood, now).catch(() => undefined)
+    }
     await Promise.all(removed.map((asset) => diaryAssetStorage.remove(asset)))
     return this.hydrate(db, {
       id,
@@ -187,6 +202,9 @@ export class SQLiteDiaryRepository implements DiaryRepository {
   }
 
   async syncPendingNotificationEvents(): Promise<void> {
+    if (!isNotificationServiceConfigured()) return
+    const notificationSettings = settingsRepository.get()
+    if (!notificationSettings.notificationEnabled || !notificationSettings.notificationEmailVerified) return
     const db = await this.connection()
     let identity
     try {
@@ -194,8 +212,6 @@ export class SQLiteDiaryRepository implements DiaryRepository {
     } catch {
       return
     }
-    if (!settingsRepository.get().notificationEnabled) return
-
     const events = await listReadyDiaryEvents(db)
     for (const event of events) {
       await markDiaryEventAttempt(db, event.id)
@@ -212,9 +228,65 @@ export class SQLiteDiaryRepository implements DiaryRepository {
     }
   }
 
+  async syncPendingNotificationSettings(): Promise<void> {
+    if (!isNotificationServiceConfigured()) return
+    const local = settingsRepository.get()
+    if (!local.notificationSyncPending || !local.notificationEmailVerified) return
+    const db = await this.connection()
+    await setNotificationEmailEnabled(local.notificationEnabled, await ensureActiveRegisteredDevice(db))
+    settingsRepository.update({ notificationSyncPending: false })
+  }
+
+  async getNotificationSettings() {
+    this.requireNotificationService()
+    const db = await this.connection()
+    return getNotificationSettings(await ensureActiveRegisteredDevice(db))
+  }
+
+  async requestNotificationEmailVerification(email: string) {
+    this.requireNotificationService()
+    const db = await this.connection()
+    return requestNotificationEmailVerification(email, await ensureActiveRegisteredDevice(db))
+  }
+
+  async confirmNotificationEmail(challengeId: string, code: string) {
+    this.requireNotificationService()
+    const db = await this.connection()
+    await confirmNotificationEmail(challengeId, code, await ensureActiveRegisteredDevice(db))
+  }
+
+  async setNotificationEmailEnabled(enabled: boolean) {
+    this.requireNotificationService()
+    const db = await this.connection()
+    await setNotificationEmailEnabled(enabled, await ensureActiveRegisteredDevice(db))
+    settingsRepository.update({ notificationSyncPending: false })
+  }
+
+  async deleteNotificationEmail() {
+    this.requireNotificationService()
+    const db = await this.connection()
+    await deleteNotificationEmail(await ensureActiveRegisteredDevice(db))
+    settingsRepository.update({
+      notificationEnabled: false,
+      notificationEmail: '',
+      notificationPendingEmail: '',
+      notificationEmailVerified: false,
+      notificationChallengeId: '',
+      notificationChallengeExpiresAt: 0,
+      notificationChallengeResendAvailableAt: 0,
+      notificationSyncPending: false,
+    })
+  }
+
   private async connection(): Promise<SQLiteDBConnection> {
     this.connectionPromise ??= this.openConnection()
     return this.connectionPromise
+  }
+
+  private requireNotificationService() {
+    if (!isNotificationServiceConfigured()) {
+      throw new NotifyApiError('notification_service_unconfigured', false)
+    }
   }
 
   private async openConnection(): Promise<SQLiteDBConnection> {

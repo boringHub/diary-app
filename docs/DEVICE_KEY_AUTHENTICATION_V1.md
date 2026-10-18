@@ -2,7 +2,7 @@
 
 **适用仓库：** boringHub/diary-app
 
-**对应服务：** https://api.304766.xyz
+**对应服务：** 由构建变量 `VITE_NOTIFY_API_ORIGIN` 指定；未配置时禁用通知接入
 
 **协议版本：** device-key-auth/v1
 **状态：** 实施规格；Android Keystore 插件和签名请求尚未完成
@@ -19,7 +19,7 @@ App 不得把 INGEST_TOKEN、ENROLLMENT_TOKEN、邮箱 API Key 或任何共享 A
 
 ### 当前已实现
 
-- Android/SQLite 端已有 event_queue，新建日记在本地事务中写入最小 diary_created 事件。
+- Android/SQLite 端已有 event_queue；新建日记先独立完成本地事务，再 best-effort 写入最小 diary_created 事件。
 - 事件只包含 eventId、eventType、occurredAt、mood、deviceId。
 - App 已有网络恢复、回到前台时的队列排空和指数退避。
 - 当前客户端发送器使用过渡版 Bearer 凭据；凭据提供器未配置时 fail-closed，事件留在本地。
@@ -43,9 +43,9 @@ D1 中的 device identity public key
 
 ## 3. 设备身份生命周期
 
-App 在安装或覆盖更新后的首次联网启动时确保设备身份存在并完成服务端注册，不以邮件提醒开关作为注册前提。邮件提醒开关只控制通知事件是否入队及发送。
+App 只有在构建时配置了通知 API，并且使用者实际启用邮箱能力时，才确保设备身份存在并完成服务端注册。未配置 API 的构建不生成通知设备身份、不注册设备，也不启动通知同步。邮件提醒开关控制通知事件是否入队及发送。
 
-### 3.1 首次启动
+### 3.1 首次使用通知能力
 
 1. 从 SQLite app_settings 读取 device_id。
 2. 如果不存在，生成 UUID v4，建议保存为 dvc_<uuid>。
@@ -191,17 +191,21 @@ deviceId 必须与签名头一致。不得加入正文、标题、图片、文�
 
 ## 7. 本地队列与错误处理
 
-本地事务顺序保持不变：
+本地日记事务和通知队列必须解耦：
 
 ~~~text
 保存日记
   ↓
-写入 event_queue
+提交本地 SQLite 事务
   ↓
 UI 返回成功
   ↓
+best-effort 写入 event_queue
+  ↓
 前台/网络恢复时发送
 ~~~
+
+`event_queue` 写入失败只能导致本次邮件事件缺失，不得回滚、删除或阻止本地日记。API 未配置时跳过事件创建和设备注册。
 
 每次发送时重新生成 timestamp、nonce 和签名；重试不能复用旧 nonce。eventId 必须保持不变，以便服务端幂等。
 
