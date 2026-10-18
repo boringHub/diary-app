@@ -1,11 +1,11 @@
 {
-  "versionCode": 7,
-  "versionName": "1.4.1",
+  "versionCode": 8,
+  "versionName": "1.4.2",
   "apk": "shiguangjian-android.apk",
-  "apkSize": 12563369,
-  "sha256": "719ca823150f1aace741af5379cd6964c878a061b742d3238934460fd2770758",
-  "githubUrl": "https://github.com/boringHub/diary-app/releases/download/v1.4.1/shiguangjian-android.apk",
-  "ossUrl": "https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/v1.4.1/shiguangjian-android.zip",
+  "apkSize": 12563401,
+  "sha256": "97b9304640743af3c46ab214789829b6cc9dcbc4a9cfde49df2cbd2c9caec5d0",
+  "githubUrl": "https://github.com/boringHub/diary-app/releases/download/v1.4.2/shiguangjian-android.apk",
+  "ossUrl": "https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/v1.4.2/shiguangjian-android.zip",
   "ossFormat": "zip",
-  "releaseNotes": "新增设置页反馈建议，修复反馈和日记分享请求超时后的状态提示，顶部消息改为顺序排列；覆盖更新保留已有日记与图片，请勿先卸载。"
+  "releaseNotes": "纳入记忆星球样式优化，修正画布与光晕、波纹转场的边界残影；包含反馈建议、邮件分享状态提示和顶部消息顺序排列。覆盖更新保留已有日记与图片，请勿先卸载。"
 }
