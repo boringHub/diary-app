@@ -1,0 +1,21 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Brand from '../components/Brand.astro';
+import Icon from '../components/Icon.astro';
+import AppearanceToggle from '../components/AppearanceToggle.astro';
+const base = import.meta.env.BASE_URL;
+---
+<Layout title="数据与隐私 · 拾光笺" description="了解拾光笺的本地日记、主动分享、通知与网站互动的数据边界。">
+  <header class="site-header"><div class="nav-shell"><Brand/><div class="nav-actions"><AppearanceToggle /><a href={base} class="text-link">返回首页 <Icon name="arrow" size={16}/></a></div></div></header>
+  <main id="main" class="section-shell legal-main">
+    <span class="section-kicker">YOUR WORDS, YOUR LITTLE CORNER</span><h1>心事的去向，<br/>应该由你知道。</h1>
+    <p>这里介绍当前拾光笺的实际数据处理方式。最后更新：2026 年 10 月 21 日。</p>
+    <h2>日记首先保存在本机</h2><p>Android 的日记文字和相关记录保存在应用私有目录的 SQLite 数据库，图片保存在应用私有文件目录。创建、查看、编辑和删除日记不依赖网络服务。未主动分享的日记不会因为打开日记或切换页面而上传。</p>
+    <h2>只有明确选择，才分享单篇日记</h2><p>选择分享后，应用发送该篇日记的标题和纯文本正文，由服务端投递到已配置的固定收件邮箱。图片、页面布局和本地文件路径不随分享发送。分享需要网络连接，邮件及其投递状态由所配置的通知服务处理。已经发出的邮件不能通过删除本机日记来撤回。</p>
+    <h2>通知和反馈是独立的可选功能</h2><p>你填写并验证的通知邮箱用于接收提醒；它与服务端配置的日记分享收件邮箱相互独立。关闭或解绑提醒邮箱不会撤回已发送的分享。主动提交反馈时，反馈内容会发送到所配置的服务；不提交的反馈草稿只保存在本机。</p>
+    <h2>官网的互动不会创建真实日记</h2><p>本网站的星球、心情和主题切换都是界面演示，使用虚构内容。网站本身没有注册表单、日记输入、广告脚本或分析脚本。整站深色与浅色偏好只保存在当前浏览器本地，用于下次访问恢复外观；星球、心情和 App 主题演示不写入浏览器存储。</p><p>本网站的托管服务可能按其自身设置保存常规访问日志。下载按钮会前往 GitHub 或阿里云 OSS，这些服务各自处理连接和下载请求。页面字体由本网站提供，浏览页面无需请求第三方字体服务。</p>
+    <h2>请珍惜本机的记录</h2><p>更新时请使用同一正式渠道直接覆盖安装，以保留现有数据。卸载 App、清除应用数据或丢失设备可能导致本地日记无法恢复。当前请不要把本地存储理解为自动云端备份。</p>
+    <h2>还有疑问</h2><p>你可以通过 <a href="https://github.com/boringHub/diary-app/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a> 提出问题，或在已配置通知服务的 Android App 内提交反馈。请不要在公开 Issue 中附上私人日记、邮箱验证码或设备密钥。</p>
+    <a class="button button-dark" href={base}>回到拾光笺 <Icon name="arrow" size={17}/></a>
+  </main>
+</Layout>

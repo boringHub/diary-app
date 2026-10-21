@@ -1,0 +1,103 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+import Brand from '../components/Brand.astro';
+import AppearanceToggle from '../components/AppearanceToggle.astro';
+const base = import.meta.env.BASE_URL;
+const github = 'https://github.com/boringHub/diary-app';
+const apk = `${github}/releases/latest/download/shiguangjian-android.apk`;
+const themes = [
+  { id: 'night', name: '记忆星空', label: '在夜色里，和自己轻轻说话。', color: '#223f47', mark: '01' },
+  { id: 'mist', name: '晨雾纸笺', label: '清晨、草木，和一张干净的纸。', color: '#b8cbbf', mark: '02' },
+  { id: 'sunset', name: '晚风邮局', label: '把今天的心事，寄给温柔晚霞。', color: '#b98991', mark: '03' },
+];
+const moods = [
+  { id: 'happy', face: '◡', name: '开心', color: '#f4d08c' },
+  { id: 'calm', face: '‿', name: '平静', color: '#9cd8bd' },
+  { id: 'sad', face: '⌢', name: '难过', color: '#9bc3e8' },
+  { id: 'tired', face: '–', name: '疲惫', color: '#c5b5dd' },
+  { id: 'excited', face: 'ᴗ', name: '期待', color: '#eeab93' },
+];
+const faq = [
+  { q: '一定要有特别的事，才能写日记吗？', a: '当然不用。一顿好吃的饭、一阵刚好的风，甚至“今天好像什么也没发生”，都是值得留下的日常。几个字也好，一张照片也好，按自己的节奏就好。' },
+  { q: '没有网络，也能记录吗？', a: '可以。新建、查看、编辑和删除日记都在本机完成，不依赖网络或通知服务。文字和图片先收好，想写的时候就能写。' },
+  { q: '我的日记会自动上传吗？', a: '未主动分享的日记保存在本机。只有你明确选择分享单篇日记时，标题和纯文本正文才会发送给服务端配置的收件邮箱；图片不会随邮件发送。网站的互动演示也只使用虚构样例，不收集你的日记。' },
+  { q: '现在支持哪些设备？怎么更新？', a: '目前提供 Android 安装包。下载后根据系统提示允许安装；已有用户请直接覆盖安装同一正式渠道的新版本，保留原有日记。卸载会清除本机数据，请不要先卸载再更新。iOS 版本暂未提供。' },
+];
+---
+<Layout>
+  <header class="site-header" id="top">
+    <div class="nav-shell">
+      <Brand />
+      <nav class="desktop-nav" aria-label="主导航">
+        <a href="#universe">一颗记忆星球</a><a href="#moments">记录的美好</a><a href="#themes">随心换装</a>
+      </nav>
+      <div class="nav-actions"><AppearanceToggle /><a class="button button-small button-dark" href="#download">开始拾光 <Icon name="arrow" size={16}/></a><button class="menu-toggle" aria-label="展开导航" aria-expanded="false" aria-controls="mobile-nav"><Icon name="menu" /></button></div>
+    </div>
+    <nav id="mobile-nav" class="mobile-nav" aria-label="手机导航" hidden><a href="#universe">一颗记忆星球</a><a href="#moments">记录的美好</a><a href="#themes">随心换装</a><a href="#faq">一些小问题</a></nav>
+  </header>
+  <main id="main">
+    <section class="hero section-shell" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <span class="eyebrow hero-eyebrow entrance"><span class="tiny-star">✦</span> 一款有温度的私人日记</span>
+        <h1 id="hero-title" class="entrance">把日子，<br/>过成自己的<span class="title-final">星空<svg viewBox="0 0 235 22" aria-hidden="true"><path d="M4 15C63 2 158 1 229 11M32 20C101 8 158 10 201 15"/></svg><span class="title-spark">✳</span></span></h1>
+        <p class="hero-description entrance">生活不必每刻闪耀，<br/>那些微小的、普通的、只属于你的瞬间，<br/>都值得被好好收藏。</p>
+        <div class="hero-ctas entrance"><a href="#download" class="button button-dark"><Icon name="download" size={19}/> 下载拾光笺 <span class="button-divider"></span><span class="button-meta">Android</span></a><a href="#universe" class="text-link">先逛逛小宇宙 <span class="round-arrow"><Icon name="arrow" size={17}/></span></a></div>
+        <div class="hero-notes entrance"><span><Icon name="lock" size={14}/> 本地优先</span><i></i><span><Icon name="wifi" size={14}/> 离线可写</span><i></i><span>慢慢写，没关系</span></div>
+      </div>
+      <div class="hero-visual entrance" aria-label="记忆星球与日记界面示意">
+        <div class="hero-halo" aria-hidden="true"></div>
+        <span class="orbit-label" aria-hidden="true">a little universe, just for you.</span>
+        <span class="hero-doodle doodle-one" aria-hidden="true">✳</span><span class="hero-doodle doodle-two" aria-hidden="true">✦</span>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-status"><span>21:06</span><span class="phone-island"></span><span>▮▮▮ ▰</span></div>
+            <div class="phone-heading"><span>我的记忆星球<small>每一颗，都是某一天的你。</small></span><Icon name="sparkles" size={18}/></div>
+            <div class="phone-galaxy"><canvas data-galaxy="hero" aria-hidden="true"></canvas><span class="phone-memory"><i></i> 10 月 18 日 · 小小的幸福</span></div>
+            <div class="phone-caption"><span class="breathing-dot"></span>把今天，放进星空里</div>
+            <div class="phone-nav" aria-label="App 导航示意"><span class="phone-nav-item"><Icon name="globe" size={19}/><span>星球</span></span><span class="phone-add"><Icon name="plus" size={22}/></span><span class="phone-nav-item"><Icon name="moon" size={19}/><span>我的</span></span></div>
+          </div>
+        </div>
+        <div class="floating-note"><span class="tape" aria-hidden="true"></span><div class="note-top"><span>OCT. 18 · SUN</span><Icon name="heart" size={17}/></div><h3>今天，风也很温柔。</h3><p>下班绕了一点远路，<br/>发现晚霞偷偷给世界加了滤镜。</p><div class="mini-landscape" aria-hidden="true"><span class="landscape-sun"></span><span class="landscape-hill hill-back"></span><span class="landscape-hill hill-front"></span><span class="landscape-caption">a moment to keep</span></div><div class="note-bottom"><span><span class="small-mood">◡</span> 有一点开心</span><span>✦</span></div></div>
+        <span class="floating-sticker"><span class="sticker-star">✦</span> 今天也有<br/>值得收藏的小事</span>
+        <span class="hand-note">每个普通的你，都在发光。<svg viewBox="0 0 100 40" aria-hidden="true"><path d="M2 2c15 35 66 37 88 10m-16 0 17-2-5 14"/></svg></span>
+      </div>
+      <a href="#intro" class="scroll-cue"><span>慢一点，往下看看</span><Icon name="down" size={15}/></a>
+    </section>
+    <div class="values-strip" aria-label="产品理念"><div class="section-shell"><span>写下此刻</span><span aria-hidden="true">✳</span><span>接住每种心情</span><span aria-hidden="true">✦</span><span>收藏小小的幸福</span><span aria-hidden="true">✳</span><span>与自己慢慢相处</span><span aria-hidden="true">✦</span></div></div>
+    <section class="intro section-shell" id="intro">
+      <span class="section-kicker reveal">LIFE IS IN THE LITTLE THINGS</span>
+      <h2 class="reveal">不是每一天都特别，<br/>但每一天，<span class="serif-accent">都只有一次。</span></h2>
+      <p class="reveal">一杯刚好的咖啡，一场没带伞的雨，一次终于说出口的勇敢。<br class="desktop-break"/>拾光笺想陪你捡起这些小小的日常，让它们在回望时，依然有光。</p>
+      <span class="intro-flower" aria-hidden="true">✳</span>
+    </section>
+    <section class="universe-section section-shell" id="universe" aria-labelledby="universe-title">
+      <div class="universe-card reveal">
+        <div class="universe-copy"><span class="section-kicker light-kicker">01 / YOUR LITTLE UNIVERSE</span><h2 id="universe-title">你的日常，<br/>有自己的引力。</h2><p>写下一篇日记，就点亮一颗星。<br/>转一转记忆星球，和过去的自己打个照面。<br/>原来，那些日子一直都在。</p><div class="universe-controls"><button class="button button-lime" id="random-memory"><Icon name="sparkles" size={17}/> 邂逅一段记忆</button><button class="rotation-toggle" aria-pressed="false" aria-label="暂停星球旋转">暂停旋转</button></div><span class="interaction-note">试着拖动星球，或用方向键转一转 ↗</span></div>
+        <div class="universe-stage"><canvas data-galaxy="interactive" tabindex="0" role="img" aria-label="记忆星球演示，可拖动或使用方向键旋转。点击邂逅一段记忆，阅读虚构的日记片段。"></canvas><div class="memory-popover" aria-live="polite"><span class="memory-date">2026.10.18 <span>· 开心</span></span><p id="memory-text">晚霞不小心，落进了我的日常。</p><span class="memory-footnote">一颗来自日常的星星 · 演示记忆</span></div><span class="galaxy-coordinate" aria-hidden="true">MEMORIES, NOT JUST ENTRIES.</span></div>
+        <span class="universe-corner-star" aria-hidden="true">✧</span>
+      </div>
+    </section>
+    <section class="moments-section section-shell" id="moments" aria-labelledby="moments-title">
+      <div class="section-heading reveal"><div><span class="section-kicker">02 / A PLACE FOR EVERY FEELING</span><h2 id="moments-title">不止记录，<br class="mobile-break"/>也好好接住自己。</h2></div><p>你不需要文笔很好。<br/>真实的你，就已经很好。</p></div>
+      <div class="features-grid">
+        <article class="feature-card mood-feature reveal"><div class="feature-icon"><Icon name="heart"/></div><h3>今天是什么颜色？</h3><p>每种心情，都有自己的光。<br/>开心也好，低落也没关系。</p><div class="mood-picker" role="group" aria-label="试着选择今天的心情">{moods.map((m, i) => <button data-mood={m.id} style={`--mood-color:${m.color}`} aria-pressed={i === 0 ? 'true' : 'false'} aria-label={m.name}><span class="mood-face"><i></i><i></i><b>{m.face}</b></span><span>{m.name}</span></button>)}</div><div class="mood-response" aria-live="polite"><span class="response-dot"></span><span id="mood-message">把这份小小的开心，存成一颗星。</span></div></article>
+        <article class="feature-card writing-feature reveal"><div class="feature-icon"><Icon name="pen"/></div><h3>几句话，也是一篇日记。</h3><p>不赶时间，不规定字数。<br/>照片和文字，一起收好这一刻。</p><div class="writing-preview"><div><span>写给今天的自己</span><Icon name="image" size={15}/></div><p>今天没发生什么大事，<br/>但路边的小猫对我眨了眨眼。<span class="writing-caret"></span></p><span class="writing-bottom"><span>一点点日常，也很可爱</span><span>✦</span></span></div></article>
+        <article class="feature-card privacy-feature reveal"><div class="feature-icon"><Icon name="lock"/></div><h3>心事，有自己的小角落。</h3><p>日记本地优先保存，离线也能写。<br/>分享之前，每一段心事由你决定。</p><div class="privacy-art" aria-hidden="true"><span class="privacy-orbit"></span><span class="privacy-orbit orbit-two"></span><div class="lock-illustration"><Icon name="lock" size={41}/></div><span class="privacy-star">✧</span><span class="privacy-dot"></span></div><a href={`${base}privacy/`} class="inline-link">了解数据与隐私 <Icon name="arrow" size={15}/></a></article>
+      </div>
+    </section>
+    <section class="themes-section section-shell" id="themes" aria-labelledby="themes-title">
+      <div class="theme-showcase reveal" data-theme-preview="night">
+        <div class="theme-copy"><span class="section-kicker">03 / MAKE IT FEEL LIKE YOU</span><h2 id="themes-title">今天，<br/>想住进哪种心情？</h2><p>夜色、晨雾，或是温柔的晚霞。<br/>给你的小宇宙，换一件喜欢的外衣。</p><div class="theme-options" role="group" aria-label="预览三套内置主题">{themes.map((theme, i) => <button data-theme={theme.id} aria-pressed={i === 0 ? 'true' : 'false'}><span class="theme-swatch" style={`--swatch:${theme.color}`}><Icon name="check" size={15}/></span><span>{theme.name}</span><span class="theme-number">{theme.mark}</span></button>)}</div><span class="theme-caption">三套内置主题 · 在 App 中还可导入主题包</span></div>
+        <div class="theme-visual"><div class="theme-disc" aria-hidden="true"></div><div class="theme-paper"><span class="theme-paper-date">A NOTE TO MYSELF <Icon name="star" size={17}/></span><span class="theme-paper-day">18 <small>OCTOBER</small></span><h3>和自己，慢慢相处。</h3><p>有时候，停下来也是一种前进。<br/>今天的风很轻，我也是。</p><div class="theme-paper-divider"></div><div class="theme-paper-footer"><span><i></i> 今天很平静</span><span>✧</span></div></div><div class="theme-floating-label"><span class="breathing-dot"></span><span id="theme-label">在夜色里，和自己轻轻说话。</span></div><span class="theme-flower" aria-hidden="true">✳</span></div>
+      </div>
+    </section>
+    <section class="philosophy section-shell"><div class="philosophy-orbit reveal" aria-hidden="true"><span>✦</span><i></i><i></i></div><span class="section-kicker reveal">A SMALL NOTE, A LONG WAY TO GO</span><h2 class="reveal">长大以后，<br/>也要记得<span class="serif-accent">收藏自己。</span></h2><p class="reveal">不用把日子写得漂亮，也不用每天都来。<br/>想说的时候，这里总有一张空白的笺。</p><span class="signature reveal">愿你回头看时，有迹可循，有光可拾。</span></section>
+    <section class="faq-section section-shell" id="faq" aria-labelledby="faq-title"><div class="faq-heading reveal"><span class="section-kicker">A FEW LITTLE QUESTIONS</span><h2 id="faq-title">你可能还想知道。</h2><p>开始之前，把这些小事说清楚。</p><span class="faq-doodle" aria-hidden="true">?</span></div><div class="faq-list reveal">{faq.map((item, i) => <details open={i === 0}><summary>{item.q}<span class="faq-plus"><Icon name="plus" size={18}/></span></summary><div class="faq-answer"><p>{item.a}</p></div></details>)}</div></section>
+    <section class="download-section section-shell" id="download" aria-labelledby="download-title"><div class="download-card reveal"><div class="download-stars" aria-hidden="true"><span>✦</span><span>✳</span><span>✧</span><span>✦</span></div><span class="section-kicker light-kicker">YOUR STORY STARTS WITH TODAY</span><h2 id="download-title">今天，就拾起第一束光。</h2><p>把忙着生活的自己，轻轻写进日记里。</p><a class="button button-lime download-primary" href={apk}><Icon name="download" size={20}/> 下载 Android 版 <Icon name="arrow" size={18}/></a><div class="download-links"><a href={`${github}/releases/latest`} target="_blank" rel="noopener noreferrer">查看版本与安装说明 ↗</a><span>·</span><a href="https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/shiguangjian-android.zip">备用下载（ZIP）</a></div><span class="download-note">Android 开发预览 · 直接覆盖更新，记得保留你的日记</span></div></section>
+  </main>
+  <footer class="site-footer section-shell"><div class="footer-top"><div><Brand footer/><p>把日子过成自己的星空。</p></div><div class="footer-links"><a href="#universe">探索拾光笺</a><a href={`${base}privacy/`}>数据与隐私</a><a href={github} target="_blank" rel="noopener noreferrer">GitHub <Icon name="arrow" size={14}/></a><a href={`${github}/issues`} target="_blank" rel="noopener noreferrer">反馈与建议 <Icon name="arrow" size={14}/></a></div></div><div class="footer-bottom"><span>© {new Date().getFullYear()} 拾光笺</span><span>Made with care, for your ordinary days. <span class="footer-star">✦</span></span><a href="#top">回到顶部 ↑</a></div></footer>
+  <script>
+    import '../scripts/site';
+  </script>
+</Layout>

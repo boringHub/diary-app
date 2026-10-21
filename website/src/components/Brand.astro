@@ -1,0 +1,8 @@
+---
+interface Props { footer?: boolean }
+const { footer = false } = Astro.props;
+---
+<a href={import.meta.env.BASE_URL} class:list={['brand', { 'brand-footer': footer }]} aria-label="拾光笺首页">
+  <img class="brand-mark" src={`${import.meta.env.BASE_URL}app-icon.png`} width="43" height="43" alt="" decoding="async" />
+  <span>拾光笺<small>SHIGUANGJIAN</small></span>
+</a>

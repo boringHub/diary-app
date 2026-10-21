@@ -1,0 +1,6 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Brand from '../components/Brand.astro';
+import AppearanceToggle from '../components/AppearanceToggle.astro';
+---
+<Layout title="这颗星星暂时迷路了 · 拾光笺"><header class="site-header"><div class="nav-shell"><Brand/><AppearanceToggle /></div></header><main id="main" class="error-page"><span aria-hidden="true">✧</span><span class="section-kicker">404 / A LITTLE LOST IN SPACE</span><h1>这颗星星，暂时迷路了。</h1><p>我们一起回到熟悉的小宇宙吧。</p><a class="button button-dark" href={import.meta.env.BASE_URL}>返回拾光笺 →</a></main></Layout>
