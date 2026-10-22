@@ -6,6 +6,7 @@
 
 ## 维护文档
 
+- [星语塔罗完整设计与交互原型](docs/tarot/README.md)：新增塔罗流程、AI 对话、历史、接口与数据设计，尚未接入正式功能。
 - [品牌官网开发与部署](website/README.md)：独立 Astro 静态官网、视觉交互与 Pages / Nginx / OSS 部署说明。
 - [Android 版本更新与发布手册](RELEASE.md)：后续发布前必须先阅读，包含版本修改、构建、签名、发布、升级验证和数据保护步骤。
 - [正式版与测试版渠道规范](docs/RELEASE_CHANNELS.md)：定义包名、更新源、迭代日志和公告防误发流程。

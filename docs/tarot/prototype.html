@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="拾光笺星语塔罗交互设计原型，全部离线运行，AI回复为本地示例。">
+<title>星语 · 拾光笺塔罗交互原型</title>
+<link rel="stylesheet" href="prototype.css?v=20261022-ask3">
+</head>
+<body>
+<div class="workspace">
+  <aside class="editorial">
+    <div class="eyebrow">SHIGUANGJIAN / A QUIET ORACLE</div>
+    <h1>在星光里，<br>问问自己。</h1>
+    <p>有些答案，需要换个角度看。<br>从一个具体的问题开始，<br>把仪式留给双手，把选择留给自己。</p>
+    <div class="line"></div>
+    <div class="eyebrow">星语 · 塔罗占卜模块</div>
+    <div class="outline" id="outline"></div>
+    <p class="footnote">交互设计原型 · 2026.10.22<br>更轻的操作 / 连续的牌组动效 / 一屏牌阵<br>所有功能离线演示，AI 回复为示例，卡面为几何占位图。</p>
+  </aside>
+  <section class="device" aria-label="星语手机交互原型">
+    <div class="status"><span>9:41</span><span>拾光笺 · 星语 ✦</span></div>
+    <header class="topbar"><button class="icon" id="back" aria-label="返回">‹</button><span class="brand">星语</span><button class="textbtn" id="history">历史</button></header>
+    <main class="content" id="main"></main>
+    <div id="composer-wrap"></div>
+    <div id="fan-root"></div>
+    <div class="prototype-tag">离线流程原型 · AI 为本地示例</div>
+    <div class="toast hidden" role="status" id="toast"></div>
+  </section>
+</div>
+<dialog id="modal" aria-labelledby="modal-title"><div id="modal-body"></div></dialog>
+<script>
+'use strict';
+const KEY='sgj.tarot.prototype.v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const directions=[
+ {id:'shopping',name:'购物决策',glyph:'◇',hint:'是心动，还是需要？',positions:['真实需要','可能收获','潜在代价','行动建议'],example:'这台相机适合现在买下吗？'},
+ {id:'choice',name:'二选一',glyph:'⑁',hint:'看看两条路的风景',positions:['当下处境','A 的助力','A 的挑战','B 的助力','B 的挑战'],example:'留在现在的城市，还是去另一座城市？'},
+ {id:'self',name:'近期状态',glyph:'☾',hint:'听听此刻的自己',positions:['此刻状态','忽略的线索','下一步行动'],example:'最近总提不起精神，我可以怎样调整？'},
+ {id:'relationship',name:'关系相处',glyph:'∞',hint:'找一个靠近的方式',positions:['我的状态','互动模式','我能做什么'],example:'我可以怎样改善最近的沟通？'},
+ {id:'growth',name:'工作学业',glyph:'✧',hint:'找到下一步的方向',positions:['当前处境','主要阻碍','可用资源','下一步行动'],example:'准备这次考试，我可以把力气放在哪里？'},
+ {id:'guidance',name:'一张指引',glyph:'✦',hint:'一个轻轻的提醒',positions:['此刻提醒'],example:'今天有什么值得我留意的事？'}
+];
+const majorNames=['愚者','魔术师','女祭司','皇后','皇帝','教皇','恋人','战车','力量','隐者','命运之轮','正义','倒吊人','死神','节制','恶魔','高塔','星星','月亮','太阳','审判','世界'];
+const majorKeys=['探索 · 开始','行动 · 专注','直觉 · 倾听','滋养 · 创造','秩序 · 责任','传统 · 学习','价值 · 选择','方向 · 自律','耐心 · 勇气','独处 · 反思','变化 · 周期','平衡 · 承担','暂停 · 视角','结束 · 更新','调和 · 节奏','依赖 · 边界','重构 · 觉察','希望 · 修复','不确定 · 感受','清晰 · 活力','回顾 · 回应','整合 · 完成'];
+const ranks=['一','二','三','四','五','六','七','八','九','十','侍从','骑士','王后','国王'];
+const suits=[['wands','权杖','热情 · 行动'],['cups','圣杯','感受 · 连接'],['swords','宝剑','思考 · 沟通'],['pentacles','星币','资源 · 日常']];
+const catalog=majorNames.map((name,i)=>({id:'major-'+String(i).padStart(2,'0'),name,keyword:majorKeys[i],n:i}));
+suits.forEach((s,si)=>ranks.forEach((r,i)=>catalog.push({id:s[0]+'-'+String(i+1).padStart(2,'0'),name:s[1]+r,keyword:s[2],n:22+si*14+i})));
+let db={readings:[],consent:false},current=null,view='home',busy=false,streamTimer=null,toastTimer=null,historyFilter='all',historyQuery='';
+let activeSlot=null,fanRotation=0,fanScale=1,fanPan={x:0,y:0},fanDrag=null,fanSuppressUntil=0,arrivalSlot=null,flightSlot=null,revealing=false,shuffleRun=0,fanFrame=null;
+const fanPointers=new Map();
+const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const drawnCount=()=>current.drawn.filter(Boolean).length;
+try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved&&Array.isArray(saved.readings))db=saved}catch(e){setTimeout(()=>toast('之前的原型记录没能读取，当前仍可体验。'),100)}
+const info=()=>directions.find(d=>d.id===current?.direction);
+const card=id=>catalog.find(c=>c.id===id);
+const uuid=()=>crypto.randomUUID();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){toast('本机空间不可用，刚才的进度还没有保存。');return false}}
+function touch(){if(current)current.updatedAt=Date.now();return save()}
+function toast(t){clearTimeout(toastTimer);$('#toast').textContent=t;$('#toast').classList.remove('hidden');toastTimer=setTimeout(()=>$('#toast').classList.add('hidden'),3200)}
+function rand(n){const limit=Math.floor(4294967296/n)*n,a=new Uint32Array(1);do{crypto.getRandomValues(a)}while(a[0]>=limit);return a[0]%n}
+function makeDeck(){const a=catalog.map(c=>({id:c.id,reversed:rand(2)===1}));for(let i=a.length-1;i>0;i--){const j=rand(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function orbit(){return '<svg class="orbit" viewBox="0 0 120 120" aria-hidden="true"><g fill="none" stroke="#d9bd82" stroke-width=".7"><circle cx="60" cy="60" r="43"/><ellipse cx="60" cy="60" rx="27" ry="52" transform="rotate(30 60 60)"/><path d="M20 60h80M60 9v102"/></g><path fill="#d9bd82" d="m60 38 6 16 16 6-16 6-6 16-6-16-16-6 16-6z"/><circle cx="96" cy="39" r="3" fill="#d9bd82"/></svg>'}
+function backArt(){return '<svg viewBox="0 0 100 150" aria-hidden="true"><g fill="none" stroke="#d9bd82" stroke-width=".6"><rect x="6" y="6" width="88" height="138" rx="3"/><rect x="10" y="10" width="80" height="130" rx="2"/><circle cx="50" cy="75" r="30"/><ellipse cx="50" cy="75" rx="19" ry="45"/><path d="M50 18v114M16 75h68M25 32l50 86M75 32l-50 86"/></g><path fill="#d9bd82" d="m50 53 5 17 17 5-17 5-5 17-5-17-17-5 17-5z"/><g fill="#d9bd82"><circle cx="22" cy="23" r="1.5"/><circle cx="78" cy="127" r="1.5"/><circle cx="78" cy="23" r="1"/><circle cx="22" cy="127" r="1"/></g></svg>'}
+function faceArt(n){const a=n%4,center=a===0?'<circle cx="50" cy="56" r="21" fill="#b88d4c"/><circle cx="59" cy="49" r="19" fill="#f1e7d2"/>':a===1?'<path d="M50 30 57 49 77 56 57 63 50 82 43 63 23 56 43 49Z" fill="#b88d4c"/>':a===2?'<circle cx="50" cy="56" r="20" fill="none" stroke="#b88d4c" stroke-width="2"/><path d="M30 90 50 37 70 90Z" fill="none" stroke="#536d72" stroke-width="2"/>':'<path d="M50 28 75 58 50 90 25 58Z" fill="none" stroke="#536d72" stroke-width="2"/><circle cx="50" cy="58" r="12" fill="#b88d4c"/>';return '<svg viewBox="0 0 100 120" aria-hidden="true"><g fill="none" stroke="#b88d4c" stroke-width=".7"><path d="M10 105V25Q50-10 90 25v80M15 101h70M18 16l64 88M82 16 18 104"/><circle cx="50" cy="58" r="34"/></g>'+center+'<g fill="#536d72"><circle cx="21" cy="25" r="1.5"/><circle cx="79" cy="25" r="1.5"/><path d="m50 8 2 5-2 5-2-5z"/></g></svg>'}
+function face(c){const x=card(c.id);return '<div class="face '+(c.reversed?'reversed':'')+'"><span class="roman">'+(x.n<22?String(x.n).padStart(2,'0'):'✦')+'</span>'+faceArt(x.n)+'<span class="card-name">'+esc(x.name)+'</span></div>'}
+function stack(){return '<div class="stack"><div class="back">'+backArt()+'</div><div class="back">'+backArt()+'</div><div class="back">'+backArt()+'</div></div>'}
+function spread(revealed=false){const p=info().positions,n=p.length,cls=n===4?'four':n===5?'five':n===1?'single':'';return '<div class="spread '+cls+'">'+p.map((label,i)=>{const c=current.drawn[i];return '<div class="slot '+(arrivalSlot===i?'arrived ':'')+(flightSlot===i?'in-flight ':'')+(revealed&&revealing?'turning':'')+'" style="--order:'+i+'" data-slot="'+i+'"><button class="slot-button" data-action="'+(revealed?'card-detail':'open-fan')+'" data-index="'+i+'" '+(!revealed&&c?'disabled':'')+' aria-label="'+esc(revealed?'查看'+card(c.id).name+'的详细解释':c?label+'，已选定，不可重抽':'为'+label+'抽牌')+'">'+(c?(revealed?face(c):'<div class="back selected">'+backArt()+'</div>'):'<div class="empty"><span><span class="slot-number">'+(i+1)+'</span><span class="slot-prompt" aria-hidden="true">＋</span></span></div>')+'</button><label>'+esc(label)+'</label>'+(revealed&&c?'<small>'+esc(card(c.id).name)+' · '+(c.reversed?'逆位':'正位')+'</small>':'')+'</div>'}).join('')+'</div>'}
+function scatterPose(i){const fraction=n=>n-Math.floor(n);return {x:Math.round((fraction(Math.sin(i*12.9898+1)*43758.5453)-.5)*218),y:Math.round((fraction(Math.sin(i*78.233+7)*19341.713)-.5)*190)}}
+function scatter(){return '<div class="scatter-table" aria-label="散铺的塔罗牌桌">'+Array.from({length:32},(_,i)=>{const {x,y}=scatterPose(i);return '<div class="back scatter-card" style="--sx:'+x+'px;--sy:'+y+'px;--sr:'+((i*67+shuffleRun*23)%170-85)+'deg">'+backArt()+'</div>'}).join('')+'</div>'}
+function lockRitual(){busy=true;$('.device').setAttribute('aria-busy','true');document.querySelectorAll('.ritual-page button,.ritual-page input,.topbar button').forEach(el=>el.disabled=true)}
+function unlockRitual(){busy=false;$('.device').removeAttribute('aria-busy');$('#history').disabled=false}
+async function washDeck(){
+ if(drawnCount())return;
+ const previous={deck:current.deck,reversals:current.reversals,remaining:current.remaining,cutApplied:current.cutApplied,cutOrder:current.cutOrder,updatedAt:current.updatedAt};
+ const next=makeDeck(),table=$('.scatter-table'),cards=[...table.children];
+ lockRitual();
+ const animations=cards.map((el,i)=>{
+  const style=getComputedStyle(el),start=style.transform,w=el.offsetWidth;
+  const pose=(x,y,r,scale)=>'translate(calc(-50% + '+x+'px),calc(-50% + '+y+'px)) rotate('+r+'deg) scale('+scale+')';
+  const scale=48/w,{x,y}=scatterPose(i);
+  const frames=[{transform:start,offset:0},{transform:pose(-y*.95,x*.75,(i*83)%240-120,scale),offset:.33},{transform:pose(x*.8,-y,(i*41)%200-100,scale),offset:.68},{transform:pose(x,y,(i*67+(shuffleRun+1)*23)%170-85,scale),offset:1}];
+  return el.animate(frames,{duration:reducedMotion()?100:1700,delay:reducedMotion()?0:i*4,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'});
+ });
+ try{await Promise.all(animations.map(a=>a.finished))}catch(e){}
+ current.deck=next;current.reversals=true;current.remaining=[];current.cutApplied=false;current.cutOrder=null;shuffleRun++;fanRotation=0;
+ if(!touch())Object.assign(current,previous);unlockRitual();render();
+}
+async function gatherToCut(){
+ if(!current.deck.length)return;
+ lockRitual();
+ const table=$('.scatter-table'),cards=[...table.children];
+ const animations=cards.map((el,i)=>el.animate([{transform:getComputedStyle(el).transform},{transform:'translate(calc(-50% + '+((i%4-1.5)*.7)+'px),calc(-50% + '+((31-i)*.12)+'px)) rotate('+((i%5-2)*.3)+'deg) scale(2)'}],{duration:reducedMotion()?80:680,delay:reducedMotion()?0:i*5,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'}));
+ try{await Promise.all(animations.map(a=>a.finished))}catch(e){}
+ const origin=table.getBoundingClientRect(),x=origin.left+origin.width/2,y=origin.top+origin.height/2;
+ const previous=current.stage;current.stage='cut';
+ if(!touch()){current.stage=previous;unlockRitual();render();return}
+ const flying=document.createElement('div');flying.className='back flying-card';flying.innerHTML=backArt();flying.style.cssText='left:'+(x-48)+'px;top:'+(y-72)+'px;width:96px;height:144px';
+ setView('cut');document.body.append(flying);$('.cut-deck').style.visibility='hidden';
+ const target=$('.cut-deck').getBoundingClientRect();
+ try{await flying.animate([{transform:'translate(0,0)'},{transform:'translate('+(target.left+target.width/2-x)+'px,'+(target.top+target.height/2-y)+'px)'}],{duration:reducedMotion()?80:360,easing:'cubic-bezier(.22,.7,.2,1)',fill:'forwards'}).finished}catch(e){}
+ flying.remove();unlockRitual();render();
+}
+async function cutDeck(){
+ if(drawnCount())return;
+ const previous={cut:current.cut,cutOrder:current.cutOrder,remaining:current.remaining,cutApplied:current.cutApplied,updatedAt:current.updatedAt};
+ const cut=18+rand(43),source=current.cutOrder||current.deck,next=[...source.slice(cut),...source.slice(0,cut)];
+ const piles=[...document.querySelectorAll('.cut-pile')];
+ lockRitual();
+ const animations=piles.map((el,i)=>{el.style.zIndex=i?'2':'1';const sign=i?1:-1;return el.animate([{transform:'translate(0,0)'},{transform:'translate('+(sign*62)+'px,'+(i?-23:23)+'px) rotate('+(sign*5)+'deg)',offset:.32},{transform:'translate('+(-sign*50)+'px,'+(i?-32:32)+'px) rotate('+(-sign*3)+'deg)',offset:.68},{transform:'translate(0,0) rotate(0)'}],{duration:reducedMotion()?100:1050,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'})});
+ try{await Promise.all(animations.map(a=>a.finished))}catch(e){}
+ current.cutOrder=next;current.remaining=next.map((c,i)=>({...c,number:i+1}));current.cutApplied=true;current.cut=cut;fanRotation=0;
+ if(!touch())Object.assign(current,previous);unlockRitual();render();
+}
+function progress(step){return '<div class="progress" aria-label="仪式第 '+step+' 步，共 4 步">'+[1,2,3,4].map(i=>'<span class="'+(i<=step?'done':'')+'"></span>').join('')+'</div>'}
+function setView(v){closeFan(false);view=v;render();$('#main').scrollTop=0}
+function render(){
+ const steps=['选择方向','写下问题','洗牌','切牌','抽牌','翻牌','对话'];const ix=['home','ask','shuffle','cut','draw','reveal','chat'].indexOf(view);
+ $('#outline').innerHTML=steps.map((s,i)=>'<span class="'+(i===ix?'active':'')+'">'+String(i+1).padStart(2,'0')+' '+s+'</span>').join('');
+ const backLabel={cut:'洗牌',draw:'切牌',chat:'牌阵',shuffle:'首页',reveal:'首页',ask:'首页',history:'首页'}[view]||'返回';
+ $('#back').disabled=view==='home';$('#back').textContent='‹ '+backLabel;$('#back').setAttribute('aria-label','返回'+backLabel);$('#composer-wrap').innerHTML='';
+ let s='';
+ if(view==='home'){
+  const unfinished=db.readings.find(r=>!['reveal','chat'].includes(r.stage));
+  s='<div class="home-hero"><div class="kicker">A MOMENT FOR YOURSELF</div><h2>把问题，<br>放在星光里。</h2>'+orbit()+'<p class="lead">不急着找答案，先换个角度看看。</p></div>';
+  if(unfinished)s+='<button class="resume" data-action="open" data-id="'+unfinished.id+'">继续上次的星语 <span style="float:right">↗</span><small>'+esc(unfinished.question||'还没写完的问题')+'</small></button>';
+  s+='<div class="section-label"><span>今天，想聊聊什么？</span><span>06 个方向</span></div><div class="directions">'+directions.map((d,i)=>'<button class="direction" data-action="direction" data-id="'+d.id+'"><span class="num">0'+(i+1)+'</span><span class="glyph" aria-hidden="true">'+d.glyph+'</span><strong>'+d.name+'</strong><small>'+d.hint+'</small></button>').join('')+'</div><p class="quiet">塔罗提供思考角度，选择仍由你决定。</p>';
+ }
+ if(view==='ask'){
+  const d=info();s='<div class="ask-body"><div class="ask-heading"><div class="ask-direction"><span aria-hidden="true">'+d.glyph+'</span>'+d.name+'</div><h2 id="question-title">你想问些什么？</h2></div><div class="question-paper"><textarea id="question" aria-labelledby="question-title" aria-describedby="question-count" placeholder="'+esc(d.example)+'">'+esc(current.question)+'</textarea><div class="question-meta"><span id="question-count">'+Array.from(current.question).length+' / 800</span></div></div>';
+  if(d.id==='choice')s+='<div class="pair ask-options"><label class="field"><span>选项 A</span><input id="option-a" maxlength="100" value="'+esc(current.a)+'" placeholder="第一种选择"></label><label class="field"><span>选项 B</span><input id="option-b" maxlength="100" value="'+esc(current.b)+'" placeholder="另一种选择"></label></div>';
+  s+='<details class="ask-disclosure"><summary><span>补充背景</span><small id="context-status">'+(current.context?'已填写':'选填')+'</small></summary><label class="field"><span class="sr-only">补充背景</span><textarea id="context" class="short" placeholder="补充你在意的细节…" aria-describedby="context-limit">'+esc(current.context)+'</textarea><small id="context-limit">最多 1,200 字</small></label></details></div><div class="ask-footer"><button class="primary" data-action="begin">去洗牌 <span aria-hidden="true">→</span></button></div>';
+ }
+ if(view==='shuffle'){
+  s='<div class="ritual-title"><h2>洗牌</h2></div><div class="deck-stage">'+scatter()+'</div><div class="actions">'+(current.deck.length?'<button class="secondary" data-action="shuffle" '+(drawnCount()?'disabled':'')+'>再洗一次</button><button class="primary" data-action="to-cut">去切牌</button>':'<button class="primary" data-action="shuffle">开始洗牌</button>')+'</div>';
+ }
+ if(view==='cut'){
+  s='<div class="ritual-title"><h2>切牌</h2></div><div class="cut-stage"><button class="cut-deck" data-action="cut" aria-label="点击牌堆切牌" '+(drawnCount()?'disabled':'')+'><div class="cut-pile">'+stack()+'</div><div class="cut-pile">'+stack()+'</div></button></div><div class="actions"><button class="secondary" data-action="cut" '+(drawnCount()?'disabled':'')+'>'+(current.cutApplied?'再切一次':'切牌')+'</button><button class="primary" data-action="to-draw" '+(!current.cutApplied&&!drawnCount()?'disabled':'')+'>去抽牌</button></div>';
+ }
+ if(view==='draw'){
+  const count=info().positions.length,full=drawnCount()===count;
+  s='<div class="ritual-title"><h2>抽牌</h2></div>'+spread()+'<p class="draw-help">'+drawnCount()+' / '+count+'</p><div class="actions"><button class="primary" data-action="reveal" '+(!full?'disabled':'')+'>翻开我的牌</button></div>';
+ }
+ if(view==='reveal'){
+  s='<div class="ritual-title"><h2>'+esc(info().name)+'</h2></div>'+spread(true)+'<div class="actions"><button class="primary" data-action="to-chat">聊聊这组牌</button></div>';
+ }
+ if(view==='chat'){
+  s='<div class="reading-summary"><div class="kicker">'+info().name+'</div><p>'+esc(current.question)+'</p>'+(current.direction==='choice'?'<small>A · '+esc(current.a)+'<br>B · '+esc(current.b)+'</small>':'')+'<div class="mini-cards">'+current.drawn.map(c=>'<span>'+esc(card(c.id).name)+(c.reversed?' ↓':' ↑')+'</span>').join('')+'</div></div><div class="chat-demo">本原型的回复为预设示例，没有调用真实 AI。</div><div id="messages">'+messagesHtml()+'</div>';
+  if(!current.messages.length)s+='<p class="lead">牌面已经保存在本机。可以先认识它们，再开始一次解读。</p><div class="actions"><button class="primary" data-action="interpret">开始模拟解读</button><button class="secondary" data-action="local-meanings">查看本地牌义</button></div>';
+  if(current.messages.length)s+='<div class="suggestions"><button data-action="suggest" data-text="我可以先做哪一步？">我可以先做哪一步？</button><button data-action="suggest" data-text="这几张牌之间有什么联系？">看看牌之间的联系</button></div>';
+  s+='<div class="chat-tools"><button class="textbtn" data-action="favorite">'+(current.favorite?'★ 已收藏':'☆ 收藏')+'</button><button class="textbtn" data-action="note">个人笔记'+(current.note?' · 已写':'')+'</button><button class="textbtn" data-action="new">再问一个问题 ↗</button></div>';
+  if(current.messages.length)$('#composer-wrap').innerHTML='<form class="composer" id="chat-form"><textarea id="chat-input" rows="1" placeholder="可以再聊聊你在意的地方…" aria-label="追问内容" '+(busy?'disabled':'')+'></textarea><button type="'+(busy?'button':'submit')+'" '+(busy?'data-action="stop"':'')+'>'+ (busy?'停止':'发送')+'</button></form>';
+ }
+ if(view==='history'){
+  s='<div class="kicker">YOUR CONSTELLATIONS</div><h2>问过的问题，<br>都好好收着。</h2><p class="lead">只保存在这个浏览器，打开和搜索不会联网。</p><input class="search" id="search" aria-label="搜索历史问题" placeholder="找一个问题、选项或笔记" value="'+esc(historyQuery)+'"><div class="filters"><button class="'+(historyFilter==='all'?'active':'')+'" data-action="filter" data-id="all">全部</button><button class="'+(historyFilter==='favorite'?'active':'')+'" data-action="filter" data-id="favorite">收藏</button><button class="'+(historyFilter==='draft'?'active':'')+'" data-action="filter" data-id="draft">未完成</button></div><div id="history-list"></div><p class="quiet">卸载或清除浏览器数据会丢失原型记录。</p>';
+ }
+ $('#main').innerHTML='<div class="page '+view+'-page '+(['shuffle','cut','draw','reveal'].includes(view)?'ritual-page':'')+'">'+s+'</div>';
+ if(view==='history')historyList();
+}
+function openFan(index){
+ if(view!=='draw'||current.drawn[index]||busy)return;
+ activeSlot=index;fanScale=1;fanPan={x:0,y:0};fanSuppressUntil=0;
+ $('#main').inert=true;$('.topbar').inert=true;renderFan();$('#fan-close').focus();
+}
+function stopFanGlide(){if(fanFrame!==null)cancelAnimationFrame(fanFrame);fanFrame=null}
+function closeFan(restore=true){
+ const slot=activeSlot;activeSlot=null;fanDrag=null;fanPointers.clear();stopFanGlide();
+ $('#fan-root').innerHTML='';$('#main').inert=false;$('.topbar').inert=false;
+ if(restore&&slot!==null)$('[data-slot="'+slot+'"] .slot-button')?.focus();
+}
+function renderFan(){
+ if(activeSlot===null)return;
+ $('#fan-root').innerHTML='<section class="ring-picker" role="dialog" aria-modal="true" aria-labelledby="fan-title"><header class="ring-header"><button class="icon" id="fan-close" data-action="close-fan" aria-label="返回牌阵">‹ 牌阵</button><small>第 '+(activeSlot+1)+' 张牌</small><span class="ring-balance"></span></header><h3 id="fan-title">'+esc(info().positions[activeSlot])+'</h3><p class="ring-hint">双指缩放 · 滑动选牌</p><div class="fan-stage" tabindex="0" aria-label="首尾相连的圆环牌组，滑动旋转，双指缩放；方向键旋转，加减键缩放"></div></section>';
+ const stage=$('.fan-stage');
+ stage.innerHTML=current.remaining.map((c,i)=>'<button class="back fan-card" data-action="pick-fan" data-index="'+i+'" aria-label="选择第 '+c.number+' 号牌"><span class="card-index">'+c.number+'</span>'+backArt()+'</button>').join('');
+ paintFan();
+}
+function ringGeometry(){
+ const stage=$('.fan-stage'),w=stage.clientWidth,h=stage.clientHeight;
+ return {x:w*1.04+fanPan.x,y:h*.53+fanPan.y,r:w*.81*fanScale,w:62*fanScale,h:144*fanScale};
+}
+function paintFan(){
+ const stage=$('.fan-stage');if(!stage)return;
+ fanRotation=((fanRotation%360)+360)%360;
+ const g=ringGeometry(),total=current.remaining.length;
+ const edge=-Math.atan((g.w/2)/(g.r+g.h/2)),next=edge+Math.PI*2/total;
+ const clip='polygon(0 0,'+(g.w/2+Math.tan(next)*(g.r+g.h/2))+'px 0,'+(g.w/2+Math.tan(next)*(g.r-g.h/2))+'px 100%,'+(g.w/2+Math.tan(edge)*(g.r-g.h/2))+'px 100%)';
+ [...stage.children].forEach((el,i)=>{
+  const angle=-90+i*360/total+fanRotation,radians=angle*Math.PI/180;
+  el.style.left=(g.x+Math.cos(radians)*g.r)+'px';el.style.top=(g.y+Math.sin(radians)*g.r)+'px';
+  el.style.width=g.w+'px';el.style.height=g.h+'px';el.style.transform='translate(-50%,-50%) rotate('+(angle+90)+'deg)';el.dataset.angle=angle+90;
+  el.style.zIndex=i+1;
+  el.style.clipPath=clip;
+ });
+}
+function glideFan(velocity){
+ if(reducedMotion()||Math.abs(velocity)<.015)return;
+ let previous=performance.now();
+ const tick=now=>{if(activeSlot===null||fanPointers.size)return;const dt=Math.min(32,now-previous);previous=now;fanRotation+=velocity*dt/16;velocity*=Math.pow(.9,dt/16);paintFan();if(Math.abs(velocity)>.015)fanFrame=requestAnimationFrame(tick);else fanFrame=null};
+ fanFrame=requestAnimationFrame(tick);
+}
+function ringPoint(e){const r=$('.fan-stage').getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function angleAt(p){const g=ringGeometry();return Math.atan2(p.y-g.y,p.x-g.x)*180/Math.PI}
+function angleDelta(a,b){return ((a-b+540)%360)-180}
+function startFanGesture(moved=false){
+ const points=[...fanPointers.values()];
+ if(points.length>=2){
+  const [a,b]=points,center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+  fanDrag={kind:'pinch',distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),scale:fanScale,center,geometry:ringGeometry(),moved:true};
+ }else if(points.length){const p=points[0];fanDrag={kind:'rotate',start:p,last:p,angle:angleAt(p),time:performance.now(),velocity:0,moved}}
+ else fanDrag=null;
+}
+function zoomRing(scale,anchor){
+ const stage=$('.fan-stage'),g=ringGeometry(),next=Math.max(.8,Math.min(1.8,scale)),ratio=next/fanScale;
+ fanPan={x:anchor.x+(g.x-anchor.x)*ratio-stage.clientWidth*1.04,y:anchor.y+(g.y-anchor.y)*ratio-stage.clientHeight*.53};fanScale=next;paintFan();
+}
+async function pickFan(index,source){
+ if(busy||activeSlot===null||current.drawn[activeSlot]||Date.now()<fanSuppressUntil)return;
+ const c=current.remaining[index];if(!c)return;
+ const slot=activeSlot,start=source.getBoundingClientRect(),width=source.offsetWidth,height=source.offsetHeight,angle=Number(source.dataset.angle),flying=document.createElement('div');
+ const x=start.left+start.width/2,y=start.top+start.height/2;
+ flying.className='back flying-card';flying.innerHTML=backArt();flying.style.cssText='left:'+(x-width/2)+'px;top:'+(y-height/2)+'px;width:'+width+'px;height:'+height+'px';
+ current.drawn[slot]=c;current.remaining.splice(index,1);
+ if(!touch()){current.drawn[slot]=null;current.remaining.splice(index,0,c);return}
+ flightSlot=slot;busy=true;closeFan(false);render();document.body.append(flying);
+ const target=$('[data-slot="'+slot+'"] .slot-button').getBoundingClientRect();
+ const dx=target.left+target.width/2-x,dy=target.top+target.height/2-y;
+ try{await flying.animate([{transform:'rotate('+angle+'deg)'},{transform:'translate(0,-26px) rotate('+(angle*.6)+'deg) scale(1.04)',offset:.22},{transform:'translate('+dx+'px,'+dy+'px) rotate(0) scale('+(target.width/width)+','+(target.height/height)+')'}],{duration:reducedMotion()?100:680,easing:'cubic-bezier(.22,.7,.2,1)',fill:'forwards'}).finished}catch(e){}
+ flying.remove();busy=false;flightSlot=null;arrivalSlot=slot;render();setTimeout(()=>{arrivalSlot=null},500);
+ const next=info().positions.findIndex((_,i)=>!current.drawn[i]);
+ if(next>=0)$('[data-slot="'+next+'"] .slot-button')?.focus();else $('[data-action="reveal"]')?.focus();
+}
+const majorDetails=[
+ '新的起点与尚未被定义的可能。允许自己探索，也给试错留出空间。','把已有资源化为行动，关注专注、表达和实际执行。','留一点安静给直觉，也区分内心感受与已经证实的事实。','照顾需要、滋养创造力，看看什么条件能让事情自然生长。','建立清楚的边界与结构，让责任和自主之间保持平衡。','检视经验、规则与学习路径，选择真正适合自己的方法。','看见关系与选择背后的价值观，让行动与在意的事情一致。','明确方向，再用持续的小步行动协调相互拉扯的需求。','温柔而稳定地面对困难，耐心往往比强迫更有力量。','暂时慢下来，独处与整理能帮你看清自己的判断。','留意环境和节奏的变化，把精力放在可以调整的部分。','权衡事实、选择与后果，公平也包括对自己的诚实。','暂停惯常反应，换一个视角，不必把等待看成失败。','旧阶段的结束为新事物腾出空间；这是转化的象征，不预示现实死亡。','尝试调和需求与资源，找到可以持续的节奏，而不是走向极端。','留意依赖、诱惑与不自由的习惯，重新认识自己可以选择的边界。','某个不稳固的设想需要重新审视，重建可以从核实事实开始；不预示必然灾难。','在修复与希望中重新建立信任，让一点小行动承接期待。','不确定可能放大担忧，给感受空间，同时用信息验证猜测。','清晰、活力与坦诚的表达，留意当下已有的支持和进展。','回顾经历并回应真正的需要，让新的决定基于反思。','看见阶段性的整合与完成，也为下一段旅程留出余地。'
+];
+const rankDetails=['开始、萌芽和可用的新机会','平衡、选择与相互协调','发展、表达和共同创造','稳定、停顿或需要调整的结构','分歧、变化和面对困难','重新调整、支持与恢复平衡','评估方向、坚持与自我检视','持续投入、练习与行动的节奏','阶段性积累、自主与内在需要','完成、承载以及是否需要放下','好奇、学习和刚开始的尝试','积极推进，也检视行动是否过急','细腻照顾与成熟地理解需要','统筹资源、承担责任和稳定地行动'];
+function cardDetail(index){
+ const c=current.drawn[index];if(!c)return;const x=card(c.id),position=info().positions[index];
+ const base=x.n<22?majorDetails[x.n]:x.keyword+'的主题，结合'+rankDetails[(x.n-22)%14]+'。可以观察这一主题如何出现在你的现实处境中。';
+ const reading=c.reversed?'逆位可提醒你留意这份力量是否受阻、过度使用，或更多发生在内心。它并不自动意味着坏结果；先看看哪一种解释与你的经历相符。':'正位先从这张牌的直接主题出发，观察它带来的资源、提醒与可以行动的地方，结合真实信息判断。';
+ openModal('<div class="card-detail-hero">'+face(c)+'</div><h3 id="modal-title" style="text-align:center">'+esc(x.name)+' · '+(c.reversed?'逆位':'正位')+'</h3><div class="card-detail-meta">'+(index+1)+' · '+esc(position)+'　/　'+esc(x.keyword)+'</div><section class="card-detail-section"><h4>这张牌在说什么</h4><p>'+esc(base)+'</p></section><section class="card-detail-section"><h4>'+(c.reversed?'逆位':'正位')+'的理解角度</h4><p>'+reading+'</p></section><section class="card-detail-section"><h4>回到「'+esc(position)+'」</h4><p>把「'+esc(x.keyword)+'」放在这个牌位里想一想：你已经观察到什么？哪些感受仍需要用现实信息确认？</p></section><small>本地牌义示意，不是 AI 对本次问题的综合解读。</small><div class="actions"><button class="primary" data-action="close">回到牌阵</button></div>');
+}
+document.addEventListener('pointerdown',e=>{
+ if(!e.target.closest('.fan-stage')||busy||activeSlot===null)return;
+ if(e.pointerType==='mouse'&&e.button!==0)return;
+ stopFanGlide();fanPointers.set(e.pointerId,ringPoint(e));startFanGesture();
+ if(fanPointers.size>1){fanSuppressUntil=Date.now()+350;for(const id of fanPointers.keys())$('.fan-stage').setPointerCapture(id)}
+});
+document.addEventListener('pointermove',e=>{
+ if(!fanPointers.has(e.pointerId)||!fanDrag)return;
+ const point=ringPoint(e);fanPointers.set(e.pointerId,point);
+ if(fanDrag.kind==='pinch'){
+  e.preventDefault();const [a,b]=[...fanPointers.values()];if(!a||!b)return;
+  const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2},next=Math.max(.8,Math.min(1.8,fanDrag.scale*Math.hypot(a.x-b.x,a.y-b.y)/fanDrag.distance)),ratio=next/fanDrag.scale,stage=$('.fan-stage');
+  fanScale=next;fanPan={x:center.x+(fanDrag.geometry.x-fanDrag.center.x)*ratio-stage.clientWidth*1.04,y:center.y+(fanDrag.geometry.y-fanDrag.center.y)*ratio-stage.clientHeight*.53};paintFan();return;
+ }
+ if(!fanDrag.moved&&Math.hypot(point.x-fanDrag.start.x,point.y-fanDrag.start.y)>7){fanDrag.moved=true;$('.fan-stage').setPointerCapture(e.pointerId)}
+ if(fanDrag.moved){
+  e.preventDefault();const now=performance.now(),angle=angleAt(point),delta=angleDelta(angle,fanDrag.angle);
+  fanRotation+=delta;fanDrag.velocity=delta/Math.max(8,now-fanDrag.time)*16;fanDrag.angle=angle;fanDrag.time=now;fanDrag.last=point;paintFan();
+ }
+},{passive:false});
+function endFanPointer(e,cancelled=false){
+ if(!fanPointers.has(e.pointerId))return;
+ const gesture=fanDrag;fanPointers.delete(e.pointerId);
+ if(gesture?.moved||cancelled)fanSuppressUntil=Date.now()+350;
+ if(fanPointers.size){startFanGesture(true);return}
+ fanDrag=null;
+ if(!cancelled&&gesture?.kind==='rotate'&&gesture.moved)glideFan(performance.now()-gesture.time<100?Math.max(-4,Math.min(4,gesture.velocity)):0);
+}
+document.addEventListener('pointerup',e=>endFanPointer(e));
+document.addEventListener('pointercancel',e=>endFanPointer(e,true));
+document.addEventListener('lostpointercapture',e=>{if(fanPointers.has(e.pointerId))endFanPointer(e,true)});
+document.addEventListener('wheel',e=>{
+ if(activeSlot===null||!e.target.closest('.fan-stage')||busy)return;e.preventDefault();stopFanGlide();
+ if(e.ctrlKey)zoomRing(fanScale*Math.exp(-e.deltaY*.005),ringPoint(e));
+ else{fanRotation+=(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY)*.14;paintFan()}
+},{passive:false});
+document.addEventListener('keydown',e=>{
+ if(activeSlot===null)return;
+ if(e.key==='Escape'){e.preventDefault();closeFan();return}
+ if(e.target.closest('.fan-stage')){
+  if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();stopFanGlide();fanRotation+=(e.key==='ArrowRight'?1:-1)*360/current.remaining.length;paintFan()}
+  if(['+','=','-','0'].includes(e.key)){e.preventDefault();const stage=$('.fan-stage');if(e.key==='0'){fanScale=1;fanPan={x:0,y:0};paintFan()}else zoomRing(fanScale+(e.key==='-'?-.1:.1),{x:stage.clientWidth*.35,y:stage.clientHeight*.5})}
+ }
+ if(e.key==='Tab'){const items=[...$('#fan-root').querySelectorAll('button,[tabindex="0"]')],first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
+});
+window.addEventListener('resize',()=>{if(activeSlot!==null)paintFan()});
+function messagesHtml(){return current.messages.map(m=>'<article class="message '+m.role+'"><div class="by">'+(m.role==='assistant'?'星语 · 模拟解读':'你')+'</div><div class="body" id="m-'+m.id+'">'+esc(m.content)+'</div>'+(m.status==='interrupted'?'<span class="incomplete">已停止 · 这条回复没有完成</span>':'')+'</article>').join('')}
+function historyList(){const sorted=[...db.readings].sort((a,b)=>b.updatedAt-a.updatedAt),list=sorted.filter(r=>(historyFilter!=='favorite'||r.favorite)&&(historyFilter!=='draft'||!['reveal','chat'].includes(r.stage))&&[r.question,r.a,r.b,r.note].join(' ').toLowerCase().includes(historyQuery.toLowerCase()));$('#history-list').innerHTML=list.length?list.map(r=>{const d=directions.find(x=>x.id===r.direction);return '<article class="history-card"><button class="history-main" data-action="open" data-id="'+r.id+'"><div class="meta"><span>'+d.name+'</span><span>'+new Intl.DateTimeFormat('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).format(r.createdAt)+'</span></div><p>'+esc(r.question||'还没写完的问题')+'</p><small>'+(['reveal','chat'].includes(r.stage)?r.drawn.map(c=>esc(card(c.id).name)).join(' · '):'未完成 · 可以继续')+'</small></button><div class="bottom"><span>'+(r.favorite?'★ 已收藏':'本机记录')+'</span><button class="textbtn" data-action="delete" data-id="'+r.id+'">删除</button></div></article>'}).join(''):'<div class="empty-state">✦<br><br>这里会收好你问过的每一个问题。</div>'}
+function openModal(html){$('#modal-body').innerHTML=html;$('#modal').showModal()}
+function stopStream(){if(streamTimer){clearInterval(streamTimer);streamTimer=null;const m=current.messages.at(-1);if(m?.role==='assistant')m.status='interrupted';busy=false;touch()}}
+function goHome(){stopStream();setView('home')}
+function makeInitial(){
+ const d=info(),line=current.drawn.map((c,i)=>(i+1)+'. '+d.positions[i]+' · '+card(c.id).name+'（'+(c.reversed?'逆位':'正位')+'）\n   可从「'+card(c.id).keyword+'」这个角度思考'+(c.reversed?'，也留意有没有过度或停滞的地方':'')+'。').join('\n\n');
+ let advice=current.direction==='shopping'?'可以把「确实会用到」与「拥有它的期待」分开写下来。再看看这笔支出会不会挤压日常预算，能否先借用或试用。':current.direction==='choice'?'A「'+current.a+'」与 B「'+current.b+'」各有助力和挑战。选一个你最在意的标准，分别列出能验证的信息，暂时不需要只凭一张牌决定胜负。':'先分清哪些是已经发生的事实，哪些是你的担心和期待。把注意力放回你能做的一件小事。';
+ return '整体线索\n这组牌提供的是观察问题的角度。可以把它当作几面小镜子，看看哪些线索与你的真实处境有共鸣。\n\n逐牌看看\n'+line+'\n\n回到你的问题\n'+advice+'\n\n可以试的一小步\n今天留十分钟，写下一个你可以验证的问题。再用实际体验补充这次解读，决定仍然在你手里。\n\n〔以上为流程演示文案，正式版将由模型结合本次问题与牌义生成。〕';
+}
+function simulate(text){const m={id:uuid(),role:'assistant',content:'',status:'streaming'};current.messages.push(m);busy=true;touch();render();let offset=0;const chars=Array.from(text);streamTimer=setInterval(()=>{offset=Math.min(chars.length,offset+18);m.content=chars.slice(0,offset).join('');const el=document.getElementById('m-'+m.id);if(el)el.textContent=m.content;const pane=$('#main');if(pane.scrollHeight-pane.scrollTop-pane.clientHeight<180)pane.scrollTop=pane.scrollHeight;if(offset%90===0)touch();if(offset===chars.length){clearInterval(streamTimer);streamTimer=null;m.status='completed';busy=false;touch();render();$('#main').scrollTop=$('#main').scrollHeight}},35)}
+function enterChat(){current.stage='chat';touch();setView('chat');if(db.consent&&!current.messages.length)simulate(makeInitial())}
+function consent(){if(db.consent){simulate(makeInitial());return}openModal('<h3 id="modal-title">先告诉你，内容会去哪里。</h3><p>正式版 AI 会收到本次的问题、背景、抽到的牌及必要聊天内容，经 notify-api 请求模型解读。其他日记和个人笔记不会发送。</p><p>本原型仅演示这一流程，全部离线运行，回复为预设示例，不向任何服务发送内容。</p><div class="actions"><button class="primary" data-action="consent">了解，开始模拟解读</button><button class="secondary" data-action="decline-consent">先看本地牌义</button></div>')}
+$('#history').onclick=()=>{if(busy&&!streamTimer)return;stopStream();historyQuery='';setView('history')};
+$('#back').onclick=()=>{if(busy&&!streamTimer)return;if(busy)stopStream();if(view==='home')return;if(view==='ask'){captureForm();setView('home')}else if(view==='cut'){current.stage='shuffle';touch();setView('shuffle')}else if(view==='draw'){current.stage='cut';touch();setView('cut')}else if(view==='history')setView('home');else if(view==='chat')setView('reveal');else setView('home')};
+function captureForm(){if(view!=='ask'||!current)return;current.question=$('#question').value;current.context=$('#context').value;current.a=$('#option-a')?.value||'';current.b=$('#option-b')?.value||'';current.reversals=true;$('#question-count').textContent=Array.from(current.question).length+' / 800';$('#context-status').textContent=current.context?'已填写':'选填';touch()}
+document.addEventListener('input',e=>{if(busy)return;if(e.target.id==='search'){historyQuery=e.target.value;historyList()}if(view==='ask'&&['question','context','option-a','option-b'].includes(e.target.id))captureForm()});
+document.addEventListener('submit',e=>{if(e.target.id!=='chat-form')return;e.preventDefault();if(busy)return;const text=$('#chat-input').value.trim();if(!text)return;if(Array.from(text).length>1000){toast('追问最多写 1,000 字哦。');return}current.messages.push({id:uuid(),role:'user',content:text,status:'completed'});touch();simulate('可以先挑一件能用现实信息验证的小事。\n\n你刚刚问的「'+text+'」，可以先与原问题放在一起看：哪些是你已经确定的需要，哪些只是还没验证的假设？\n\n这次抽到的牌保持不变。选其中一个让你有共鸣的关键词，写下一项今天就能尝试的行动，再回头看看它是否对你有帮助。\n\n〔这是本地演示回复，不是真实 AI 分析。〕')});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-action]');if(!b||b.disabled)return;const a=b.dataset.action;
+ if(a==='close'){$('#modal').close();return}
+ if(a==='close-fan'){if(!busy)closeFan();return}
+ if(a==='decline-consent'){$('#modal').close();setView('reveal');return}
+ if(a==='stop'){stopStream();render();return}
+ if(busy)return;
+ if(a==='direction'){current={id:uuid(),direction:b.dataset.id,question:'',context:'',a:'',b:'',reversals:true,deck:[],remaining:[],drawn:[],cut:39,messages:[],note:'',favorite:false,stage:'ask',createdAt:Date.now(),updatedAt:Date.now()};db.readings.unshift(current);if(touch())setView('ask')}
+ if(a==='begin'){captureForm();const length=Array.from(current.question.trim()).length;if(length<5||length>800){toast('把问题写具体一点，5–800 字就好。');return}if(Array.from(current.context).length>1200){toast('补充背景最多写 1,200 字哦。');return}if(current.direction==='choice'&&(!current.a.trim()||!current.b.trim()||current.a.replace(/\s/g,'')===current.b.replace(/\s/g,''))){toast('写下两个不同的选项，再一起看看。');return}current.question=current.question.trim();current.stage='shuffle';if(touch())setView('shuffle')}
+ if(a==='shuffle')void washDeck();
+ if(a==='to-cut')void gatherToCut();
+ if(a==='back-shuffle'){current.stage='shuffle';if(touch())setView('shuffle')}
+ if(a==='back-cut'){current.stage='cut';if(touch())setView('cut')}
+ if(a==='cut')void cutDeck();
+ if(a==='to-draw'){if(!current.cutApplied&&!drawnCount())return;current.stage='draw';if(touch())setView('draw')}
+ if(a==='open-fan')openFan(Number(b.dataset.index));
+ if(a==='pick-fan')void pickFan(Number(b.dataset.index),b);
+ if(a==='card-detail')cardDetail(Number(b.dataset.index));
+ if(a==='reveal'){if(drawnCount()!==info().positions.length)return;current.stage='reveal';if(touch()){revealing=true;setView('reveal');busy=true;setTimeout(()=>{revealing=false;busy=false},reducedMotion()?100:1100)}}
+ if(a==='to-chat')enterChat();
+ if(a==='interpret')consent();
+ if(a==='consent'){db.consent=true;save();$('#modal').close();simulate(makeInitial())}
+ if(a==='local-meanings')setView('reveal');
+ if(a==='suggest'){const input=$('#chat-input');if(input){input.value=b.dataset.text;input.focus()}}
+ if(a==='favorite'){current.favorite=!current.favorite;touch();render()}
+ if(a==='note'){openModal('<h3 id="modal-title">记下自己的声音</h3><p>这段笔记只在本机，不会进入 AI 对话。</p><textarea id="note-input" aria-label="个人笔记">'+esc(current.note)+'</textarea><div class="actions"><button class="primary" data-action="save-note">好好收下</button><button class="secondary" data-action="close">先不改</button></div>')}
+ if(a==='save-note'){current.note=$('#note-input').value;if(Array.from(current.note).length>2000){toast('笔记最多写 2,000 字哦。');return}if(touch()){$('#modal').close();render();toast('笔记已经收好了。')}}
+ if(a==='new')goHome();
+ if(a==='open'){current=db.readings.find(r=>r.id===b.dataset.id);if(!current)return;setView(current.stage)}
+ if(a==='filter'){historyFilter=b.dataset.id;render()}
+ if(a==='delete'){const r=db.readings.find(x=>x.id===b.dataset.id);openModal('<h3 id="modal-title">真的要删掉这次星语吗？</h3><p>问题、抽到的牌、聊天和笔记都会从这个浏览器里删除。</p><div class="actions"><button class="primary" data-action="confirm-delete" data-id="'+r.id+'">删掉这次记录</button><button class="secondary" data-action="close">留着吧</button></div>')}
+ if(a==='confirm-delete'){db.readings=db.readings.filter(r=>r.id!==b.dataset.id);if(current?.id===b.dataset.id)current=null;save();$('#modal').close();setView('history');toast('这次记录已经删掉了。')}
+});
+window.addEventListener('pagehide',()=>{if(view==='ask')captureForm();stopStream();save()});
+// 原型载入时把上次没有完成的模拟流标为中断，历史打开不重新生成。
+db.readings.forEach(r=>{r.messages.forEach(m=>{if(m.status==='streaming')m.status='interrupted'});if(r.remaining?.length){r.remaining=r.remaining.map((c,i)=>({...c,number:c.number??i+1}));if(['draw','reveal','chat'].includes(r.stage))r.cutApplied=true;}});
+render();
+</script>
+</body>
+</html>
