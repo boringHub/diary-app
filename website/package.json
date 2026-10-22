@@ -1,6 +1,7 @@
 {
   "name": "shiguangjian-website",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "dev": "astro dev --host 127.0.0.1 --port 4321",

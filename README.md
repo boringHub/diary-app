@@ -199,6 +199,12 @@ android/             Capacitor Android 工程
 - 数据导出、导入与备份
 - 正式签名的 Android Release 构建
 
-## 说明
+## 开源许可证
 
-本仓库暂未声明开源许可证。除非后续添加许可证文件，否则源代码默认保留全部权利。
+Copyright 2026 boringHub and contributors.
+
+除另有明确声明的第三方内容外，本仓库的原创代码、文档和官网源码采用 [Apache License 2.0](LICENSE)。允许在遵守许可证的前提下使用、修改、商用和分发，也允许闭源衍生项目。
+
+再分发时须遵守许可证中有关版权、许可、修改声明及适用 NOTICE 内容的要求。版权与归属信息见 [NOTICE](NOTICE)，主要第三方依赖与字体的授权入口见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。第三方内容继续使用各自的许可证，不因本项目采用 Apache-2.0 而变更授权。
+
+Apache-2.0 不授予本项目名称、Logo 或其他品牌标识的商标使用权，但许可证第 6 条允许的合理来源描述及 NOTICE 复现除外；Fork 或衍生项目不得借此声称获得官方背书。
