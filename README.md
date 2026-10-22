@@ -15,8 +15,8 @@
 
 ## 下载与安装
 
-- [前往 Releases 下载 Android 安装包](https://github.com/boringHub/diary-app/releases/latest)
-- [直接下载最新 Android APK](https://github.com/boringHub/diary-app/releases/latest/download/shiguangjian-android.apk)
+- [前往 Releases 下载 Android 安装包](https://github.com/boringHub/shiguangjian/releases/latest)
+- [直接下载最新 Android APK](https://github.com/boringHub/shiguangjian/releases/latest/download/shiguangjian-android.apk)
 - GitHub 下载连续 30 秒没有响应时，应用会自动切换到阿里云 OSS 备用下载；设置页会显示当前来源、下载进度、校验和安装状态。
 
 当前提供的是调试签名 APK，仅用于开发体验和功能测试。Android 安装时可能需要允许浏览器或文件管理器“安装未知应用”。应用内支持在“设置 > 应用更新”中手动检查 GitHub Releases。
@@ -90,8 +90,8 @@ SQLite V4 包含 `diaries`、`diary_blocks`、`diary_assets`、`diary_layouts`�
 ### 启动 Web 开发环境
 
 ```bash
-git clone https://github.com/boringHub/diary-app.git
-cd diary-app
+git clone https://github.com/boringHub/shiguangjian.git
+cd shiguangjian
 npm ci
 npm run dev
 ```

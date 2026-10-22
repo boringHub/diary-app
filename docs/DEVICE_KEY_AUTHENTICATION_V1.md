@@ -1,6 +1,6 @@
 # 拾光笺 App：Device Key Authentication V1
 
-**适用仓库：** boringHub/diary-app
+**适用仓库：** boringHub/shiguangjian
 
 **对应服务：** 由构建变量 `VITE_NOTIFY_API_ORIGIN` 指定；未配置时禁用通知接入
 

@@ -106,7 +106,7 @@
       "apk": "shiguangjian-android.apk",
       "apkSize": 13900000,
       "sha256": "最终 APK 的小写 SHA-256",
-      "githubUrl": "https://github.com/boringHub/diary-app/releases/download/v1.3.1/shiguangjian-android.apk",
+      "githubUrl": "https://github.com/boringHub/shiguangjian/releases/download/v1.3.1/shiguangjian-android.apk",
       "ossUrl": "https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/v1.3.1/shiguangjian-android.zip",
       "ossFormat": "zip",
       "releaseNotes": "本版本面向用户的简短更新说明"
@@ -165,14 +165,14 @@
 
     ```powershell
     Invoke-RestMethod `
-      'https://github.com/boringHub/diary-app/releases/latest/download/update.json' `
+      'https://github.com/boringHub/shiguangjian/releases/latest/download/update.json' `
       -Headers @{ 'User-Agent' = 'diary-app-release-verifier' }
     ```
 
     同时确认最新 Release 页面包含 APK 和 `update.json`：
 
     ```text
-    https://github.com/boringHub/diary-app/releases/latest
+    https://github.com/boringHub/shiguangjian/releases/latest
     ```
 
     阿里云公开资源：
@@ -275,6 +275,15 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 
 换开发设备时，除上述环境变量外，还必须恢复原发布设备的旧密钥，通过 `STABLE_KEYSTORE_FILE` 指向它并校验证书 SHA-256。只有 OSS 凭据而没有相同签名密钥，无法生成可覆盖安装的正式更新包。
 
+## GitHub 仓库更名兼容 - 2026-10-22
+
+- 当前仓库为 `boringHub/shiguangjian`；开发文档、官网、工程仓库元数据及后续构建的更新请求使用新地址。
+- GitHub 已自动为 `boringHub/diary-app` 保留重定向。已验证旧仓库页面、旧 Releases API、旧 `latest/download/update.json` 和旧 APK 下载地址均返回成功；API 指向 `v1.4.2`，完整下载的 APK 为 `12563401` 字节，SHA-256 为 `97b9304640743af3c46ab214789829b6cc9dcbc4a9cfde49df2cbd2c9caec5d0`，与已发布清单一致。此为 HTTP 下载链路验证，不替代手机端验收。
+- 不得重新创建或占用旧名 `boringHub/diary-app`，否则可能破坏已安装版本依赖的旧地址重定向。
+- `release/update.json` 属于已发布 1.4.2 产物，继续保留原始内容及其旧 GitHub 地址；下一次发布的新清单使用新仓库地址。此次不覆盖已发布的 APK、清单或 OSS 对象。
+- 阿里云 OSS 的 `diary-app` Bucket 与对象路径、Android 包名、签名、数据库名称及本地存储键不随 GitHub 仓库更名改变。
+- 本地已有 checkout 可执行 `git remote set-url origin https://github.com/boringHub/shiguangjian.git`；无需更改本地文件夹名。
+
 ## 双源更新规则
 
 - 更新检查先访问 GitHub Releases API；HTTP/网络明确失败时立即读取 OSS `releases/latest/update.json`，连续 30 秒没有响应时也切换 OSS。
@@ -332,7 +341,7 @@ OSS_PUBLIC_BASE_URL        可选，默认 https://diary-app.oss-cn-hangzhou.ali
 | 测试版 APK SHA-256 | `3712aef0b09f72672ee2f7b9d6a427520c63d0bc059c766888b2a8fa976d65fa` |
 | 测试版最新清单 | <https://diary-app.oss-cn-hangzhou.aliyuncs.com/internal/latest/update.json> |
 | v1.4.2 APK SHA-256 | `97b9304640743af3c46ab214789829b6cc9dcbc4a9cfde49df2cbd2c9caec5d0` |
-| 最新 Release | <https://github.com/boringHub/diary-app/releases/latest> |
+| 最新 Release | <https://github.com/boringHub/shiguangjian/releases/latest> |
 | OSS 最新清单 | <https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/update.json> |
 
 发布正式签名 APK 前必须单独设计签名迁移方案。当前已安装的 Debug 签名版本不能直接覆盖为另一证书签名的 APK。

@@ -6,12 +6,12 @@
   "description": "本地优先的私人日记 App，以可交互的记忆星球呈现每一段记录。",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/boringHub/diary-app.git"
+    "url": "git+https://github.com/boringHub/shiguangjian.git"
   },
   "bugs": {
-    "url": "https://github.com/boringHub/diary-app/issues"
+    "url": "https://github.com/boringHub/shiguangjian/issues"
   },
-  "homepage": "https://github.com/boringHub/diary-app#readme",
+  "homepage": "https://github.com/boringHub/shiguangjian#readme",
   "engines": {
     "node": ">=20",
     "npm": ">=10"

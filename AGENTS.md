@@ -11,6 +11,7 @@
 
 ## 版本与发布
 
+- GitHub 仓库现为 `boringHub/shiguangjian`。旧地址 `boringHub/diary-app` 用于已安装版本的更新兼容，不得重新创建或占用同名仓库；OSS 的 `diary-app` Bucket、Android 包名和签名不随仓库更名调整。
 - 涉及版本号、Android APK、应用内更新、Git 标签或 GitHub Release 的任务，开始前必须先阅读 `RELEASE.md`、`docs/RELEASE_CHANNELS.md`、`CHANGELOG.md` 和 `INTERNAL_CHANGELOG.md`。
 - `RELEASE.md` 是发布流程、当前版本基线、签名要求和发布历史索引的唯一维护入口。
 - `CHANGELOG.md` 是功能新增、优化、修复以及数据兼容性变化的累计记录。

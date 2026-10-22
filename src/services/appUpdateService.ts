@@ -1,6 +1,6 @@
 import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor/core'
 
-const RELEASE_API_URL = 'https://api.github.com/repos/boringHub/diary-app/releases/latest'
+const RELEASE_API_URL = 'https://api.github.com/repos/boringHub/shiguangjian/releases/latest'
 const OSS_MANIFEST_URL = 'https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/update.json'
 const INTERNAL_OSS_MANIFEST_URL = 'https://diary-app.oss-cn-hangzhou.aliyuncs.com/internal/latest/update.json'
 const NETWORK_TIMEOUT_MS = 30_000
@@ -278,7 +278,7 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
         versionCode: manifest.versionCode,
         releaseName: `拾光笺 v${versionName}`,
         releaseNotes: manifest.releaseNotes?.trim() || '',
-        releaseUrl: `https://github.com/boringHub/diary-app/releases/tag/v${versionName}`,
+        releaseUrl: `https://github.com/boringHub/shiguangjian/releases/tag/v${versionName}`,
         apkUrl: manifest.githubUrl!.trim(),
         format: 'apk',
         source: 'github',

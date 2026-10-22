@@ -35,7 +35,7 @@ npm run preview
 
 ### Cloudflare Pages
 
-在 Cloudflare 的 Workers & Pages 中创建 Pages 项目，导入 GitHub 仓库 `boringHub/diary-app`，填写：
+在 Cloudflare 的 Workers & Pages 中创建 Pages 项目，导入 GitHub 仓库 `boringHub/shiguangjian`，填写：
 
 | 配置 | 值 |
 | --- | --- |
@@ -63,10 +63,10 @@ npm run preview
 
 ### 子路径（例如 GitHub Pages）
 
-构建时设置 `SITE_BASE=/diary-app/`、`SITE_URL=https://你的账号.github.io`。内部资源与隐私页链接会适应该前缀。
+构建时设置 `SITE_BASE=/shiguangjian/`、`SITE_URL=https://你的账号.github.io`。内部资源与隐私页链接会适应该前缀。
 
 ```powershell
-$env:SITE_BASE = '/diary-app/'
+$env:SITE_BASE = '/shiguangjian/'
 $env:SITE_URL = 'https://你的账号.github.io'
 npm run build
 ```
