@@ -1,221 +1,105 @@
-# 拾光笺
+<p align="center">
+  <img src="website/public/app-icon.png" width="88" alt="拾光笺图标" />
+</p>
 
-拾光笺是一款本地优先的私人日记 App。日记以“记忆星球”呈现，可以旋转、搜索和聚焦每一段记录，并通过心情颜色区分当天状态。
+<h1 align="center">拾光笺</h1>
+<p align="center"><strong>把日子，过成自己的星空。</strong></p>
+<p align="center">本地优先的私人日记 · 十五种心情表情 · 记忆星球 · 星语塔罗</p>
+<p align="center">
+  <a href="https://github.com/boringHub/shiguangjian/releases/latest">下载 Android 版</a> ·
+  <a href="#页面一瞥">页面一瞥</a> ·
+  <a href="CHANGELOG.md">更新日志</a> ·
+  <a href="docs/DEVELOPMENT.md">参与开发</a>
+</p>
 
-项目目前处于 Android 开发预览阶段，核心日记流程和本地持久化已经可用。新建、查看、编辑和删除日记不依赖 API、Cloudflare、Resend 或网络连接。邮件通知属于可选增强；未配置服务端或服务暂时不可用时，日记仍会先在本机正常保存。
+一顿好吃的饭，一阵刚好的风，或是今天说不清的心情，都可以留在这里。
 
-## 维护文档
+**拾光笺**想把写日记变成一件轻松的小事：先为此刻选一个表情，再写几句话、放几张照片。每篇日记都会成为记忆星球上的一束光，转一转，就能和过去的自己打个照面。想停下来梳理思绪时，也可以进入**星语塔罗**，给心里的问题留一点空间。
 
-- [App 端开发设计文档](App端开发设计文档.md)：当前页面、数据边界、开发进度与验收要求。
-- [星语塔罗完整设计与交互原型](docs/tarot/README.md)：产品与接口设计；离线流程已实现，代码现状与待验收项见 [实现记录](docs/tarot/IMPLEMENTATION.md)，AI 服务端尚待接入。
-- [品牌官网开发与部署](website/README.md)：独立 Astro 静态官网、视觉交互与 Pages / Nginx / OSS 部署说明。
-- [Android 版本更新与发布手册](RELEASE.md)：后续发布前必须先阅读，包含版本修改、构建、签名、发布、升级验证和数据保护步骤。
-- [正式版与测试版渠道规范](docs/RELEASE_CHANNELS.md)：定义包名、更新源、迭代日志和公告防误发流程。
-- [更新日志](CHANGELOG.md)：累计记录每个版本的新增功能、优化、修复和兼容性变化。
-- [内部测试版迭代日志](INTERNAL_CHANGELOG.md)：记录测试目标、临时诊断、已知问题和验证结果，不用于 GitHub 正式公告。
+## 页面一瞥
 
-## 下载与安装
+<table>
+  <tr><th>记忆星球</th><th>心情表情</th><th>日记编写</th><th>星语塔罗</th></tr>
+  <tr>
+    <td><img src="docs/screenshots/memory-planet.jpg" width="220" alt="可旋转的记忆星球与心情气泡" /></td>
+    <td><img src="docs/screenshots/mood-picker.jpg" width="220" alt="十五种彩色简笔心情表情选择面板" /></td>
+    <td><img src="docs/screenshots/diary-editor.jpg" width="220" alt="先选择心情，再写下日记的编写页面" /></td>
+    <td><img src="docs/screenshots/tarot-shuffle.jpg" width="220" alt="星语塔罗散铺洗牌页面" /></td>
+  </tr>
+</table>
 
-- [前往 Releases 下载 Android 安装包](https://github.com/boringHub/shiguangjian/releases/latest)
-- [直接下载最新 Android APK](https://github.com/boringHub/shiguangjian/releases/latest/download/shiguangjian-android.apk)
-- GitHub 下载连续 30 秒没有响应时，应用会自动切换到阿里云 OSS 备用下载；设置页会显示当前来源、下载进度、校验和安装状态。
+以上为 2026 年 10 月开发版 Web 界面的实际截图，文字均为虚构展示样例。包含尚未发布的心情与塔罗功能，下载版请以 [Release 说明](https://github.com/boringHub/shiguangjian/releases/latest) 为准。
 
-正式渠道使用 Release 构建并沿用历史签名以支持覆盖升级；内部测试版有独立包名、签名和更新通道，详见 [RELEASE.md](RELEASE.md)。Android 安装时可能需要允许浏览器或文件管理器“安装未知应用”。应用内支持在“设置 > 应用更新”中手动检查更新。
+## 在这里，慢慢收藏自己
 
-升级必须使用相同包名、相同签名和更高的 `versionCode` 进行覆盖安装。覆盖安装会保留应用私有目录中的 SQLite 日记；卸载应用会删除这些数据，因此更新流程不会提供“先卸载再安装”的降级方案。
+### 让日常有自己的引力
 
-## 当前功能
+日记不只按列表排列，也化成一颗可以转动的记忆星球。拖动、缩放，按日期寻找，或随机回望一段记忆；不同心情有不同的星光颜色，收藏的瞬间也可以再被找到。
 
-- 全屏记忆星球时间线，支持拖动、双指及滚轮缩放、聚焦和流星转场
-- 从添加按钮抽出和收回的新建日记页，详情页光晕展开与返回动画
-- 新建、编辑、查看和软删除日记
-- 十五种彩色简笔心情表情与对应星体颜色，编辑器、详情和星球气泡统一展示
-- 根据可用高度调整正文区域的紧凑编辑器与详情布局
-- 收藏日记和按日期搜索
-- Web 端 LocalStorage 持久化
-- Android 端 SQLite 本地持久化
-- 最多 5 张日记图片的选择、预览、私有目录保存和详情展示
-- 三套内置全局界面主题、ZIP 界面主题包导入和即时全局切换
-- 每篇日记独立保存固定布局和日记板素材包标识，为后续个性化日记板预留边界
-- 首次启动欢迎日记、加载状态和保存失败提示
-- 设置页手动检查更新、APK 下载和系统安装引导
-- GitHub 优先、30 秒无响应自动切换阿里云 OSS 的双源更新下载和可视化进度
-- 更新包包名、版本号、签名和可选 SHA-256 完整性校验
-- 可选的单篇日记分享、发送状态、失败重试、回执同步和首次已读提示
-- 独立的使用者通知邮箱验证与开关，设备公钥认证和本地待办退避重试
-- 星语塔罗离线流程：六种方向、78 张随包卡面、洗切选牌、正逆位参考牌义、本机历史、收藏和笔记；AI 默认关闭
-- Android 窗口、WebView、系统栏和转场底色跟随当前主题，塔罗独立页面使用对应背景
+### 先接住心情，再写下今天
 
-以上为当前开发分支能力；尚未发布的内容见 [CHANGELOG.md](CHANGELOG.md) 的“未发布”，已发布安装包的版本以 [RELEASE.md](RELEASE.md) 的当前发布基线为准。
+平静、开心、期待、心动、调皮、得意、放松、感动、困困、疲惫、低落、孤单、生气、焦虑、迷茫——十五种彩色简笔表情，给情绪多一点表达。
 
-## 技术栈
+点击编写框上方的虚线圆圈，唤出表情面板；选好后，小表情就会留在日记上方。文字和最多五张照片一起收好今天，详情和星球气泡也会保留这份心情。不规定字数，几句话也是一篇日记。
 
-- Ionic Vue 8
-- Vue 3、TypeScript、Pinia、Vue Router
-- Vite 6、Vitest
-- Capacitor 8
-- `@capacitor-community/sqlite`
-- HTML5 Canvas
+### 星语塔罗，换一个角度倾听自己
 
-## 数据存储
+从购物决策、二选一、近期状态、关系相处、工作学业和一张指引中，选一个想聊的方向。写下问题，亲手洗牌、切牌、选牌，再翻开属于这次提问的牌组。
 
-项目通过异步 Repository 接口隔离页面与具体存储实现：
+- 78 张随包卡面与正逆位参考牌义，完整基础流程可离线使用。
+- 问题草稿、历史、收藏与个人笔记留在本机，方便日后回看。
+- AI 解读默认关闭，服务端尚待接入；当前提供的是离线体验。
 
-- 浏览器开发环境使用 `LocalStorageDiaryRepository`
-- Android 原生环境使用 `SQLiteDiaryRepository`
-- Android 数据库文件名为 `shiguangjianSQLite.db`
-- Android 数据库位于应用私有目录，通常为 `/data/user/0/xyz.shiguangjian.app/databases/`
+塔罗提供思考角度，选择仍由你决定。更多画面见 [塔罗首页](docs/screenshots/tarot-home.jpg)；实现状态见 [星语塔罗说明](docs/tarot/IMPLEMENTATION.md)。
 
-SQLite 当前为 V5。原有日记、图片、布局、主题、设置、通知队列和分享状态表继续保留；V5 增量增加 `tarot_readings`、`tarot_drawn_cards`、`tarot_messages`、`tarot_ai_requests` 和 `tarot_cleanup_outbox`。日记、主题、塔罗与设备身份共用串行调度的原生数据库连接，事务执行期间其他读写等待。正文和图片分别保存为 `text`、`image` Block，图片文件位于 Capacitor `Directory.Data` 对应的应用私有目录，数据库只保存相对路径。V3 新增通知队列重试索引，V4 新增分享状态和首次分享快照，V5 不重建原表，迁移保留已有数据。
+### 给小宇宙换一件外衣
 
-浏览器日记继续使用 LocalStorage；塔罗记录独立使用 `shiguangjian.tarot.v1` IndexedDB，不与 Android 数据互通。塔罗目前没有导入导出或云端备份，卸载或清除数据会丢失本机记录。
+记忆星空、晨雾纸笺、晚风邮局，三套内置主题陪伴不同的日常。全局界面与 Android 系统栏随主题变化，也支持导入 ZIP 界面主题包。
 
-从 V1 升级到 V2 时只新增主题索引表，不删除或重建已有日记数据。自动迁移测试会先创建 V1 日记、Block、图片和布局，再执行 V2 升级并核对原数据仍可读取。浏览器中的旧版 LocalStorage 文字日记会在读取时补齐 Block 和布局结构。
+## 你的记录，先留在你身边
 
-图片数量上限不只由页面控制，LocalStorage 和 SQLite Repository 在写入前也会校验每篇日记最多 5 张图片，避免绕过界面写入不兼容的数据。
+新建、查看、编辑和删除日记都在本机完成，无需账号，也不依赖网络或邮件服务。Android 使用 SQLite 和应用私有图片目录；浏览器预览的数据独立保存在当前浏览器中，两端不会自动同步。
 
-## 全局界面主题
+未主动分享的日记保留在本机。只有明确选择分享单篇日记时，标题和纯文本正文才发送给所配置的邮件服务，图片不随邮件发送。
 
-主题中心可以导入 ZIP 界面主题包。ZIP 根目录必须包含 `manifest.json`，清单使用 `schemaVersion: 1`，并声明稳定的 `id`、语义化 `version` 和全局界面颜色。选择主题后，时间线、编辑器、详情页、设置页、主题中心和底部导航会立即一起变化；主题选择只保存在 App 设置中，不写入单篇日记。
+目前**没有自动云端备份**。卸载 App、清除应用数据或丢失设备可能导致记录丢失；更新时请使用同一正式渠道直接覆盖安装，保留已有日记。
 
-- 压缩包不超过 20 MB，解压后不超过 40 MB，文件数不超过 128
-- 拒绝绝对路径、Windows 路径、URL 和 `..` 等越界路径
-- 文件保存在 `Directory.Data/themes/{themeId}/{version}/`，同一版本不会被覆盖
-- Android 会在事务中写入 `themes` 清单索引；`theme_assets` 表暂为旧结构兼容保留
-- 导入或索引失败时会回滚清单记录并删除本次新写入的主题目录
+## 下载与体验
 
-全局界面主题与日记板素材包是两个独立系统。日记保存 `boardPackId + boardPackVersion` 和只引用 `blockId`、`assetId` 的固定布局；当前版本统一使用默认日记板。后续会在写日记时加入日记板素材包选择器，用背景板、贴纸和装饰实现每篇日记的个性化，不影响 App 的全局界面主题。
+目前提供 **Android 开发预览版**，iOS 暂未提供。
 
-## 本地开发
+- [查看最新正式 Release](https://github.com/boringHub/shiguangjian/releases/latest)
+- [直接下载 Android APK](https://github.com/boringHub/shiguangjian/releases/latest/download/shiguangjian-android.apk)
+- [备用下载 ZIP（解压后安装 APK）](https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/shiguangjian-android.zip)
 
-### 环境要求
+安装时可按 Android 提示允许对应浏览器或文件管理器安装应用。已有用户也可以在“设置 → 应用更新”中检查新版本。当前开发分支与已发布安装包可能不同，尚未发布的改动见 [更新日志](CHANGELOG.md)。
 
-- Node.js 20 或更高版本
-- npm 10 或更高版本
-- Android Studio 与 Android SDK（构建 Android 时需要）
-- JDK 21（构建 Android 时需要）
+官网源码位于 [website](website/README.md)，提供记忆星球互动、心情选择、主题预览与实际 App 画面，可独立部署为静态网站。
 
-### 启动 Web 开发环境
+## 一起让它慢慢长大
 
-```bash
-git clone https://github.com/boringHub/shiguangjian.git
-cd shiguangjian
-npm ci
-npm run dev
-```
-
-Web 预览的日记使用 LocalStorage，塔罗使用 IndexedDB；不注册生产设备、不请求通知或模型 API，也不提供邮箱绑定能力。
+接下来希望完善数据导出、导入与备份，增加每篇日记的个性化日记板，并完成星语塔罗在线解读的接入与验收。欢迎通过 [Issues](https://github.com/boringHub/shiguangjian/issues) 分享建议，或提交改进。请不要在公开讨论中附上私人日记与凭据。
 
 ### 可选的邮件通知接入
 
-公开仓库不包含当前托管的通知服务端。只需要本地日记功能时，无需准备 Cloudflare 或 Resend，并保持 `VITE_NOTIFY_API_ORIGIN` 为空：
+邮件是可继续扩展的方向，纯本地日记无需配置服务端。公开仓库保留了兼容接口与客户端流程，**不包含当前托管的通知服务端**；其他开发者可以自行实现或部署对应服务。
 
-```bash
-cp .env.example .env.local
-```
+可参考 Cloudflare Workers、D1、Queues / DLQ 与 Resend，扩展邮箱验证、可选提醒、单篇日记分享和投递状态。接入时仍应保证日记先在本机保存，离线或邮件失败不影响写日记；使用者通知邮箱与分享收件邮箱保持独立。
 
-需要邮件功能的部署者，应自行实现或部署与 App 兼容的设备签名、邮箱验证、通知设置和事件接收 API。推荐基础设施包括：
+不接入时保持 `VITE_NOTIFY_API_ORIGIN` 为空即可。详细配置、数据边界与反馈接口见 [开发指南：可选的邮件通知接入](docs/DEVELOPMENT.md#可选的邮件通知接入)。
 
-- Cloudflare Workers：提供 HTTPS API
-- Cloudflare D1：保存设备、邮箱验证和投递状态
-- Cloudflare Queues 与 DLQ：异步投递和失败处理
-- Resend：发送验证邮件和提醒邮件
-- 已在 Resend 验证的发送域名
+### 给开发者的入口
 
-服务端至少需要配置 `RESEND_API_KEY`、`EMAIL_VERIFICATION_PEPPER` 和 `NOTIFICATION_TOKEN_SECRET` 等 Secrets，并在 App 本地构建配置中设置：
+App 使用 Ionic Vue、TypeScript、Pinia、Capacitor 与 SQLite，星球通过 Canvas 绘制；官网为独立 Astro 静态工程。
 
-```dotenv
-VITE_NOTIFY_API_ORIGIN=https://your-api.example.com
-```
+- [开发指南](docs/DEVELOPMENT.md)：本地启动、存储、主题包、邮件接入与 Android 构建。
+- [App 开发设计](App端开发设计文档.md) · [星语塔罗设计](docs/tarot/README.md) · [官网开发与部署](website/README.md)。
+- [发布手册](RELEASE.md) · [正式与测试渠道](docs/RELEASE_CHANNELS.md) · [更新日志](CHANGELOG.md)。
 
-该值只填写 API Origin，不带路径。必须使用 HTTPS。`VITE_*` 会被 Vite 打包进 APK，因此这里只能放公开的 API 地址，绝不能放 Resend API Key、Cloudflare Secret、私人收件邮箱或其他凭据。留空会生成完全不接入通知服务的本地模式构建。
+## 开源许可
 
-邮件接入必须保持以下边界：日记先完成本地保存，API 未配置、离线或投递失败都不能使日记保存失败。创建通知默认询问，选择分享后才建立快照；也可在详情页手动确认分享。分享 V2 发送该篇标题和纯文本正文，不发送图片、布局或本地路径；旧版 V1 事件仍只允许发送 `eventId`、`eventType`、`occurredAt`、`mood` 和 `deviceId` 五项元数据。使用者通知邮箱与固定分享邮箱独立，关闭或解绑小提醒不影响日记分享。
+原创代码、文档和官网源码采用 [Apache License 2.0](LICENSE)，允许遵守许可证的使用、修改、商用与分发。项目名称与 Logo 不因此授予商标使用权。
 
-设置页的“反馈建议”使用独立的设备签名接口 `POST /v1/feedback`，提交字段只有 `feedbackId` 和 `content`，正文为 1 至 2,000 字。收件邮箱由服务端配置，默认与日记分享接收邮箱相同，也可单独配置 `FEEDBACK_RECIPIENT_EMAIL`。服务端入队后返回 `202 accepted`，不应等待 Resend 完成投递再响应。反馈不要求绑定使用者邮箱；打开编辑器和保存本机草稿不联网，响应超时保留同一编号以便安全重试。未接入 API 的构建可以保存草稿，本地日记照常使用。
+版权与归属见 [NOTICE](NOTICE)，依赖、字体及塔罗卡面的来源与授权见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。第三方内容沿用各自许可证。
 
-### 测试与生产构建
-
-```bash
-npm test
-npm run build
-```
-
-测试覆盖图片上限、旧 LocalStorage 兼容、主题 manifest、ZIP 包安全校验、SQLite 数据保留迁移、设备认证、分享状态、回执去重、请求限频和并发同步，以及塔罗卡面校验、洗切与快照、上下文隐私、SSE、共享数据库事务和系统主题背景同步。
-
-### 构建 Android APK
-
-先让 Capacitor 同步 Web 产物和原生插件：
-
-```bash
-npm run cap:sync
-```
-
-Windows：
-
-```powershell
-cd android
-.\gradlew.bat clean assembleDebug --no-problems-report
-```
-
-macOS 或 Linux：
-
-```bash
-cd android
-./gradlew clean assembleDebug --no-problems-report
-```
-
-APK 输出位置：
-
-```text
-android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-Android SDK 的本地路径写在被 Git 忽略的 `android/local.properties` 中，不应提交到仓库。
-
-## 发布 Android 更新
-
-完整发布流程、当前版本基线、签名指纹和发布历史统一维护在 [RELEASE.md](RELEASE.md)。以下仅保留不可省略的发布原则。
-
-每次准备 GitHub Release 时必须完成以下事项：
-
-1. 保持 `applicationId` 为 `xyz.shiguangjian.app`，不得修改包名。
-2. 将 `android/app/build.gradle` 中的 `versionCode` 至少增加 1，并同步增加 `versionName`。
-3. 使用与上一版完全相同的历史签名密钥，通过 `STABLE_KEYSTORE_FILE` 提供；当前正式渠道采用 Release 构建，证书和跨设备恢复要求以 `RELEASE.md` 为准。迁移到不同签名会被 Android 拒绝。
-4. 将 APK 上传为 `shiguangjian-android.apk`，Release 标签与 `versionName` 保持一致，例如 `v1.2.0`。
-5. 同时上传名为 `update.json` 的发布清单，格式参考仓库根目录的 `update.example.json`，其中 SHA-256 和大小必须由最终签名 APK 计算。
-6. 运行 `scripts/publish-oss.ps1`，同步版本目录和 `releases/latest` 下的 APK、ZIP 与清单，并通过公开地址复核 ZIP 内 APK 的哈希。
-7. 在保留已有日记的真机上执行覆盖安装验证，禁止通过卸载应用来解决签名或版本问题。
-8. 运行 `npm run release:validate`，再用 `npm run release:notes:stable -- X.Y.Z` 生成 `release/github-release-notes.md` 作为唯一正式公告来源。
-
-应用下载 APK 后会再次校验包名、内部 `versionCode` 和签名证书。任一项不匹配都会停止安装，以避免错误更新影响本机数据。
-
-## 项目结构
-
-```text
-src/pages/           页面与交互
-src/features/tarot/  塔罗页面、领域逻辑、存储与 AI 客户端
-src/stores/          Pinia 状态管理
-src/repositories/    Web/Android 数据适配器
-src/services/        图片文件、主题和应用更新服务
-src/types/           领域类型
-android/             Capacitor Android 工程
-```
-
-## 开发计划
-
-- 当前阶段：可选的设备公钥认证、邮箱验证、最小元数据事件队列和邮件投递已经完成私有环境联调；公开构建未配置 API 时保持纯本地运行
-- 后续个性化：加入独立的日记板素材包安装与编辑器选择，不与全局界面主题混用
-- 数据导出、导入与备份
-- 星语塔罗服务端修补与真实 AI 链路验收，见 [交接说明](docs/tarot/SERVER_REPAIR_HANDOFF.md)
-- 当前未发布功能的 Android 真机覆盖升级、系统栏、键盘、返回和进程恢复验收；正式发布按 `RELEASE.md` 执行
-
-## 开源许可证
-
-Copyright 2026 boringHub and contributors.
-
-除另有明确声明的第三方内容外，本仓库的原创代码、文档和官网源码采用 [Apache License 2.0](LICENSE)。允许在遵守许可证的前提下使用、修改、商用和分发，也允许闭源衍生项目。
-
-再分发时须遵守许可证中有关版权、许可、修改声明及适用 NOTICE 内容的要求。版权与归属信息见 [NOTICE](NOTICE)，主要第三方依赖与字体的授权入口见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。第三方内容继续使用各自的许可证，不因本项目采用 Apache-2.0 而变更授权。
-
-Apache-2.0 不授予本项目名称、Logo 或其他品牌标识的商标使用权，但许可证第 6 条允许的合理来源描述及 NOTICE 复现除外；Fork 或衍生项目不得借此声称获得官方背书。
+<p align="center">愿你回头看时，有迹可循，有光可拾。✦</p>

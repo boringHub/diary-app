@@ -44,22 +44,43 @@ window.matchMedia("(min-width: 651px)").addEventListener("change", (e) => {
 });
 
 const moodMessages: Record<string, string> = {
-  happy: "把这份小小的开心，存成一颗星。",
-  calm: "平静的日子，也有温柔的光。",
-  sad: "难过也可以，今天先抱抱自己。",
-  tired: "已经很努力了，允许自己慢一点。",
-  excited: "把这份雀跃，留给未来的自己。",
+  calm: '平静的日子，也有温柔的光。', happy: '把这份小小的开心，存成一颗星。',
+  excited: '把这份雀跃，留给未来的自己。', loved: '被打动的这一刻，也值得好好收藏。',
+  playful: '偶尔调皮一下，让日常轻盈一点。', proud: '今天的自己，值得一个小小的赞。',
+  relaxed: '松一口气，按自己的节奏走。', touched: '那些柔软的瞬间，慢慢记下来。',
+  sleepy: '困困的今天，也可以早点休息。', tired: '已经很努力了，允许自己慢一点。',
+  sad: '低落也可以，今天先抱抱自己。', lonely: '一个人的时刻，也有一张笺陪着你。',
+  angry: '把心里的不痛快，轻轻写在这里。', anxious: '先停一停，把思绪一件件放下来。',
+  confused: '还没想明白也没关系，慢慢写就好。',
 };
-document.querySelectorAll<HTMLButtonElement>("[data-mood]").forEach((button) =>
-  button.addEventListener("click", () => {
-    document
-      .querySelectorAll("[data-mood]")
-      .forEach((el) => el.setAttribute("aria-pressed", String(el === button)));
-    const message = document.querySelector("#mood-message");
-    if (message)
-      message.textContent = moodMessages[button.dataset.mood || "happy"];
-  }),
-);
+const moodDialog = document.querySelector<HTMLDialogElement>('#mood-dialog');
+const moodEntry = document.querySelector<HTMLButtonElement>('#open-moods');
+moodEntry?.addEventListener('click', () => moodDialog?.showModal());
+document.querySelector('#close-moods')?.addEventListener('click', () => moodDialog?.close());
+moodDialog?.addEventListener('click', event => {
+  if (event.target !== moodDialog) return;
+  const rect = moodDialog.getBoundingClientRect();
+  if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) moodDialog.close();
+});
+document.querySelectorAll<HTMLButtonElement>('[data-choose-mood]').forEach(button => {
+  button.addEventListener('click', () => {
+    const mood = button.dataset.chooseMood || 'calm';
+    const name = button.dataset.moodName || '平静';
+    document.querySelectorAll('[data-choose-mood]').forEach(el => el.setAttribute('aria-pressed', String(el === button)));
+    const image = document.querySelector<HTMLImageElement>('#selected-mood');
+    const source = button.querySelector('img');
+    if (image && source) { image.src = source.src; image.hidden = false; }
+    const add = moodEntry?.querySelector<HTMLElement>('.mood-add');
+    if (add) add.hidden = true;
+    moodEntry?.classList.add('has-mood');
+    moodEntry?.setAttribute('aria-label', `当前心情：${name}，点击更换`);
+    const label = document.querySelector('#selected-mood-label');
+    if (label) label.textContent = name;
+    const message = document.querySelector('#mood-message');
+    if (message) message.textContent = moodMessages[mood];
+    moodDialog?.close();
+  });
+});
 const themeMessages: Record<string, string> = {
   night: "在夜色里，和自己轻轻说话。",
   mist: "清晨、草木，和一张干净的纸。",

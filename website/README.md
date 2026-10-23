@@ -25,11 +25,11 @@ npm run preview
 
 - 奶油纸色、墨绿夜空、鼠尾草绿与少量暖杏色，圆润卡片和便笺式产品插画。
 - 自有 UI 组件和 CSS 设计系统，无通用 UI 库。DM Sans 搭配 Noto Sans SC / Noto Serif SC，字体子集自托管。
-- 首屏错峰入场、手机与便笺漂浮、滚动渐显、心情选择、三主题实时预览、原生 FAQ。
+- 首屏错峰入场、手机与便笺漂浮、滚动渐显、十五种心情弹窗选择、星语塔罗介绍、三主题实时预览、原生 FAQ。
 - 导航栏提供整站深色 / 浅色切换，首次访问跟随系统，手动选择保存在本地；首页、隐私页与 404 页保持一致。
 - 品牌图标与标签图标复用 Android 当前 `mipmap-xxxhdpi/ic_launcher.png`。
 - Canvas 星球支持拖动、方向键、暂停与样例记忆切换。离屏、后台及减少动态效果偏好下停止持续绘制。
-- 页面互动不请求业务 API；仅整站明暗偏好写入 LocalStorage，不保存心情与主题演示选择。日记内容均为虚构样例。产品画面是网站示意，不冒充实际设备截图。
+- 页面互动不请求业务 API；仅整站明暗偏好写入 LocalStorage，不保存心情与主题演示选择。日记内容均为虚构样例。首屏手机与便笺为网站示意；星语与页面展示区使用实际开发版 Web 界面截图，明确标注版本，不代表 Android 真机或已发布安装包。
 
 ## 部署
 
@@ -78,6 +78,9 @@ npm run build
 - 主页面与下载入口：`src/pages/index.astro`。默认 APK 指向 GitHub 最新正式 Release，ZIP 指向正式 `releases/latest/` 通道。
 - 数据说明：`src/pages/privacy.astro`，每次产品数据行为变化需同步。
 - 色彩、断点和动效：`src/styles/global.css`。
+- 新增产品版块样式：`src/styles/product.css`，涵盖心情弹窗、塔罗与截图区，适配明暗外观和窄屏。
+- 实际截图源文件：仓库 `docs/screenshots/`，Astro 构建时优化并输出本地图片，README 复用同一份。截图只使用虚构内容，维护说明见该目录的 README。
+- 心情名称直接复用 App 的 `src/types/diary.ts`；表情改动后，在 `website` 目录运行 `npm run moods` 更新官网 SVG。
 - 样例日记与交互文案：`src/scripts/site.ts`。
 - Canvas：`src/scripts/galaxy.ts`。
 - `public/fonts/OFL-*.txt` 保留字体许可。字体增补可运行 `node scripts/subset-fonts.mjs`，需联网访问 Google Fonts 官方字体服务。

@@ -17,7 +17,9 @@ async function content(dir) {
     )
   ).join("");
 }
-const source = await content(join(root, "src"));
+// Mood names are imported from the App rather than duplicated in the site.
+const source = (await content(join(root, "src"))) +
+  (await readFile(join(root, "../src/types/diary.ts"), "utf8"));
 const chinese = [
   ...new Set(source.match(/[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/g)),
 ].join("");

@@ -3,6 +3,13 @@ import Layout from '../layouts/Layout.astro';
 import Icon from '../components/Icon.astro';
 import Brand from '../components/Brand.astro';
 import AppearanceToggle from '../components/AppearanceToggle.astro';
+import { moodOptions, moodLabels } from '../../../src/types/diary';
+import { Image } from 'astro:assets';
+import planetShot from '../../../docs/screenshots/memory-planet.jpg';
+import diaryShot from '../../../docs/screenshots/diary-editor.jpg';
+import moodShot from '../../../docs/screenshots/mood-picker.jpg';
+import tarotShot from '../../../docs/screenshots/tarot-shuffle.jpg';
+import '../styles/product.css';
 const base = import.meta.env.BASE_URL;
 const github = 'https://github.com/boringHub/shiguangjian';
 const apk = `${github}/releases/latest/download/shiguangjian-android.apk`;
@@ -11,14 +18,15 @@ const themes = [
   { id: 'mist', name: '晨雾纸笺', label: '清晨、草木，和一张干净的纸。', color: '#b8cbbf', mark: '02' },
   { id: 'sunset', name: '晚风邮局', label: '把今天的心事，寄给温柔晚霞。', color: '#b98991', mark: '03' },
 ];
-const moods = [
-  { id: 'happy', face: '◡', name: '开心', color: '#f4d08c' },
-  { id: 'calm', face: '‿', name: '平静', color: '#9cd8bd' },
-  { id: 'sad', face: '⌢', name: '难过', color: '#9bc3e8' },
-  { id: 'tired', face: '–', name: '疲惫', color: '#c5b5dd' },
-  { id: 'excited', face: 'ᴗ', name: '期待', color: '#eeab93' },
+const moods = moodOptions.map(id => ({ id, name: moodLabels[id] }));
+const screenshots = [
+  { image: planetShot, title: '一颗记忆星球', description: '把普通日子，慢慢攒成星光。', alt: 'App 记忆星球，彩色星体与心情气泡' },
+  { image: moodShot, title: '先接住心情', description: '十五种表情，替此刻的你开个头。', alt: 'App 心情选择面板，展示十五款彩色简笔表情' },
+  { image: diaryShot, title: '再写下今天', description: '让文字和照片，留下生活的纹理。', alt: 'App 日记编写页，上方为开心表情，下方为虚构日记' },
+  { image: tarotShot, title: '留一点时间给自己', description: '洗一洗牌，也理一理心里的问题。', alt: 'App 星语塔罗洗牌页，展示散铺的牌组' },
 ];
 const faq = [
+  { q: '星语塔罗需要联网吗？', a: '当前开发版的提问、洗切选牌、正逆位参考牌义、历史、收藏与笔记都能离线使用。AI 解读默认关闭，服务端尚待接入；塔罗用来提供思考角度，选择仍由你决定。官网展示包含尚未发布的开发版页面，请以下载版本的更新说明为准。' },
   { q: '一定要有特别的事，才能写日记吗？', a: '当然不用。一顿好吃的饭、一阵刚好的风，甚至“今天好像什么也没发生”，都是值得留下的日常。几个字也好，一张照片也好，按自己的节奏就好。' },
   { q: '没有网络，也能记录吗？', a: '可以。新建、查看、编辑和删除日记都在本机完成，不依赖网络或通知服务。文字和图片先收好，想写的时候就能写。' },
   { q: '我的日记会自动上传吗？', a: '未主动分享的日记保存在本机。只有你明确选择分享单篇日记时，标题和纯文本正文才会发送给服务端配置的收件邮箱；图片不会随邮件发送。网站的互动演示也只使用虚构样例，不收集你的日记。' },
@@ -30,11 +38,11 @@ const faq = [
     <div class="nav-shell">
       <Brand />
       <nav class="desktop-nav" aria-label="主导航">
-        <a href="#universe">一颗记忆星球</a><a href="#moments">记录的美好</a><a href="#themes">随心换装</a>
+        <a href="#universe">一颗记忆星球</a><a href="#moments">心情日记</a><a href="#tarot">星语塔罗</a><a href="#themes">随心换装</a>
       </nav>
       <div class="nav-actions"><AppearanceToggle /><a class="button button-small button-dark" href="#download">开始拾光 <Icon name="arrow" size={16}/></a><button class="menu-toggle" aria-label="展开导航" aria-expanded="false" aria-controls="mobile-nav"><Icon name="menu" /></button></div>
     </div>
-    <nav id="mobile-nav" class="mobile-nav" aria-label="手机导航" hidden><a href="#universe">一颗记忆星球</a><a href="#moments">记录的美好</a><a href="#themes">随心换装</a><a href="#faq">一些小问题</a></nav>
+    <nav id="mobile-nav" class="mobile-nav" aria-label="手机导航" hidden><a href="#universe">一颗记忆星球</a><a href="#moments">心情日记</a><a href="#tarot">星语塔罗</a><a href="#themes">随心换装</a><a href="#faq">一些小问题</a></nav>
   </header>
   <main id="main">
     <section class="hero section-shell" aria-labelledby="hero-title">
@@ -81,20 +89,25 @@ const faq = [
     <section class="moments-section section-shell" id="moments" aria-labelledby="moments-title">
       <div class="section-heading reveal"><div><span class="section-kicker">02 / A PLACE FOR EVERY FEELING</span><h2 id="moments-title">不止记录，<br class="mobile-break"/>也好好接住自己。</h2></div><p>你不需要文笔很好。<br/>真实的你，就已经很好。</p></div>
       <div class="features-grid">
-        <article class="feature-card mood-feature reveal"><div class="feature-icon"><Icon name="heart"/></div><h3>今天是什么颜色？</h3><p>每种心情，都有自己的光。<br/>开心也好，低落也没关系。</p><div class="mood-picker" role="group" aria-label="试着选择今天的心情">{moods.map((m, i) => <button data-mood={m.id} style={`--mood-color:${m.color}`} aria-pressed={i === 0 ? 'true' : 'false'} aria-label={m.name}><span class="mood-face"><i></i><i></i><b>{m.face}</b></span><span>{m.name}</span></button>)}</div><div class="mood-response" aria-live="polite"><span class="response-dot"></span><span id="mood-message">把这份小小的开心，存成一颗星。</span></div></article>
+        <article class="feature-card mood-feature reveal"><div class="feature-icon"><Icon name="heart"/></div><h3>先选心情，再写今天。</h3><p>十五种彩色简笔表情，接住不同的你。<br/>开心、迷茫，或只是有一点困困。</p><div class="mood-entry-demo"><button id="open-moods" class="mood-entry" aria-label="选择今天的心情" aria-haspopup="dialog" aria-controls="mood-dialog"><span class="mood-add" aria-hidden="true">+</span><img id="selected-mood" width="76" height="76" alt="" hidden /></button><span id="selected-mood-label">点一下，选个此刻的表情</span></div><div class="mood-response" aria-live="polite"><span class="response-dot"></span><span id="mood-message">每一种心情，都值得被记住。</span></div></article>
         <article class="feature-card writing-feature reveal"><div class="feature-icon"><Icon name="pen"/></div><h3>几句话，也是一篇日记。</h3><p>不赶时间，不规定字数。<br/>照片和文字，一起收好这一刻。</p><div class="writing-preview"><div><span>写给今天的自己</span><Icon name="image" size={15}/></div><p>今天没发生什么大事，<br/>但路边的小猫对我眨了眨眼。<span class="writing-caret"></span></p><span class="writing-bottom"><span>一点点日常，也很可爱</span><span>✦</span></span></div></article>
         <article class="feature-card privacy-feature reveal"><div class="feature-icon"><Icon name="lock"/></div><h3>心事，有自己的小角落。</h3><p>日记本地优先保存，离线也能写。<br/>分享之前，每一段心事由你决定。</p><div class="privacy-art" aria-hidden="true"><span class="privacy-orbit"></span><span class="privacy-orbit orbit-two"></span><div class="lock-illustration"><Icon name="lock" size={41}/></div><span class="privacy-star">✧</span><span class="privacy-dot"></span></div><a href={`${base}privacy/`} class="inline-link">了解数据与隐私 <Icon name="arrow" size={15}/></a></article>
       </div>
     </section>
+    <dialog id="mood-dialog" class="mood-dialog" aria-labelledby="mood-dialog-title"><div class="mood-dialog-heading"><div><h2 id="mood-dialog-title">此刻，是什么心情？</h2><p>每一种心情，都值得被记住</p></div><button id="close-moods" aria-label="关闭心情选择"><Icon name="plus" size={20}/></button></div><div class="mood-choice-grid" role="group" aria-label="十五种心情">{moods.map(m => <button data-choose-mood={m.id} data-mood-name={m.name} aria-pressed="false"><img src={`${base}moods/${m.id}.svg`} width="56" height="56" alt="" loading="lazy"/><span>{m.name}</span></button>)}</div><p class="mood-dialog-note">这里的选择只是演示，不会保存。</p></dialog>
+    <section class="tarot-section section-shell" id="tarot" aria-labelledby="tarot-title">
+      <div class="tarot-showcase reveal"><div class="tarot-copy"><span class="section-kicker">03 / A QUIET MOMENT WITH YOURSELF</span><span class="tarot-edition">星语塔罗 · 开发版新篇章</span><h2 id="tarot-title">把一个问题，<br/>放在星光里。</h2><p class="tarot-lead">有些答案，可以从倾听自己开始。</p><p>为最近的状态、两难的选择，或一段关系停留片刻。写下问题，亲手洗牌、切牌、选牌，再把想到的事记下来。</p><div class="tarot-directions" aria-label="六种探索方向"><span>购物决策</span><span>二选一</span><span>近期状态</span><span>关系相处</span><span>工作学业</span><span>一张指引</span></div><ul class="tarot-facts"><li>78 张随包卡面，支持正逆位参考牌义</li><li>历史、收藏与个人笔记留在本机</li><li>离线流程已可用，AI 解读默认关闭、尚待接入</li></ul><a href="#screens" class="inline-link">看看 App 里的星语 <Icon name="arrow" size={15}/></a></div><div class="tarot-art"><span class="tarot-orbit" aria-hidden="true"></span><span class="tarot-art-star" aria-hidden="true">✧</span><div class="tarot-photo"><Image src={tarotShot} alt="星语塔罗实际开发版洗牌界面，深色牌桌上散铺的星光牌背" widths={[390,780]} sizes="(max-width: 650px) 220px, 260px" loading="lazy" /></div><span class="tarot-margin-note">让问题慢慢清晰。<br/><small>选择，仍由你决定。</small></span></div></div>
+    </section>
     <section class="themes-section section-shell" id="themes" aria-labelledby="themes-title">
       <div class="theme-showcase reveal" data-theme-preview="night">
-        <div class="theme-copy"><span class="section-kicker">03 / MAKE IT FEEL LIKE YOU</span><h2 id="themes-title">今天，<br/>想住进哪种心情？</h2><p>夜色、晨雾，或是温柔的晚霞。<br/>给你的小宇宙，换一件喜欢的外衣。</p><div class="theme-options" role="group" aria-label="预览三套内置主题">{themes.map((theme, i) => <button data-theme={theme.id} aria-pressed={i === 0 ? 'true' : 'false'}><span class="theme-swatch" style={`--swatch:${theme.color}`}><Icon name="check" size={15}/></span><span>{theme.name}</span><span class="theme-number">{theme.mark}</span></button>)}</div><span class="theme-caption">三套内置主题 · 在 App 中还可导入主题包</span></div>
+        <div class="theme-copy"><span class="section-kicker">04 / MAKE IT FEEL LIKE YOU</span><h2 id="themes-title">今天，<br/>想住进哪种心情？</h2><p>夜色、晨雾，或是温柔的晚霞。<br/>给你的小宇宙，换一件喜欢的外衣。</p><div class="theme-options" role="group" aria-label="预览三套内置主题">{themes.map((theme, i) => <button data-theme={theme.id} aria-pressed={i === 0 ? 'true' : 'false'}><span class="theme-swatch" style={`--swatch:${theme.color}`}><Icon name="check" size={15}/></span><span>{theme.name}</span><span class="theme-number">{theme.mark}</span></button>)}</div><span class="theme-caption">三套内置主题 · 在 App 中还可导入主题包</span></div>
         <div class="theme-visual"><div class="theme-disc" aria-hidden="true"></div><div class="theme-paper"><span class="theme-paper-date">A NOTE TO MYSELF <Icon name="star" size={17}/></span><span class="theme-paper-day">18 <small>OCTOBER</small></span><h3>和自己，慢慢相处。</h3><p>有时候，停下来也是一种前进。<br/>今天的风很轻，我也是。</p><div class="theme-paper-divider"></div><div class="theme-paper-footer"><span><i></i> 今天很平静</span><span>✧</span></div></div><div class="theme-floating-label"><span class="breathing-dot"></span><span id="theme-label">在夜色里，和自己轻轻说话。</span></div><span class="theme-flower" aria-hidden="true">✳</span></div>
       </div>
     </section>
+    <section class="screens-section section-shell" id="screens" aria-labelledby="screens-title"><div class="section-heading reveal"><div><span class="section-kicker">05 / A GLIMPSE INSIDE</span><h2 id="screens-title">把日常，装进这一方天地。</h2></div><p>来自 App 的实际页面。<br/>每一段文字，都是虚构的展示样例。</p></div><div class="screens-grid">{screenshots.map((shot, i) => <figure class="screen-item reveal"><a href={shot.image.src} target="_blank" rel="noopener noreferrer" aria-label={`查看${shot.title}完整截图（新窗口）`}><Image src={shot.image} alt={shot.alt} widths={[260,390,780]} sizes="(max-width: 650px) 42vw, 260px" loading="lazy" /></a><figcaption><span class="screen-number">0{i+1}</span><div><h3>{shot.title}</h3><p>{shot.description}</p></div></figcaption></figure>)}</div><p class="screens-note">2026 年 10 月开发版 Web 界面截图 · 心情与塔罗等未发布内容，以安装包的版本说明为准。</p></section>
     <section class="philosophy section-shell"><div class="philosophy-orbit reveal" aria-hidden="true"><span>✦</span><i></i><i></i></div><span class="section-kicker reveal">A SMALL NOTE, A LONG WAY TO GO</span><h2 class="reveal">长大以后，<br/>也要记得<span class="serif-accent">收藏自己。</span></h2><p class="reveal">不用把日子写得漂亮，也不用每天都来。<br/>想说的时候，这里总有一张空白的笺。</p><span class="signature reveal">愿你回头看时，有迹可循，有光可拾。</span></section>
     <section class="faq-section section-shell" id="faq" aria-labelledby="faq-title"><div class="faq-heading reveal"><span class="section-kicker">A FEW LITTLE QUESTIONS</span><h2 id="faq-title">你可能还想知道。</h2><p>开始之前，把这些小事说清楚。</p><span class="faq-doodle" aria-hidden="true">?</span></div><div class="faq-list reveal">{faq.map((item, i) => <details open={i === 0}><summary>{item.q}<span class="faq-plus"><Icon name="plus" size={18}/></span></summary><div class="faq-answer"><p>{item.a}</p></div></details>)}</div></section>
-    <section class="download-section section-shell" id="download" aria-labelledby="download-title"><div class="download-card reveal"><div class="download-stars" aria-hidden="true"><span>✦</span><span>✳</span><span>✧</span><span>✦</span></div><span class="section-kicker light-kicker">YOUR STORY STARTS WITH TODAY</span><h2 id="download-title">今天，就拾起第一束光。</h2><p>把忙着生活的自己，轻轻写进日记里。</p><a class="button button-lime download-primary" href={apk}><Icon name="download" size={20}/> 下载 Android 版 <Icon name="arrow" size={18}/></a><div class="download-links"><a href={`${github}/releases/latest`} target="_blank" rel="noopener noreferrer">查看版本与安装说明 ↗</a><span>·</span><a href="https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/shiguangjian-android.zip">备用下载（ZIP）</a></div><span class="download-note">Android 开发预览 · 直接覆盖更新，记得保留你的日记</span></div></section>
+    <section class="download-section section-shell" id="download" aria-labelledby="download-title"><div class="download-card reveal"><div class="download-stars" aria-hidden="true"><span>✦</span><span>✳</span><span>✧</span><span>✦</span></div><span class="section-kicker light-kicker">YOUR STORY STARTS WITH TODAY</span><h2 id="download-title">今天，就拾起第一束光。</h2><p>把忙着生活的自己，轻轻写进日记里。</p><a class="button button-lime download-primary" href={apk}><Icon name="download" size={20}/> 下载 Android 版 <Icon name="arrow" size={18}/></a><div class="download-links"><a href={`${github}/releases/latest`} target="_blank" rel="noopener noreferrer">查看版本与安装说明 ↗</a><span>·</span><a href="https://diary-app.oss-cn-hangzhou.aliyuncs.com/releases/latest/shiguangjian-android.zip">备用下载（ZIP）</a></div><span class="download-note">Android 开发预览 · 展示包含未发布功能，请以版本说明为准</span></div></section>
   </main>
   <footer class="site-footer section-shell"><div class="footer-top"><div><Brand footer/><p>把日子过成自己的星空。</p></div><div class="footer-links"><a href="#universe">探索拾光笺</a><a href={`${base}privacy/`}>数据与隐私</a><a href={github} target="_blank" rel="noopener noreferrer">GitHub <Icon name="arrow" size={14}/></a><a href={`${github}/issues`} target="_blank" rel="noopener noreferrer">反馈与建议 <Icon name="arrow" size={14}/></a></div></div><div class="footer-bottom"><span>© {new Date().getFullYear()} 拾光笺</span><span>Made with care, for your ordinary days. <span class="footer-star">✦</span></span><a href="#top">回到顶部 ↑</a></div></footer>
   <script>
