@@ -7,6 +7,7 @@ const paperDuration = 680
 const starDuration = 1160
 const lerp = (from: number, to: number, progress: number) => from + (to - from) * progress
 const clamp = (value: number) => Math.max(0, Math.min(1, value))
+const transitionBackground = (element: HTMLElement) => getComputedStyle(element).getPropertyValue('--app-shell-background').trim() || '#07131f'
 const smooth = (from: number, to: number, value: number) => {
   const progress = clamp((value - from) / (to - from))
   return progress * progress * (3 - 2 * progress)
@@ -93,22 +94,23 @@ function buildTabSlideAnimation(direction: TabSlideDirection, baseEl: HTMLElemen
   const isBack = direction === 'back'
   const enteringFrom = isBack ? '-100%' : '100%'
   const leavingTo = isBack ? '100%' : '-100%'
+  const backgroundColor = transitionBackground(baseEl)
 
   const enteringAnimation = createAnimation('primary-tab-enter')
     .addElement(enteringEl)
-    .beforeStyles({ visibility: 'visible', opacity: '1', zIndex: '2', background: '#07131f' })
+    .beforeStyles({ visibility: 'visible', opacity: '1', zIndex: '2', background: backgroundColor })
     .fromTo('transform', `translate3d(${enteringFrom}, 0, 0)`, 'translate3d(0, 0, 0)')
     .afterClearStyles(['transform', 'opacity', 'visibility', 'z-index', 'background'])
 
   const leavingAnimation = createAnimation('primary-tab-leave')
     .addElement(leavingEl)
-    .beforeStyles({ visibility: 'visible', opacity: '1', zIndex: '1', background: '#07131f' })
+    .beforeStyles({ visibility: 'visible', opacity: '1', zIndex: '1', background: backgroundColor })
     .fromTo('transform', 'translate3d(0, 0, 0)', `translate3d(${leavingTo}, 0, 0)`)
     .afterClearStyles(['transform', 'opacity', 'visibility', 'z-index', 'background'])
 
   return createAnimation('primary-tab-slide')
     .addElement(baseEl)
-    .beforeStyles({ overflow: 'hidden', background: '#07131f' })
+    .beforeStyles({ overflow: 'hidden', background: backgroundColor })
     .addAnimation([enteringAnimation, leavingAnimation])
     .duration(280)
     .easing('cubic-bezier(0.32, 0.72, 0, 1)')
@@ -125,16 +127,17 @@ export const createEditorSaveAnimation: AnimationBuilder = (baseEl, opts = {}) =
   const enteringEl = opts.enteringEl as HTMLElement | undefined
   const leavingEl = opts.leavingEl as HTMLElement | undefined
   if (!enteringEl || !leavingEl) return createAnimation('editor-save-fade').duration(0)
+  const backgroundColor = transitionBackground(baseEl)
 
   const enteringAnimation = createAnimation('editor-save-enter')
     .addElement(enteringEl)
-    .beforeStyles({ visibility: 'visible', background: '#07131f' })
+    .beforeStyles({ visibility: 'visible', background: backgroundColor })
     .fromTo('opacity', '0', '1')
     .afterClearStyles(['opacity', 'background'])
 
   const leavingAnimation = createAnimation('editor-save-leave')
     .addElement(leavingEl)
-    .beforeStyles({ visibility: 'visible', background: '#07131f' })
+    .beforeStyles({ visibility: 'visible', background: backgroundColor })
     .fromTo('opacity', '1', '0')
     .afterClearStyles(['opacity', 'background'])
 
@@ -159,12 +162,13 @@ export const createDiaryToStarAnimation: AnimationBuilder = (baseEl, opts = {}) 
   const enteringEl = opts.enteringEl as HTMLElement | undefined
   const leavingEl = opts.leavingEl as HTMLElement | undefined
   if (!enteringEl || !leavingEl) return createAnimation('diary-to-star').duration(0)
+  const backgroundColor = transitionBackground(baseEl)
   const paperEl = leavingEl.querySelector('.editor-paper') as HTMLElement | null
   const editorChrome = leavingEl.querySelectorAll('.page-subbar, .mood-section')
 
   const enteringAnimation = createAnimation('planet-reveal')
     .addElement(enteringEl)
-    .beforeStyles({ visibility: 'visible', background: '#07131f' })
+    .beforeStyles({ visibility: 'visible', background: backgroundColor })
     .fromTo('opacity', '.35', '1')
     .fromTo('transform', 'scale(.975)', 'scale(1)')
     .afterClearStyles(['transform', 'opacity', 'background'])
@@ -192,8 +196,8 @@ export const createDiaryToStarAnimation: AnimationBuilder = (baseEl, opts = {}) 
 
   const leavingBackground = createAnimation('editor-background-fade')
     .addElement(leavingEl)
-    .beforeStyles({ visibility: 'visible', background: '#07131f' })
-    .fromTo('background-color', '#07131f', 'rgba(7, 19, 31, 0)')
+    .beforeStyles({ visibility: 'visible', background: backgroundColor })
+    .fromTo('background-color', backgroundColor, 'transparent')
     .afterClearStyles(['background', 'background-color'])
 
   return createAnimation('diary-to-star')

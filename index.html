@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#07131f" />
+    <script>
+      // Restore the theme backing color before the app bundle/CSS paints.
+      try {
+        const appearance = JSON.parse(localStorage.getItem('shiguangjian.appearance.v1') || 'null');
+        if (appearance && /^#[0-9a-f]{6}$/i.test(appearance.backgroundColor)) {
+          document.documentElement.style.setProperty('--app-shell-background', appearance.backgroundColor);
+          if (appearance.colorScheme === 'dark' || appearance.colorScheme === 'light') {
+            document.documentElement.style.colorScheme = appearance.colorScheme;
+          }
+          document.querySelector('meta[name="theme-color"]').content = appearance.backgroundColor;
+        }
+      } catch {}
+    </script>
     <title>拾光笺</title>
   </head>
   <body>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDiaryStore } from './stores/diaryStore'
 import { IonApp, IonIcon, IonRouterOutlet, useIonRouter } from '@ionic/vue'
@@ -7,16 +7,21 @@ import { add, planetOutline, settingsOutline } from 'ionicons/icons'
 import { createDiaryPaperEnterAnimation, createTabSlideAnimation } from './animations'
 import { getThemePresentation, useCurrentTheme } from './services/themeService'
 import AppToastStack from './components/AppToastStack.vue'
+import { syncSystemAppearance } from './services/systemAppearance'
 
 const route = useRoute()
 const ionRouter = useIonRouter()
 const store = useDiaryStore()
 void store.ensureLoaded().catch(() => undefined)
 const currentTheme = useCurrentTheme()
-const appThemeStyle = computed(() => getThemePresentation(
+const appThemePresentation = computed(() => getThemePresentation(
   currentTheme.value?.id ?? 'default',
   currentTheme.value?.version ?? '1.0.0',
-).cssVariables)
+))
+
+watch([appThemePresentation, () => route.path], ([presentation, path]) => {
+  void syncSystemAppearance(presentation, path === '/tarot' || path.startsWith('/tarot/'))
+}, { immediate: true, flush: 'sync' })
 
 const nav = [
   { path: '/timeline', label: '星球', icon: planetOutline },
@@ -55,7 +60,7 @@ function createDiary() {
 </script>
 
 <template>
-  <IonApp class="app-theme" :style="appThemeStyle">
+  <IonApp class="app-theme" :style="appThemePresentation.cssVariables">
     <AppToastStack />
     <IonRouterOutlet :animated="true" />
     <nav v-if="showTabBar" class="floating-nav" :class="{ 'floating-nav-night': route.path !== '/timeline', 'floating-nav-editor': isNewDiaryRoute }" aria-label="主导航">
