@@ -6,7 +6,8 @@
 
 ## 维护文档
 
-- [星语塔罗完整设计与交互原型](docs/tarot/README.md)：新增塔罗流程、AI 对话、历史、接口与数据设计，尚未接入正式功能。
+- [App 端开发设计文档](App端开发设计文档.md)：当前页面、数据边界、开发进度与验收要求。
+- [星语塔罗完整设计与交互原型](docs/tarot/README.md)：产品与接口设计；离线流程已实现，代码现状与待验收项见 [实现记录](docs/tarot/IMPLEMENTATION.md)，AI 服务端尚待接入。
 - [品牌官网开发与部署](website/README.md)：独立 Astro 静态官网、视觉交互与 Pages / Nginx / OSS 部署说明。
 - [Android 版本更新与发布手册](RELEASE.md)：后续发布前必须先阅读，包含版本修改、构建、签名、发布、升级验证和数据保护步骤。
 - [正式版与测试版渠道规范](docs/RELEASE_CHANNELS.md)：定义包名、更新源、迭代日志和公告防误发流程。
@@ -19,7 +20,7 @@
 - [直接下载最新 Android APK](https://github.com/boringHub/shiguangjian/releases/latest/download/shiguangjian-android.apk)
 - GitHub 下载连续 30 秒没有响应时，应用会自动切换到阿里云 OSS 备用下载；设置页会显示当前来源、下载进度、校验和安装状态。
 
-当前提供的是调试签名 APK，仅用于开发体验和功能测试。Android 安装时可能需要允许浏览器或文件管理器“安装未知应用”。应用内支持在“设置 > 应用更新”中手动检查 GitHub Releases。
+正式渠道使用 Release 构建并沿用历史签名以支持覆盖升级；内部测试版有独立包名、签名和更新通道，详见 [RELEASE.md](RELEASE.md)。Android 安装时可能需要允许浏览器或文件管理器“安装未知应用”。应用内支持在“设置 > 应用更新”中手动检查更新。
 
 升级必须使用相同包名、相同签名和更高的 `versionCode` 进行覆盖安装。覆盖安装会保留应用私有目录中的 SQLite 日记；卸载应用会删除这些数据，因此更新流程不会提供“先卸载再安装”的降级方案。
 
@@ -28,7 +29,8 @@
 - 全屏记忆星球时间线，支持拖动、双指及滚轮缩放、聚焦和流星转场
 - 从添加按钮抽出和收回的新建日记页，详情页光晕展开与返回动画
 - 新建、编辑、查看和软删除日记
-- 五种心情状态与对应星体颜色
+- 十五种彩色简笔心情表情与对应星体颜色，编辑器、详情和星球气泡统一展示
+- 根据可用高度调整正文区域的紧凑编辑器与详情布局
 - 收藏日记和按日期搜索
 - Web 端 LocalStorage 持久化
 - Android 端 SQLite 本地持久化
@@ -41,6 +43,10 @@
 - 更新包包名、版本号、签名和可选 SHA-256 完整性校验
 - 可选的单篇日记分享、发送状态、失败重试、回执同步和首次已读提示
 - 独立的使用者通知邮箱验证与开关，设备公钥认证和本地待办退避重试
+- 星语塔罗离线流程：六种方向、78 张随包卡面、洗切选牌、正逆位参考牌义、本机历史、收藏和笔记；AI 默认关闭
+- Android 窗口、WebView、系统栏和转场底色跟随当前主题，塔罗独立页面使用对应背景
+
+以上为当前开发分支能力；尚未发布的内容见 [CHANGELOG.md](CHANGELOG.md) 的“未发布”，已发布安装包的版本以 [RELEASE.md](RELEASE.md) 的当前发布基线为准。
 
 ## 技术栈
 
@@ -60,7 +66,9 @@
 - Android 数据库文件名为 `shiguangjianSQLite.db`
 - Android 数据库位于应用私有目录，通常为 `/data/user/0/xyz.shiguangjian.app/databases/`
 
-SQLite V4 包含 `diaries`、`diary_blocks`、`diary_assets`、`diary_layouts`、`themes`、`theme_assets`、`app_settings`、`event_queue` 和 `diary_share_states`。正文和图片分别保存为 `text`、`image` Block，图片文件位于 Capacitor `Directory.Data` 对应的应用私有目录，数据库只保存相对路径。V3 新增通知队列重试索引，V4 新增分享状态和首次分享快照，迁移保留已有数据。
+SQLite 当前为 V5。原有日记、图片、布局、主题、设置、通知队列和分享状态表继续保留；V5 增量增加 `tarot_readings`、`tarot_drawn_cards`、`tarot_messages`、`tarot_ai_requests` 和 `tarot_cleanup_outbox`。日记、主题、塔罗与设备身份共用串行调度的原生数据库连接，事务执行期间其他读写等待。正文和图片分别保存为 `text`、`image` Block，图片文件位于 Capacitor `Directory.Data` 对应的应用私有目录，数据库只保存相对路径。V3 新增通知队列重试索引，V4 新增分享状态和首次分享快照，V5 不重建原表，迁移保留已有数据。
+
+浏览器日记继续使用 LocalStorage；塔罗记录独立使用 `shiguangjian.tarot.v1` IndexedDB，不与 Android 数据互通。塔罗目前没有导入导出或云端备份，卸载或清除数据会丢失本机记录。
 
 从 V1 升级到 V2 时只新增主题索引表，不删除或重建已有日记数据。自动迁移测试会先创建 V1 日记、Block、图片和布局，再执行 V2 升级并核对原数据仍可读取。浏览器中的旧版 LocalStorage 文字日记会在读取时补齐 Block 和布局结构。
 
@@ -96,7 +104,7 @@ npm ci
 npm run dev
 ```
 
-Web 预览只使用 LocalStorage，不注册设备、不请求通知 API，也不提供邮箱绑定能力。
+Web 预览的日记使用 LocalStorage，塔罗使用 IndexedDB；不注册生产设备、不请求通知或模型 API，也不提供邮箱绑定能力。
 
 ### 可选的邮件通知接入
 
@@ -133,7 +141,7 @@ npm test
 npm run build
 ```
 
-测试覆盖图片上限、旧 LocalStorage 兼容、主题 manifest、ZIP 包安全校验、SQLite 数据保留迁移、设备认证、分享状态、回执去重、请求限频和并发同步。
+测试覆盖图片上限、旧 LocalStorage 兼容、主题 manifest、ZIP 包安全校验、SQLite 数据保留迁移、设备认证、分享状态、回执去重、请求限频和并发同步，以及塔罗卡面校验、洗切与快照、上下文隐私、SSE、共享数据库事务和系统主题背景同步。
 
 ### 构建 Android APK
 
@@ -173,7 +181,7 @@ Android SDK 的本地路径写在被 Git 忽略的 `android/local.properties` �
 
 1. 保持 `applicationId` 为 `xyz.shiguangjian.app`，不得修改包名。
 2. 将 `android/app/build.gradle` 中的 `versionCode` 至少增加 1，并同步增加 `versionName`。
-3. 使用与上一版完全相同的签名密钥。当前公开版本为调试签名，下一次覆盖升级必须保留构建该 APK 的原始调试密钥；迁移到不同签名会被 Android 拒绝。
+3. 使用与上一版完全相同的历史签名密钥，通过 `STABLE_KEYSTORE_FILE` 提供；当前正式渠道采用 Release 构建，证书和跨设备恢复要求以 `RELEASE.md` 为准。迁移到不同签名会被 Android 拒绝。
 4. 将 APK 上传为 `shiguangjian-android.apk`，Release 标签与 `versionName` 保持一致，例如 `v1.2.0`。
 5. 同时上传名为 `update.json` 的发布清单，格式参考仓库根目录的 `update.example.json`，其中 SHA-256 和大小必须由最终签名 APK 计算。
 6. 运行 `scripts/publish-oss.ps1`，同步版本目录和 `releases/latest` 下的 APK、ZIP 与清单，并通过公开地址复核 ZIP 内 APK 的哈希。
@@ -186,6 +194,7 @@ Android SDK 的本地路径写在被 Git 忽略的 `android/local.properties` �
 
 ```text
 src/pages/           页面与交互
+src/features/tarot/  塔罗页面、领域逻辑、存储与 AI 客户端
 src/stores/          Pinia 状态管理
 src/repositories/    Web/Android 数据适配器
 src/services/        图片文件、主题和应用更新服务
@@ -198,7 +207,8 @@ android/             Capacitor Android 工程
 - 当前阶段：可选的设备公钥认证、邮箱验证、最小元数据事件队列和邮件投递已经完成私有环境联调；公开构建未配置 API 时保持纯本地运行
 - 后续个性化：加入独立的日记板素材包安装与编辑器选择，不与全局界面主题混用
 - 数据导出、导入与备份
-- 正式签名的 Android Release 构建
+- 星语塔罗服务端修补与真实 AI 链路验收，见 [交接说明](docs/tarot/SERVER_REPAIR_HANDOFF.md)
+- 当前未发布功能的 Android 真机覆盖升级、系统栏、键盘、返回和进程恢复验收；正式发布按 `RELEASE.md` 执行
 
 ## 开源许可证
 

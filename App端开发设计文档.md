@@ -1,5 +1,7 @@
 # 拾光笺 App 端开发设计文档
 
+更新：2026-10-23。本文描述当前开发代码；未发布变化见 [CHANGELOG.md](CHANGELOG.md)，安装包发布基线与签名要求统一以 [RELEASE.md](RELEASE.md) 为准。塔罗详细实现与待验收项见 [docs/tarot/IMPLEMENTATION.md](docs/tarot/IMPLEMENTATION.md)。
+
 ## 1. 目标
 
 App 端使用 Vue 3 开发，在浏览器中完成页面和业务调试，稳定后通过 Capacitor 打包为 Android APK/AAB。
@@ -16,7 +18,7 @@ Repository / Service
 SQLite + App 私有文件 + 网络通知
 ```
 
-产品数据边界沿用《总体数据架构设计.md》：日记正文、标题、图片和布局只保存在设备本地；通知 API 只接收经过允许的操作元数据。
+产品采用本地优先的数据边界：日记默认保存在设备本地；用户选择分享后，独立 V2 接口只发送该篇标题和纯文本正文，不发送图片、布局或本地路径。旧版通知事件接口仅接收允许的操作元数据。塔罗 AI 默认关闭；未来接通后仍需用户同意并主动请求，只发送当前问题与已揭示卡牌等白名单上下文，不发送私人笔记、其他日记或图片。
 
 ## 1.1 基础文案与交流语气
 
@@ -63,9 +65,17 @@ SQLite + App 私有文件 + 网络通知
 /diary/:id/edit 编辑日记
 /themes         主题中心
 /settings       设置
+/tarot          星语首页
+/tarot/new      问题与草稿
+/tarot/history  本机塔罗历史
+/tarot/settings 星语设置与数据管理
+/tarot/:id/ritual 洗切、选牌与揭示
+/tarot/:id/chat  参考牌义与解读对话
 ```
 
 第一阶段已实现记忆星球首页、新建文字日记、心情、收藏、软删除、详情查看和基础设置入口。第二阶段已接入图片 Block、应用私有文件、SQLite V2、全局界面主题、ZIP 界面主题包导入、日记板数据边界和固定布局。第三阶段已完成设备身份、通知事件队列、邮箱验证、服务端异步投递和设置页管理流程。
+
+当前开发代码还包含十五种心情表情、紧凑编辑和详情布局、Android 原生背景同步，以及星语塔罗离线流程。数据库已增量迁移至 V5；塔罗 AI 服务端与当前改动的 Android 真机验收仍待完成。
 
 ### 3.1 记忆星球首页（/timeline）
 
@@ -95,7 +105,8 @@ SQLite + App 私有文件 + 网络通知
 
 #### 视觉规则
 
-- `mood` 决定星星的色相：平静为青绿、开心为暖黄、低落为蓝、疲惫为灰紫、期待为橙红。
+- `mood` 决定星星的色相，当前支持平静、开心、期待、心动、调皮、得意、放松、感动、困困、疲惫、低落、孤单、生气、焦虑、迷茫十五种心情；旧有五种取值继续兼容。颜色与标签统一维护于 `src/types/diary.ts`。
+- 新建日记通过正文卡片上方居中的虚线加号打开表情面板，选中后显示彩色简笔表情；编辑、详情与星球气泡复用相同表情。扩展心情沿用原字段，旧通知队列按兼容分类发送，不新增数据库列。
 - `isFavorite` 使用额外光环表示；每颗星额外拥有稳定的随机亮度、大小和呼吸相位，装饰星数量随日记数增加，形成更完整的星空层次。
 - 星球使用深色沉浸背景、全屏装饰星场和不显示的聚焦范围，文字信息使用固定 DOM 气泡承载，保证可读性和无障碍。
 - Canvas 负责星球、星星、光晕和拖拽渲染；Vue DOM 负责日期搜索、气泡、状态提示和可访问的日记列表。
@@ -126,16 +137,28 @@ focused → searching → single-result / cluster-result / empty-result
 - 中央新建按钮保留，作为最明确的日记创建动作。
 - 设置入口保留；详情页和编辑页不显示底部导航。
 - 星球页底部预留安全区，Canvas 不把可交互星星放到导航遮挡范围内。
+- 星球工具区与设置提供星语入口；`/tarot` 系列路由隐藏全局底栏，使用独立的 Ionic 页面栈与返回流程。
+
+### 3.3 日记编辑与详情
+
+编辑器按屏幕可用高度分配正文区域，压缩标题、表情入口和卡片留白；详情页使用相同的表情位置与紧凑间距，长正文自然滚动。图片仍受每篇最多 5 张的页面与 Repository 双重校验。
+
+### 3.4 星语塔罗
+
+离线流程已实现六种方向与固定 1/3/4/5 张牌阵、问题草稿、Web Crypto 洗切牌、圆环选牌、正逆位揭示、参考牌义、本机历史筛选、收藏和笔记。78 张 RWS 1909 卡面随包提供。选牌结果先落盘再播放动画，已翻牌记录不能改题换牌；问题修改、删除与迟到写入保护详见实现记录。
+
+AI 默认关闭，离线流程不依赖服务端。客户端已预留签名流式请求、版本化同意、SSE、主动恢复与清理待办；启用前必须按 [服务端交接说明](docs/tarot/SERVER_REPAIR_HANDOFF.md) 完成真实网络链路验收。进入页面和读取历史不自动请求模型。
 
 ## 4. 数据模型
 
-初版 TypeScript 模型与 Android V1 对齐：
+当前日记 TypeScript 模型的主要字段如下；SQLite 仍保留部分历史兼容列：
 
 ```text
 Diary
-  id, title, summary, createdAt, updatedAt
-  mood, moodValue, boardPackId, boardPackVersion, layoutId
-  isFavorite, isArchived, isDeleted
+  id, title, summary, body, createdAt, updatedAt
+  mood, boardPackId, boardPackVersion, layoutId
+  isFavorite, isDeleted, blocks, assets, layout
+  shareStatus, shareId?, shareReadAt?, shareError?
 
 DiaryBlock
   id, diaryId, blockType, sortOrder, contentJson
@@ -149,6 +172,10 @@ EventQueueItem
 ```
 
 时间使用 Unix milliseconds，ID 使用应用生成的 UUID。删除使用软删除；默认时间线过滤 `isDeleted = true` 的记录。
+
+SQLite 当前版本为 V5：V2 增加主题表，V3 增加通知队列重试索引，V4 增加日记分享状态和首次分享快照，V5 增加 `tarot_readings`、`tarot_drawn_cards`、`tarot_messages`、`tarot_ai_requests`、`tarot_cleanup_outbox` 及索引，不重建既有日记表。塔罗子表的外键级联不影响日记数据。
+
+`src/repositories/sqliteDatabase.ts` 统一管理日记、塔罗、主题和设备身份的原生连接；事务独占连接直至提交或回滚，其他读写串行等待。浏览器日记使用 LocalStorage，塔罗使用独立的 `shiguangjian.tarot.v1` IndexedDB；两者与 Android 不互通。塔罗当前没有云端历史或导入导出。
 
 ## 5. 分层约束
 
@@ -165,7 +192,8 @@ Storage Adapter / Notification API
 - 页面组件不直接操作 LocalStorage、SQLite、Filesystem 或 `fetch`。
 - `DiaryRepository` 负责日记和内容块的持久化。
 - `SettingsRepository` 负责轻量设置。
-- `NotificationService` 只发送事件元数据，禁止传递正文、标题、图片和本地路径。
+- 旧版通知事件只发送元数据；V2 分享只在用户选择分享后发送该篇标题与纯文本正文，禁止发送图片、布局和本地路径。
+- 塔罗 AI 上下文由独立白名单构建器生成，不能直接序列化整个日记或阅读记录。
 - 正式 Android 适配器替换浏览器适配器时，页面和业务 Store 不改动。
 
 ## 6. 全局主题、日记板与布局
@@ -189,6 +217,8 @@ Storage Adapter / Notification API
 
 当前版本所有日记统一使用 `plain-diary-board@1.0.0`。旧数据中的 `theme_id/theme_version` 列暂作为兼容存储位读取，旧全局主题 ID 会映射到默认日记板，不会锁定历史日记的 App 界面。未来接入真正的日记板包时，再通过非破坏迁移增加语义清晰的字段和素材索引。
 
+`systemAppearance.ts` 同步 CSS 变量、页面底色、`color-scheme` 与 `theme-color`；Android 通过 `AppAppearance` 插件同步窗口、WebView 和系统栏图标明暗，塔罗页面采用主题的 `--tarot-bg`。前台恢复和系统配置变化会重新应用背景，冷启动恢复缓存的主题底色；页面转场使用当前底色。系统栏、手势导航和切换过程仍需真机验收。
+
 ## 7. 开发阶段
 
 ### 阶段一：浏览器可调试闭环
@@ -204,7 +234,7 @@ Storage Adapter / Notification API
 - 使用 Filesystem 保存照片、主题和生成素材。
 - 加入图片选择和主题 manifest 解析。
 
-当前进度（2026-09-28）：
+阶段二完成记录（2026-09-28，以下测试数量为当时结果）：
 
 - 已引入 Capacitor 8 并生成 Android 工程。
 - 已建立异步 `DiaryRepository` 契约；浏览器使用 LocalStorage，Android 自动使用 SQLite。
@@ -232,7 +262,7 @@ Storage Adapter / Notification API
 
 设置页通过设备签名请求 6 位验证码，验证码十分钟有效；本地旧邮箱只作为待验证候选。已验证邮箱和待验证新邮箱分开保存，因此更换邮箱确认前原绑定继续有效。关闭提醒会先在本机生效，网络失败时保留待同步状态；解绑会清除本地验证状态。验证码挑战保存在本机，有效期内关闭弹窗或重启后仍可继续确认。
 
-notify-api 在 D1 中保存邮箱验证摘要、设备通知设置和唯一投递记录，Cloudflare Queue 消息只携带 `challengeId` 或 `deliveryId`。消费者重新检查设备、邮箱和开关状态后调用 Resend，仅 `diary_created` 发送中性提醒；邮件不包含日记内容。`202 accepted` 只表示服务器已持久接收并接管符合条件的投递，不代表邮件到达。代码和本地自动化验证已完成，生产 Queue、D1 migration、Worker secrets、Resend 域名确认及真实邮箱冒烟测试仍属于部署验收。
+通知服务端源码独立维护，不在公开 App 仓库内。旧版事件只发送中性提醒，当前创建流程使用独立 V2 分享接口，确认后才发送标题与纯文本正文。`202 accepted` 只表示服务器已持久接收并接管投递，不代表邮件到达。邮箱验证码、分享、回执和反馈的线上行为需要在相应部署环境单独验收，App 本地测试不替代服务端与真实邮箱验收。
 
 ### 阶段四：Android 发布
 
@@ -253,16 +283,26 @@ npx cap run android
 - 两个来源最终都必须经过包名、递增 `versionCode`、预期版本、签名证书和 APK SHA-256 校验，ZIP 不改变信任边界。
 - 每版发布必须运行 `scripts/publish-oss.ps1`，具体环境变量、对象路径和验证流程以 `RELEASE.md` 为准。
 
+### 当前开发状态（2026-10-23）
+
+- 已提交离线塔罗及服务端交接、十五种心情与紧凑布局、Android 主题背景同步；用户可感知变化累计于 `CHANGELOG.md` 的“未发布”。
+- 当前推送仅同步开发代码与文档；新安装包发布需按 `RELEASE.md` 独立执行版本递增、签名、双源上传与覆盖升级验收。
+- 本轮验证：`npm test` 通过 24 个文件 / 138 项测试，`npm run build` 与 `npm run release:validate` 通过；Web 主包仍有大于 500 kB 的构建提示。未在本轮构建或发布 APK。
+- 塔罗 AI 服务端、Android 真机覆盖升级、键盘、TalkBack、系统返回、仪式阶段进程恢复和主题系统栏仍待验收。
+
 ## 8. 验收标准
 
 - 浏览器执行 `npm run dev` 可以查看并操作时间线。
 - 创建和编辑日记不会依赖后端或网络。
 - 日记删除后默认不出现在时间线，收藏状态可保持。
-- 业务层没有把日记正文发送给通知接口的路径。
+- 未确认分享时不发送日记正文；确认后仅通过独立 V2 分享接口发送该篇标题与纯文本正文，旧版通知事件接口始终只接收元数据。
 - 后续切换 Capacitor 存储实现时，不修改页面组件的数据调用方式。
 - 可导入合法 ZIP 全局界面主题包，越界路径、超限包和重复版本会被拒绝且不会留下半安装状态。
 - 切换全局主题后，当前页面、历史日记详情和之后打开的页面立即使用同一套界面样式。
 - 日记板素材包与全局主题相互独立；当前日记保存默认 `boardPackId + boardPackVersion`，未来由编辑器单独选择。
 - DiaryLayout 固定为 `1080 × 1440`，只引用 `blockId` 或 `assetId`，不复制正文和本地路径。
-- SQLite V1 → V2 自动迁移保留原数据；发布前还必须在保留 V1 数据库的 Android 设备上完成覆盖安装验证。
+- SQLite V1 → V2 与 V4 → V5 自动迁移保留原日记、图片、布局、设置和待办；发布前还必须在保留真实日记的旧版 Android 设备上完成覆盖安装验证。
 - GitHub 更新接口或下载连续 30 秒无响应时会切换 OSS，下载界面能持续显示来源和进度，备用 ZIP 解压后仍通过完整 APK 安全校验。
+- 十五种心情读写后保持一致，编辑器、详情和星球气泡展示对应表情，旧心情记录仍可读取。
+- 共享原生数据库连接的跨功能事务不串写，失败回滚后可继续读写；关闭 AI 或未同意时不发送模型请求。
+- 离线塔罗抽牌、揭示和历史不依赖网络；AI、真机覆盖升级与系统主题背景需分别取得实际验收证据。
