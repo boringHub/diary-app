@@ -6,6 +6,7 @@ import { checkmarkDoneOutline, chevronBack, createOutline, heart, heartOutline, 
 import { useDiaryStore } from '../stores/diaryStore'
 import type { DiaryBlock } from '../types/diary'
 import { moodLabels } from '../types/diary'
+import MoodFace from '../components/MoodFace.vue'
 import { createStarReturnAnimation } from '../animations'
 import { diaryShareSyncState, refreshDiaryShareStatus } from '../services/notificationSync'
 import { showAppToast } from '../services/appToast'
@@ -150,11 +151,15 @@ async function refreshShareStatus() {
         <div class="page-stars" aria-hidden="true"></div>
         <header class="subbar page-subbar">
           <button class="icon-button" aria-label="返回时间线" @click="backToTimeline"><IonIcon :icon="chevronBack" /></button>
-          <div class="page-title"><span class="page-title-kicker">记忆星球 · 这颗星</span><strong>{{ moodLabels[diary.mood] }}</strong></div>
+          <div class="page-title"><span class="page-title-kicker">记忆星球 · 这颗星</span><strong>日记详情</strong></div>
           <div class="actions"><button class="icon-button" :class="{ 'favorite-active': diary.isFavorite }" :aria-label="diary.isFavorite ? '取消收藏' : '收藏'" @click="void store.toggleFavorite(diary.id)"><IonIcon :icon="diary.isFavorite ? heart : heartOutline" /></button><button class="icon-button" aria-label="编辑日记" @click="ionRouter.navigate(`/diary/${diary.id}/edit`, 'forward', 'push')"><IonIcon :icon="createOutline" /></button></div>
         </header>
+        <div class="diary-mood-entry diary-mood-display">
+          <MoodFace :mood="diary.mood" />
+          <span class="diary-mood-caption" aria-hidden="true">{{ moodLabels[diary.mood] }}</span>
+        </div>
         <article class="detail-paper">
-          <div class="detail-orbit"><span class="orbit-dot"></span><span>{{ moodLabels[diary.mood] }} · {{ diary.isFavorite ? '已收藏' : '一段日常' }}</span></div>
+          <div class="detail-orbit"><span class="orbit-dot" aria-hidden="true"></span><span>{{ diary.isFavorite ? '已收藏' : '一段日常' }}</span></div>
           <p class="detail-date">{{ new Intl.DateTimeFormat('zh-CN', { dateStyle: 'full' }).format(diary.updatedAt) }}</p>
           <h1>{{ diary.title || '还没取名字' }}</h1>
           <div class="detail-rule"></div>

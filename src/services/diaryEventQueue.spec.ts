@@ -1,5 +1,6 @@
 import initSqlJs, { type Database } from 'sql.js'
 import { describe, expect, it } from 'vitest'
+import type { Mood } from '../types/diary'
 import {
   enqueueDiaryCreatedEvent,
   listReadyDiaryEvents,
@@ -32,6 +33,17 @@ describe('diary event queue', () => {
     expect(first).toMatchObject({ eventId: events[0]?.values[0]?.[0], eventType: 'diary_created', occurredAt: 1234, mood: 'happy' })
     expect(second).toMatchObject({ eventType: 'diary_created', occurredAt: 5678, mood: 'calm', deviceId: first.deviceId })
     expect(events[0]?.values.map((row) => row[4])).toEqual(['pending', 'pending'])
+
+    const expectedMoods: Record<Mood, string> = {
+      calm: 'calm', happy: 'happy', sad: 'low', tired: 'tired', excited: 'hopeful',
+      loved: 'happy', playful: 'happy', proud: 'happy', relaxed: 'calm', touched: 'happy',
+      sleepy: 'tired', lonely: 'low', angry: 'low', anxious: 'low', confused: 'low',
+    }
+    for (const [mood, expected] of Object.entries(expectedMoods)) {
+      await enqueueDiaryCreatedEvent(database, mood as Mood, 9999)
+      const payload = db.exec('SELECT payload_json FROM event_queue ORDER BY rowid DESC LIMIT 1')[0]?.values[0]?.[0]
+      expect(JSON.parse(String(payload)).mood, mood).toBe(expected)
+    }
     db.close()
   })
 

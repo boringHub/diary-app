@@ -1,4 +1,27 @@
-export type Mood = 'calm' | 'happy' | 'sad' | 'tired' | 'excited'
+export const moodOptions = ['calm', 'happy', 'excited', 'loved', 'playful', 'proud', 'relaxed', 'touched', 'sleepy', 'tired', 'sad', 'lonely', 'angry', 'anxious', 'confused'] as const
+export type Mood = typeof moodOptions[number]
+
+export function isMood(value: unknown): value is Mood {
+  return typeof value === 'string' && moodOptions.some((mood) => mood === value)
+}
+
+export const moodColors: Record<Mood, string> = {
+  calm: '#81d3bd',
+  happy: '#ffd27d',
+  sad: '#8bb8e8',
+  tired: '#b6a8d6',
+  excited: '#ff9e82',
+  loved: '#f3abc0',
+  playful: '#dfbf79',
+  proud: '#e7bd83',
+  relaxed: '#a9d8ca',
+  touched: '#efb5a2',
+  sleepy: '#a9b4dc',
+  lonely: '#9ebbd2',
+  angry: '#ee9290',
+  anxious: '#d4b0d3',
+  confused: '#bfbedc',
+}
 
 export type DiaryShareStatus = 'none' | 'pending' | 'queued' | 'processing' | 'sent' | 'read' | 'failed' | 'cancelled' | 'expired'
 
@@ -96,4 +119,14 @@ export const moodLabels: Record<Mood, string> = {
   sad: '低落',
   tired: '疲惫',
   excited: '期待',
+  loved: '心动',
+  playful: '调皮',
+  proud: '得意',
+  relaxed: '放松',
+  touched: '感动',
+  sleepy: '困困',
+  lonely: '孤单',
+  angry: '生气',
+  anxious: '焦虑',
+  confused: '迷茫',
 }

@@ -45,6 +45,7 @@ import type {
   Mood,
   SaveDiaryImageInput,
 } from '../types/diary'
+import { isMood } from '../types/diary'
 import type { DiaryRepository, DiaryShareReadNotice, DiaryShareReceiptSync, SaveDiaryInput } from './diaryRepository'
 import { getSQLiteDatabase, withSQLiteTransaction } from './sqliteDatabase'
 
@@ -728,6 +729,6 @@ export class SQLiteDiaryRepository implements DiaryRepository {
   }
 
   private readMood(value: unknown): Mood {
-    return value === 'happy' || value === 'sad' || value === 'tired' || value === 'excited' ? value : 'calm'
+    return isMood(value) ? value : 'calm'
   }
 }

@@ -4,8 +4,8 @@ import { useIonRouter } from '@ionic/vue'
 import { IonContent, IonIcon, IonPage, onIonViewDidEnter, onIonViewDidLeave, onIonViewWillEnter, onIonViewWillLeave } from '@ionic/vue'
 import { calendarOutline, closeOutline, searchOutline, sparklesOutline } from 'ionicons/icons'
 import { useDiaryStore } from '../stores/diaryStore'
-import { moodLabels } from '../types/diary'
-import type { Diary, Mood } from '../types/diary'
+import { moodColors, type Diary } from '../types/diary'
+import MoodFace from '../components/MoodFace.vue'
 import { createStarEnterAnimation, type StarTransitionOrigin } from '../animations'
 import {
   MAX_PLANET_ZOOM,
@@ -46,12 +46,10 @@ const hint = ref('拖动星球，找找今天的心情呀')
 const canvasSize = ref({ width: 0, height: 0 })
 const arrivingStar = ref<{ diaryId: string; color: string; x: number; y: number; focusX: number; focusY: number; phase: 'falling' | 'settling' } | null>(null)
 
-const moodColors: Record<Mood, string> = { calm: '#81d3bd', happy: '#ffd27d', sad: '#8bb8e8', tired: '#b6a8d6', excited: '#ff9e82' }
 const shortDateFormatter = new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' })
 const dateKey = (value: number) => { const date = new Date(value); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
 const formatShortDate = (value: number) => shortDateFormatter.format(value)
 const focusedDiary = computed(() => store.diaries.find((diary) => diary.id === selectedDiaryId.value) ?? null)
-const focusedMood = computed(() => focusedDiary.value ? moodLabels[focusedDiary.value.mood] : '')
 const clusterMode = computed(() => cluster.value.length > 1)
 const bubbleStyle = computed(() => ({
   left: `${clusterMode.value ? canvasSize.value.width / 2 : focusAnchor.value.x}px`,
@@ -566,7 +564,7 @@ onBeforeUnmount(() => {
           ></span>
           <div v-if="focusedDiary && focusVisible" class="memory-bubble mood-bubble" :style="bubbleStyle" aria-live="polite">
             <span class="bubble-tail"></span>
-            <span class="bubble-mood"><i :style="{ background: moodColors[focusedDiary.mood] }"></i>{{ focusedMood }}</span>
+            <span class="bubble-mood"><MoodFace :mood="focusedDiary.mood" /></span>
             <span class="bubble-date">{{ formatShortDate(focusedDiary.createdAt) }}</span>
           </div>
         </div>

@@ -5,7 +5,9 @@ import { alertController, IonContent, IonIcon, IonPage, useIonRouter } from '@io
 import { chevronBack, close, imageOutline } from 'ionicons/icons'
 import { useDiaryStore } from '../stores/diaryStore'
 import { createDiaryPaperExitAnimation, createDiaryToStarAnimation, createEditorSaveAnimation } from '../animations'
-import { MAX_DIARY_IMAGES, type DiaryImageInput, type Mood } from '../types/diary'
+import { MAX_DIARY_IMAGES, moodLabels, type DiaryImageInput, type Mood } from '../types/diary'
+import MoodFace from '../components/MoodFace.vue'
+import MoodPickerDialog from '../components/MoodPickerDialog.vue'
 import { isNotificationServiceConfigured } from '../services/notifyApiClient'
 import { settingsRepository } from '../repositories/settingsRepository'
 import { showAppToast } from '../services/appToast'
@@ -29,20 +31,20 @@ void store.ensureLoaded().catch(() => undefined)
 const existing = computed(() => route.params.id ? store.get(String(route.params.id)) : undefined)
 const title = ref('')
 const body = ref('')
-const mood = ref<Mood>('calm')
+const mood = ref<Mood | null>(null)
+const moodPickerOpen = ref(false)
 const images = shallowRef<EditorImage[]>([])
 const imageInput = ref<HTMLInputElement>()
 const allowLeave = ref(false)
-const moods: Mood[] = ['calm', 'happy', 'sad', 'tired', 'excited']
-const labels: Record<Mood, string> = { calm: '平静', happy: '开心', sad: '低落', tired: '疲惫', excited: '期待' }
-const isDirty = computed(() => title.value !== (existing.value?.title ?? '') || body.value !== (existing.value?.body ?? '') || mood.value !== (existing.value?.mood ?? 'calm') || images.value.map((image) => image.assetId ?? image.key).join(',') !== (existing.value?.assets ?? []).map((asset) => asset.id).join(','))
-const canSave = computed(() => Boolean(body.value.trim() || images.value.length) && isDirty.value && !store.saving)
+const isDirty = computed(() => title.value !== (existing.value?.title ?? '') || body.value !== (existing.value?.body ?? '') || mood.value !== (existing.value?.mood ?? null) || images.value.map((image) => image.assetId ?? image.key).join(',') !== (existing.value?.assets ?? []).map((asset) => asset.id).join(','))
+const canSave = computed(() => Boolean(mood.value) && Boolean(body.value.trim() || images.value.length) && isDirty.value && !store.saving)
 
 watch([() => route.params.id, () => store.loaded], () => {
   if (route.params.id && !store.loaded) return
   title.value = existing.value?.title ?? ''
   body.value = existing.value?.body ?? ''
-  mood.value = existing.value?.mood ?? 'calm'
+  mood.value = existing.value?.mood ?? null
+  moodPickerOpen.value = false
   images.value = (existing.value?.assets ?? []).map((asset) => ({ key: asset.id, assetId: asset.id, name: asset.id, mimeType: asset.mimeType ?? 'image/*', url: asset.url ?? '' }))
   allowLeave.value = false
 }, { immediate: true })
@@ -134,7 +136,7 @@ onBeforeRouteLeave(async () => {
 })
 
 async function save() {
-  if (!canSave.value) return
+  if (!canSave.value || !mood.value) return
   const isEditing = Boolean(existing.value)
   try {
     const imageInputs: DiaryImageInput[] = []
@@ -196,6 +198,13 @@ async function shareNewDiary(diaryId: string) {
           <div class="page-title"><span class="page-title-kicker">{{ existing ? '回到这颗星' : '写下一颗新星' }}</span><strong>{{ existing ? '改改日记' : '写篇新日记' }}</strong></div>
           <button class="save-button" :disabled="!canSave" @click="save">{{ store.saving ? '保存中' : '保存' }}</button>
         </header>
+        <div class="diary-mood-entry">
+          <button type="button" class="diary-mood-button" :class="{ 'has-mood': mood }" :aria-label="mood ? `当前心情：${moodLabels[mood]}，点击更换` : '选择日记心情'" aria-haspopup="dialog" :aria-expanded="moodPickerOpen" @click="moodPickerOpen = true">
+            <MoodFace v-if="mood" :mood="mood" decorative />
+            <span v-else class="diary-mood-plus" aria-hidden="true">+</span>
+          </button>
+          <span class="diary-mood-caption">{{ mood ? moodLabels[mood] : '先选一个此刻的心情' }}</span>
+        </div>
         <div class="editor-paper">
           <div class="editor-paper-top"><span class="paper-mark"></span><span>一段正在长出来的记忆</span><span class="paper-date">{{ new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' }).format(Date.now()) }}</span></div>
           <input v-model="title" class="title-input" placeholder="给今天取个标题呀" maxlength="50" />
@@ -224,15 +233,8 @@ async function shareNewDiary(diaryId: string) {
           </div>
           <input ref="imageInput" class="visually-hidden" type="file" accept="image/*" multiple @change="onImagesSelected" />
         </div>
-        <div class="mood-section">
-          <div class="section-heading"><p class="section-label">今天是什么心情呀</p><span>挑一个最像现在的颜色~</span></div>
-          <div class="mood-picker">
-            <button v-for="item in moods" :key="item" :class="{ selected: mood === item }" :aria-pressed="mood === item" @click="mood = item">
-              <span class="mood-dot" :class="item"></span>{{ labels[item] }}
-            </button>
-          </div>
-        </div>
       </section>
     </IonContent>
+    <MoodPickerDialog v-model="mood" :open="moodPickerOpen" @close="moodPickerOpen = false" />
   </IonPage>
 </template>

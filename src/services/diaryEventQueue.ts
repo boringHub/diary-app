@@ -117,9 +117,20 @@ function retryDelay(retryCount: number) {
 
 function toNotificationMood(mood: Mood): DiaryCreatedEvent['mood'] {
   switch (mood) {
-    case 'sad': return 'low'
+    case 'happy':
+    case 'loved':
+    case 'playful':
+    case 'proud':
+    case 'touched': return 'happy'
+    case 'sad':
+    case 'lonely':
+    case 'angry':
+    case 'anxious':
+    case 'confused': return 'low'
+    case 'tired':
+    case 'sleepy': return 'tired'
     case 'excited': return 'hopeful'
-    default: return mood
+    default: return 'calm'
   }
 }
 

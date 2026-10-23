@@ -3,6 +3,7 @@ import initSqlJs from 'sql.js'
 import type { SQLiteDBConnection } from '@capacitor-community/sqlite'
 import { settingsRepository } from './settingsRepository'
 import { DATABASE_SCHEMA } from './sqliteSchema'
+import { moodOptions } from '../types/diary'
 
 const queueMocks = vi.hoisted(() => ({
   enqueueDiaryCreatedEvent: vi.fn(),
@@ -62,6 +63,42 @@ describe('SQLiteDiaryRepository notification isolation', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllEnvs()
+  })
+
+  it('saves and reloads every mood without changing existing diary records', async () => {
+    const SQL = await initSqlJs()
+    const sqlite = new SQL.Database()
+    sqlite.run(DATABASE_SCHEMA)
+    const db = createDatabase()
+    db.query.mockImplementation(async (sql, ...args: unknown[]) => {
+      const statement = sqlite.prepare(sql)
+      try {
+        statement.bind((args[0] ?? []) as never)
+        const values: Record<string, unknown>[] = []
+        while (statement.step()) values.push(statement.getAsObject())
+        return { values }
+      } finally {
+        statement.free()
+      }
+    })
+    db.run.mockImplementation(async (sql, values = []) => { sqlite.run(sql, values as never); return {} })
+    db.beginTransaction.mockImplementation(async () => { sqlite.run('BEGIN') })
+    db.commitTransaction.mockImplementation(async () => { sqlite.run('COMMIT') })
+    db.rollbackTransaction.mockImplementation(async () => { sqlite.run('ROLLBACK') })
+    try {
+      const repository = withDatabase(new SQLiteDiaryRepository(), db)
+      for (const mood of moodOptions) {
+        const saved = await repository.save({ title: mood, body: '保存这份心情', mood })
+        expect(saved.mood).toBe(mood)
+        expect(await repository.get(saved.id)).toMatchObject({ mood, body: '保存这份心情' })
+      }
+      expect(await repository.list()).toHaveLength(moodOptions.length)
+      const first = (await repository.list())[0]!
+      sqlite.run('UPDATE diaries SET mood = NULL WHERE id = ?', [first.id])
+      expect(await repository.get(first.id)).toMatchObject({ mood: 'calm' })
+    } finally {
+      sqlite.close()
+    }
   })
 
   it('submits feedback without a notification email and leaves diary data untouched', async () => {
