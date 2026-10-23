@@ -1,5 +1,6 @@
 import type { DiaryCreatedEvent } from './diaryEventQueue'
 import { deviceKeyAuth } from './deviceKeyAuth'
+import { signedHeaders } from './signedTransport'
 
 const REQUEST_TIMEOUT_MS = 15_000
 const EVENT_TYPES = new Set(['diary_created', 'diary_updated', 'diary_favorited'])
@@ -294,27 +295,11 @@ async function sendSignedRequest(options: {
   expectedEventId?: string
 }) {
   const origin = requireNotifyApiOrigin()
-  const timestamp = Math.floor(Date.now() / 1_000).toString()
-  const nonce = crypto.randomUUID()
-  const bodyHash = await sha256Hex(options.body)
-  const canonical = ['v1', options.method.toUpperCase(), options.path, options.identity.deviceId, timestamp, nonce, bodyHash].join('\n')
-  let signature: string
-  try {
-    signature = await options.signer.sign(options.identity.alias, encodeBase64(canonical))
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new NotifyApiError(message, isTransientKeyError(message))
-  }
+  const headers = await signedHeaders(options.method, options.path, options.body, options.identity, options.signer)
 
   const { response, result } = await requestJsonWithTimeout(options.request, `${origin}${options.path}`, {
     method: options.method,
-    headers: {
-      ...(options.body ? { 'content-type': 'application/json' } : {}),
-      'x-device-id': options.identity.deviceId,
-      'x-timestamp': timestamp,
-      'x-nonce': nonce,
-      'x-signature': signature,
-    },
+    headers,
     ...(options.body ? { body: options.body } : {}),
   })
   if ((response.status === 202 && result.status === 'accepted') || (response.status === 200 && result.status === 'duplicate')) {
@@ -374,10 +359,6 @@ function apiError(body: Record<string, any>, status: number) {
   return new NotifyApiError(typeof body.error === 'string' ? body.error : `http_${status}`, status === 408 || status === 429 || status >= 500)
 }
 
-function isTransientKeyError(message: string) {
-  return message === 'KEYSTORE_UNAVAILABLE' || message === 'SIGN_FAILED'
-}
-
 function toAllowedPayload(event: DiaryCreatedEvent): DiaryCreatedEvent {
   if (
     typeof event.eventId !== 'string' || !/^[\w-]{1,128}$/.test(event.eventId) ||
@@ -400,11 +381,4 @@ function toAllowedPayload(event: DiaryCreatedEvent): DiaryCreatedEvent {
 export async function sha256Hex(value: string) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
-}
-
-function encodeBase64(value: string) {
-  const bytes = new TextEncoder().encode(value)
-  let binary = ''
-  for (const byte of bytes) binary += String.fromCharCode(byte)
-  return btoa(binary)
 }

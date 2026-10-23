@@ -1,0 +1,1770 @@
+{
+  "schemaVersion": 1,
+  "deckId": "rws-1909",
+  "version": "1.0.0",
+  "catalogVersion": "rws-zh-v1",
+  "artist": "Pamela Colman Smith",
+  "scanCredit": "Saskia Jansen",
+  "cards": [
+    {
+      "cardId": "major-00",
+      "nameZh": "愚者",
+      "nameEn": "The Fool",
+      "arcana": "major",
+      "suit": null,
+      "rank": 0,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-00.webp",
+      "upright": [
+        "探索",
+        "起点",
+        "开放"
+      ],
+      "reversed": [
+        "冒进",
+        "迟疑",
+        "准备不足"
+      ],
+      "meaning": "新的起点带来尚未定义的可能。允许尝试，也为试错留出资源。",
+      "reversedMeaning": "探索可能被担忧阻挡，也可能走得太急。先确认风险和可以承受的边界。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_00_Fool.jpeg",
+      "license": "Public domain",
+      "sha256": "d69e53f2665b0e07d2bfa9e0f8d28c2ef1439fa65d583bfad0ca66419eb5a78d"
+    },
+    {
+      "cardId": "major-01",
+      "nameZh": "魔术师",
+      "nameEn": "The Magician",
+      "arcana": "major",
+      "suit": null,
+      "rank": 1,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-01.webp",
+      "upright": [
+        "专注",
+        "资源",
+        "行动"
+      ],
+      "reversed": [
+        "分心",
+        "空转",
+        "表达受阻"
+      ],
+      "meaning": "把手中已有的能力与资源组合起来，让一个想法落到具体行动。",
+      "reversedMeaning": "检查承诺与实际能力是否一致，减少分心，再完成一件小事。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_01_Magician.jpeg",
+      "license": "Public domain",
+      "sha256": "64b5dfe00975817ffcf11b3238c3e02fb5c36da694e3a8291a18070540fd3201"
+    },
+    {
+      "cardId": "major-02",
+      "nameZh": "女祭司",
+      "nameEn": "The High Priestess",
+      "arcana": "major",
+      "suit": null,
+      "rank": 2,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-02.webp",
+      "upright": [
+        "直觉",
+        "安静",
+        "观察"
+      ],
+      "reversed": [
+        "杂音",
+        "疏离",
+        "信息遗漏"
+      ],
+      "meaning": "留出安静观察的空间，分清内心感受与已经证实的事实。",
+      "reversedMeaning": "内外信息可能混杂。给感受命名，同时补足尚未核实的细节。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_02_High_Priestess.jpeg",
+      "license": "Public domain",
+      "sha256": "faff8d1467ed7f8febdbfdeef1a37c0b3efe5b0ca5162b94df0e534248b6279d"
+    },
+    {
+      "cardId": "major-03",
+      "nameZh": "皇后",
+      "nameEn": "The Empress",
+      "arcana": "major",
+      "suit": null,
+      "rank": 3,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-03.webp",
+      "upright": [
+        "滋养",
+        "创造",
+        "丰盛"
+      ],
+      "reversed": [
+        "透支",
+        "依赖",
+        "照顾失衡"
+      ],
+      "meaning": "关注身体、环境与创造力，为事物的生长提供实际照顾。",
+      "reversedMeaning": "检视付出是否过量、需求是否被忽略。照顾别人时也保留自己的空间。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_03_Empress.jpeg",
+      "license": "Public domain",
+      "sha256": "dddbbe4381fa9d6b939dd4a89e3cb76fd9ff98f4ec88106bbcf5d7a7ebe7c36e"
+    },
+    {
+      "cardId": "major-04",
+      "nameZh": "皇帝",
+      "nameEn": "The Emperor",
+      "arcana": "major",
+      "suit": null,
+      "rank": 4,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-04.webp",
+      "upright": [
+        "结构",
+        "责任",
+        "边界"
+      ],
+      "reversed": [
+        "僵化",
+        "控制",
+        "秩序松动"
+      ],
+      "meaning": "清楚的规则与边界能承接责任，让计划有稳定的支点。",
+      "reversedMeaning": "秩序可能过紧或不足。区分必要结构与习惯性的控制。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_04_Emperor.jpeg",
+      "license": "Public domain",
+      "sha256": "5dbfa9367cce19b52d975815f2bb1ffb1bdf4138dee1921e8cab604cfbd50e12"
+    },
+    {
+      "cardId": "major-05",
+      "nameZh": "教皇",
+      "nameEn": "The Hierophant",
+      "arcana": "major",
+      "suit": null,
+      "rank": 5,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-05.webp",
+      "upright": [
+        "学习",
+        "传统",
+        "共同准则"
+      ],
+      "reversed": [
+        "质疑",
+        "独立",
+        "规则冲突"
+      ],
+      "meaning": "借助经验、学习与共同规则，辨认值得保留的做法。",
+      "reversedMeaning": "检视沿用的规则是否合适。独立判断也需要可靠信息支持。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_05_Hierophant.jpeg",
+      "license": "Public domain",
+      "sha256": "227b79a8a44dcd176f72a3dbc4a377833e8b953df18a05ca557229f0e3392823"
+    },
+    {
+      "cardId": "major-06",
+      "nameZh": "恋人",
+      "nameEn": "The Lovers",
+      "arcana": "major",
+      "suit": null,
+      "rank": 6,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-06.webp",
+      "upright": [
+        "价值",
+        "联结",
+        "选择"
+      ],
+      "reversed": [
+        "分歧",
+        "失衡",
+        "价值冲突"
+      ],
+      "meaning": "让选择与自己重视的价值一致，坦诚面对关系中的差异与承诺。",
+      "reversedMeaning": "留意口头认同与实际行动的距离，先说清各自真正需要什么。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_06_Lovers.jpeg",
+      "license": "Public domain",
+      "sha256": "24e4ad6c463f1f987c8de91bf2bbdba6e53638861a241c90c2d04e4e404ec910"
+    },
+    {
+      "cardId": "major-07",
+      "nameZh": "战车",
+      "nameEn": "The Chariot",
+      "arcana": "major",
+      "suit": null,
+      "rank": 7,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-07.webp",
+      "upright": [
+        "方向",
+        "意志",
+        "协调"
+      ],
+      "reversed": [
+        "失控",
+        "拉扯",
+        "急进"
+      ],
+      "meaning": "明确目标，协调相互拉扯的需要，以持续行动推进。",
+      "reversedMeaning": "推进可能太急或失去方向。先整合资源，再决定下一步速度。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_07_Chariot.jpeg",
+      "license": "Public domain",
+      "sha256": "0070301efd10dccefdbe71d3c490ca486f6f7b65625b9b75fb24aae523e218f5"
+    },
+    {
+      "cardId": "major-08",
+      "nameZh": "力量",
+      "nameEn": "Strength",
+      "arcana": "major",
+      "suit": null,
+      "rank": 8,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-08.webp",
+      "upright": [
+        "耐心",
+        "勇气",
+        "温柔"
+      ],
+      "reversed": [
+        "自我怀疑",
+        "压抑",
+        "耗竭"
+      ],
+      "meaning": "以温和而坚定的方式面对困难，耐心能让力量持续。",
+      "reversedMeaning": "承认疲惫与不安，避免用苛责驱动自己。重新安排支持与休息。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_08_Strength.jpeg",
+      "license": "Public domain",
+      "sha256": "79f06601943a200e6de377b9faf0bf5c651f525e3d20457f629c0beb2869e041"
+    },
+    {
+      "cardId": "major-09",
+      "nameZh": "隐者",
+      "nameEn": "The Hermit",
+      "arcana": "major",
+      "suit": null,
+      "rank": 9,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-09.webp",
+      "upright": [
+        "独处",
+        "反思",
+        "求索"
+      ],
+      "reversed": [
+        "隔绝",
+        "回避",
+        "迷失"
+      ],
+      "meaning": "暂时慢下来，通过独处和整理听见自己的判断。",
+      "reversedMeaning": "独处可能变成回避。辨认什么时候需要静心，什么时候需要求助。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_09_Hermit.jpeg",
+      "license": "Public domain",
+      "sha256": "262cecf2c93f869d168337eeff27ee02264da3786fdacdc910bd78d984948a4f"
+    },
+    {
+      "cardId": "major-10",
+      "nameZh": "命运之轮",
+      "nameEn": "Wheel of Fortune",
+      "arcana": "major",
+      "suit": null,
+      "rank": 10,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-10.webp",
+      "upright": [
+        "变化",
+        "周期",
+        "转机"
+      ],
+      "reversed": [
+        "停滞",
+        "抗拒",
+        "节奏失衡"
+      ],
+      "meaning": "环境与节奏会变化，把精力放在能调整和回应的部分。",
+      "reversedMeaning": "对变化的抗拒可能增加消耗。观察重复模式，找一个可改变的环节。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_10_Wheel_of_Fortune.jpeg",
+      "license": "Public domain",
+      "sha256": "dae5a2969ac30349582c970b6efda53b6f4735a980467e44417016d83f38f331"
+    },
+    {
+      "cardId": "major-11",
+      "nameZh": "正义",
+      "nameEn": "Justice",
+      "arcana": "major",
+      "suit": null,
+      "rank": 11,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-11.webp",
+      "upright": [
+        "公平",
+        "事实",
+        "责任"
+      ],
+      "reversed": [
+        "偏颇",
+        "逃避",
+        "信息不全"
+      ],
+      "meaning": "依据事实权衡选择与后果，公平也包含对自己诚实。",
+      "reversedMeaning": "判断可能受偏见或遗漏影响。补足事实，再检查责任如何分担。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_11_Justice.jpeg",
+      "license": "Public domain",
+      "sha256": "27db4fbc3d39368f79625fd33c1cda93489919a67dceb5eb65ab3c705a97ae83"
+    },
+    {
+      "cardId": "major-12",
+      "nameZh": "倒吊人",
+      "nameEn": "The Hanged Man",
+      "arcana": "major",
+      "suit": null,
+      "rank": 12,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-12.webp",
+      "upright": [
+        "暂停",
+        "换位",
+        "放手"
+      ],
+      "reversed": [
+        "僵持",
+        "拖延",
+        "无效牺牲"
+      ],
+      "meaning": "暂停惯常反应，换个角度看问题，不必把等待当成失败。",
+      "reversedMeaning": "辨认等待是在酝酿还是拖延，不让无边界的牺牲替代真正的选择。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_12_Hanged_Man.jpeg",
+      "license": "Public domain",
+      "sha256": "b464996405962f9b891931f54ac8361b5e2f75db1cec564336bcee6a16ce7581"
+    },
+    {
+      "cardId": "major-13",
+      "nameZh": "死神",
+      "nameEn": "Death",
+      "arcana": "major",
+      "suit": null,
+      "rank": 13,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-13.webp",
+      "upright": [
+        "转化",
+        "结束",
+        "更新"
+      ],
+      "reversed": [
+        "执着",
+        "抗拒",
+        "过渡受阻"
+      ],
+      "meaning": "一个阶段的结束为新事物腾出空间。这象征转化，不预示现实死亡。",
+      "reversedMeaning": "放下旧模式可能需要时间。先承认不舍，再选择可以逐步结束的部分。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_13_Death.jpeg",
+      "license": "Public domain",
+      "sha256": "96291c406be4b59c057e32b4f74c219ffec89848eb8709b397e72a119ad5feda"
+    },
+    {
+      "cardId": "major-14",
+      "nameZh": "节制",
+      "nameEn": "Temperance",
+      "arcana": "major",
+      "suit": null,
+      "rank": 14,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-14.webp",
+      "upright": [
+        "调和",
+        "适度",
+        "整合"
+      ],
+      "reversed": [
+        "失衡",
+        "过度",
+        "节奏紊乱"
+      ],
+      "meaning": "调和需要与资源，寻找能够持续的节奏和中间路径。",
+      "reversedMeaning": "某些投入可能失去比例。减少过度，重新安排休息与行动的配比。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_14_Temperance.jpeg",
+      "license": "Public domain",
+      "sha256": "5d14cf9f71e28226a527db724399f277b6846f32b50b349504b1812c89a72fa0"
+    },
+    {
+      "cardId": "major-15",
+      "nameZh": "恶魔",
+      "nameEn": "The Devil",
+      "arcana": "major",
+      "suit": null,
+      "rank": 15,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-15.webp",
+      "upright": [
+        "依附",
+        "欲望",
+        "束缚"
+      ],
+      "reversed": [
+        "觉察",
+        "松绑",
+        "反复"
+      ],
+      "meaning": "检视诱惑、依赖和限制选择的习惯。看清束缚不等于失去自主。",
+      "reversedMeaning": "开始觉察不自由的模式，也可能反复。用具体边界支持改变。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_15_Devil.jpeg",
+      "license": "Public domain",
+      "sha256": "66a5de0ce13abd65bca209519018898776d5adf06e59f2d2fce9476d93d34978"
+    },
+    {
+      "cardId": "major-16",
+      "nameZh": "高塔",
+      "nameEn": "The Tower",
+      "arcana": "major",
+      "suit": null,
+      "rank": 16,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-16.webp",
+      "upright": [
+        "动摇",
+        "揭露",
+        "重建"
+      ],
+      "reversed": [
+        "回避",
+        "缓变",
+        "内在震动"
+      ],
+      "meaning": "不稳固的设想可能需要重新检视。从核实事实开始重建，不预示必然灾祸。",
+      "reversedMeaning": "变化可能被压住或在内心发生。安全地面对问题，比维持表象更有帮助。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_16_Tower.jpeg",
+      "license": "Public domain",
+      "sha256": "7cffe8f61eb03f6fd38330acd70f3764b0cb352363de197a230d5b80d60acf86"
+    },
+    {
+      "cardId": "major-17",
+      "nameZh": "星星",
+      "nameEn": "The Star",
+      "arcana": "major",
+      "suit": null,
+      "rank": 17,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-17.webp",
+      "upright": [
+        "希望",
+        "修复",
+        "信任"
+      ],
+      "reversed": [
+        "灰心",
+        "失联",
+        "期待落差"
+      ],
+      "meaning": "给修复留出时间，用一点实际行动承接希望和信任。",
+      "reversedMeaning": "希望可能暂时难以感受到。降低过高期待，重新找到身边可用的支持。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_17_Star.jpeg",
+      "license": "Public domain",
+      "sha256": "47371ae1c121daafecff17ab5a7bfc104de887e2bd57eae4d479845def17257e"
+    },
+    {
+      "cardId": "major-18",
+      "nameZh": "月亮",
+      "nameEn": "The Moon",
+      "arcana": "major",
+      "suit": null,
+      "rank": 18,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-18.webp",
+      "upright": [
+        "模糊",
+        "感受",
+        "想象"
+      ],
+      "reversed": [
+        "澄清",
+        "困惑",
+        "担忧浮现"
+      ],
+      "meaning": "不确定会放大担忧，给感受空间，同时用信息验证猜测。",
+      "reversedMeaning": "某些疑虑开始浮现或澄清。不要急于下结论，逐条确认真实线索。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_18_Moon.jpeg",
+      "license": "Public domain",
+      "sha256": "714e7a0e09b8985eea05b7e66e9652ade354d49bee616c8266548fa8a561f649"
+    },
+    {
+      "cardId": "major-19",
+      "nameZh": "太阳",
+      "nameEn": "The Sun",
+      "arcana": "major",
+      "suit": null,
+      "rank": 19,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-19.webp",
+      "upright": [
+        "清晰",
+        "活力",
+        "坦诚"
+      ],
+      "reversed": [
+        "疲惫",
+        "乐观过度",
+        "表达受阻"
+      ],
+      "meaning": "关注当下已有的支持与进展，清楚而坦诚地表达需要。",
+      "reversedMeaning": "活力可能暂时不足，或期待过于饱满。允许进展有起伏。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_19_Sun.jpeg",
+      "license": "Public domain",
+      "sha256": "759104c5e9c5f3b5931e531880f5738bada13283527bbbc650e4d2ee8273ca57"
+    },
+    {
+      "cardId": "major-20",
+      "nameZh": "审判",
+      "nameEn": "Judgement",
+      "arcana": "major",
+      "suit": null,
+      "rank": 20,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-20.webp",
+      "upright": [
+        "回顾",
+        "回应",
+        "觉醒"
+      ],
+      "reversed": [
+        "自责",
+        "犹豫",
+        "回避反思"
+      ],
+      "meaning": "回顾经历，回应真正的需要，让新决定基于反思而非惯性。",
+      "reversedMeaning": "避免把反思变成自责。分清可学习的经验与无法改变的过去。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_20_Judgement.jpeg",
+      "license": "Public domain",
+      "sha256": "f705a132ef93fa74e4a25e1f681c282ed9de4a3e5a7afac5519dd688ae7f85de"
+    },
+    {
+      "cardId": "major-21",
+      "nameZh": "世界",
+      "nameEn": "The World",
+      "arcana": "major",
+      "suit": null,
+      "rank": 21,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/major-21.webp",
+      "upright": [
+        "完成",
+        "整合",
+        "阶段"
+      ],
+      "reversed": [
+        "未竟",
+        "收尾",
+        "缺少闭环"
+      ],
+      "meaning": "看见一个阶段的整合与完成，也为下一段旅程留出空间。",
+      "reversedMeaning": "可能还有需要收尾的部分。界定完成标准，不让追求完美阻止结束。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_21_World.jpeg",
+      "license": "Public domain",
+      "sha256": "070d6575155e42be10b6ff224fa348e87e433e6b190c1d6b881e82607d60894e"
+    },
+    {
+      "cardId": "wands-01",
+      "nameZh": "权杖王牌",
+      "nameEn": "Ace of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 1,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-01.webp",
+      "upright": [
+        "灵感",
+        "萌芽"
+      ],
+      "reversed": [
+        "迟滞",
+        "热情不足"
+      ],
+      "meaning": "新的热情值得被认真对待，把灵感转成一个小试验。",
+      "reversedMeaning": "先找回动力的来源，不必因短暂没有热情否定方向。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_01.jpeg",
+      "license": "Public domain",
+      "sha256": "5d8ad612e6ea9273b7441ffa2a3d47794fbb94b8bf18d93ce96056ef3c732620"
+    },
+    {
+      "cardId": "wands-02",
+      "nameZh": "权杖二",
+      "nameEn": "Two of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 2,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-02.webp",
+      "upright": [
+        "规划",
+        "视野"
+      ],
+      "reversed": [
+        "犹疑",
+        "局限"
+      ],
+      "meaning": "站远一点比较路线，把愿景与手中条件一起考虑。",
+      "reversedMeaning": "计划可能过大或过窄，用实际信息校准选择。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_02.jpeg",
+      "license": "Public domain",
+      "sha256": "abde7747658f8ab27340bba13a40771fd9d8d051038fe3078d7154f217e1079b"
+    },
+    {
+      "cardId": "wands-03",
+      "nameZh": "权杖三",
+      "nameEn": "Three of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 3,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-03.webp",
+      "upright": [
+        "拓展",
+        "等待"
+      ],
+      "reversed": [
+        "延误",
+        "准备不足"
+      ],
+      "meaning": "已有行动开始向外延伸，为后续发展准备资源。",
+      "reversedMeaning": "进展与预期不一致，检查准备和协作环节。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_03.jpeg",
+      "license": "Public domain",
+      "sha256": "7f2c6d8ceccdcc3f7c5003fe002f5366786ba0dee49c30089b21fb60fa380cb3"
+    },
+    {
+      "cardId": "wands-04",
+      "nameZh": "权杖四",
+      "nameEn": "Four of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 4,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-04.webp",
+      "upright": [
+        "庆祝",
+        "归属"
+      ],
+      "reversed": [
+        "不安",
+        "基础松动"
+      ],
+      "meaning": "珍惜阶段性的稳定与共同成果，建立能安心停靠的环境。",
+      "reversedMeaning": "检视归属感与安全感需要哪些实际条件支撑。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_04.jpeg",
+      "license": "Public domain",
+      "sha256": "eae8df6988683af14c0015903410fca05ad11fee1b8a5b2a4aa35dc1abeb353d"
+    },
+    {
+      "cardId": "wands-05",
+      "nameZh": "权杖五",
+      "nameEn": "Five of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 5,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-05.webp",
+      "upright": [
+        "竞争",
+        "碰撞"
+      ],
+      "reversed": [
+        "回避",
+        "冲突内化"
+      ],
+      "meaning": "不同目标或方法正在碰撞，先明确共同规则再表达立场。",
+      "reversedMeaning": "避免冲突未必消除分歧，温和地说清重要差异。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_05.jpeg",
+      "license": "Public domain",
+      "sha256": "015eda530a31be0c31be0a3ca88220c6725a323d450b3a29e9957b599d3cdd48"
+    },
+    {
+      "cardId": "wands-06",
+      "nameZh": "权杖六",
+      "nameEn": "Six of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 6,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-06.webp",
+      "upright": [
+        "认可",
+        "进展"
+      ],
+      "reversed": [
+        "失落",
+        "外部评价"
+      ],
+      "meaning": "承认已经做出的努力，也思考怎样分享成果和责任。",
+      "reversedMeaning": "外部评价可能影响信心，重新定义自己的进步标准。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_06.jpeg",
+      "license": "Public domain",
+      "sha256": "cd6962c38fd56ddd833303355bc7cd40b1e1f63a15a54caf9b5d838dd8f6241d"
+    },
+    {
+      "cardId": "wands-07",
+      "nameZh": "权杖七",
+      "nameEn": "Seven of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 7,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-07.webp",
+      "upright": [
+        "坚持",
+        "立场"
+      ],
+      "reversed": [
+        "防御过度",
+        "退缩"
+      ],
+      "meaning": "保护值得坚持的边界，选择真正需要回应的挑战。",
+      "reversedMeaning": "区分必要坚持与长期紧绷，不必回应每一次质疑。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_07.jpeg",
+      "license": "Public domain",
+      "sha256": "e97a6596dea2b15cda347fb155dd57b95bc9c4dbfe7cc3912a75f0b0141fc9d9"
+    },
+    {
+      "cardId": "wands-08",
+      "nameZh": "权杖八",
+      "nameEn": "Eight of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 8,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-08.webp",
+      "upright": [
+        "迅速",
+        "交流"
+      ],
+      "reversed": [
+        "延迟",
+        "忙乱"
+      ],
+      "meaning": "信息和行动的节奏加快，先协调优先级再推进。",
+      "reversedMeaning": "过快或过慢都可能带来误解，把沟通和安排说清楚。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_08.jpeg",
+      "license": "Public domain",
+      "sha256": "69d8eccad9c5385c719a7e096c3de5f418e0e79e07fdaceedebc5beb67644fb2"
+    },
+    {
+      "cardId": "wands-09",
+      "nameZh": "权杖九",
+      "nameEn": "Nine of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 9,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-09.webp",
+      "upright": [
+        "韧性",
+        "戒备"
+      ],
+      "reversed": [
+        "耗竭",
+        "疑虑"
+      ],
+      "meaning": "经验带来韧性，也提醒你在坚持时保留恢复的余地。",
+      "reversedMeaning": "长期戒备可能消耗力量，评估何处可以接受支持。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_09.jpeg",
+      "license": "Public domain",
+      "sha256": "3196614c43f89bf71d845e735e09ab7e4b1b9b9d5cf08c76df5816d1b2744dc2"
+    },
+    {
+      "cardId": "wands-10",
+      "nameZh": "权杖十",
+      "nameEn": "Ten of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 10,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-10.webp",
+      "upright": [
+        "承担",
+        "负荷"
+      ],
+      "reversed": [
+        "卸下",
+        "过载"
+      ],
+      "meaning": "责任可能积累得太多，看看哪些可以委托、延后或放下。",
+      "reversedMeaning": "重新分担压力，承认承载能力的边界。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_10.jpeg",
+      "license": "Public domain",
+      "sha256": "7b39adf29fe55e83e2aad3eec75bb3a6582e9a2f7da2a0622494dfb9473a2017"
+    },
+    {
+      "cardId": "wands-11",
+      "nameZh": "权杖侍从",
+      "nameEn": "Page of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 11,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-11.webp",
+      "upright": [
+        "好奇",
+        "尝试"
+      ],
+      "reversed": [
+        "分心",
+        "三分钟热度"
+      ],
+      "meaning": "以学习者的心态尝试，把新鲜感变成一次具体体验。",
+      "reversedMeaning": "减少同时开启的任务，给一个方向足够的练习时间。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_11.jpeg",
+      "license": "Public domain",
+      "sha256": "cdf281788f711433da700d9a91d883008464708a748479876bf0d7462d47fdc7"
+    },
+    {
+      "cardId": "wands-12",
+      "nameZh": "权杖骑士",
+      "nameEn": "Knight of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 12,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-12.webp",
+      "upright": [
+        "热情",
+        "推进"
+      ],
+      "reversed": [
+        "急躁",
+        "忽冷忽热"
+      ],
+      "meaning": "行动力可以推动局面，出发前也为持续投入做准备。",
+      "reversedMeaning": "冲动与停滞可能交替，先建立稳定节奏。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_12.jpeg",
+      "license": "Public domain",
+      "sha256": "a9543049d190ce81f669273fa20fea336f88ae9b60ec502016b30915bfb37c0a"
+    },
+    {
+      "cardId": "wands-13",
+      "nameZh": "权杖王后",
+      "nameEn": "Queen of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 13,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-13.webp",
+      "upright": [
+        "自信",
+        "温暖"
+      ],
+      "reversed": [
+        "比较",
+        "信心受阻"
+      ],
+      "meaning": "接纳自己的独特表达，以温暖与自主感染周围。",
+      "reversedMeaning": "少一点比较，确认什么事情能让自己恢复自信。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_13.jpeg",
+      "license": "Public domain",
+      "sha256": "a2840eb3fc6f42c089d33d61261c9e45c8d522fd253cd9814e56235846053e84"
+    },
+    {
+      "cardId": "wands-14",
+      "nameZh": "权杖国王",
+      "nameEn": "King of Wands",
+      "arcana": "minor",
+      "suit": "wands",
+      "rank": 14,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/wands-14.webp",
+      "upright": [
+        "愿景",
+        "领导"
+      ],
+      "reversed": [
+        "强势",
+        "目标过满"
+      ],
+      "meaning": "把愿景转成方向，给协作者清晰目标与自主空间。",
+      "reversedMeaning": "领导与控制之间需要界线，检查目标是否切合资源。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Wands_14.jpeg",
+      "license": "Public domain",
+      "sha256": "60bc18be55e0d86da0d045f39eb5f944fbca26a0937c5a03dfe6395edffc49b1"
+    },
+    {
+      "cardId": "cups-01",
+      "nameZh": "圣杯王牌",
+      "nameEn": "Ace of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 1,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-01.webp",
+      "upright": [
+        "情感",
+        "敞开"
+      ],
+      "reversed": [
+        "压抑",
+        "情绪过满"
+      ],
+      "meaning": "给新的感受和联结一个入口，温柔地回应自己的需要。",
+      "reversedMeaning": "情绪可能受阻或过满，先照顾自己再决定如何表达。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_01.jpeg",
+      "license": "Public domain",
+      "sha256": "c61ad0bcdde26aa9362cf0b6c2d9d2f3e9a34c6a600c8c3ace2ddd51cc0f4eb1"
+    },
+    {
+      "cardId": "cups-02",
+      "nameZh": "圣杯二",
+      "nameEn": "Two of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 2,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-02.webp",
+      "upright": [
+        "互相",
+        "联结"
+      ],
+      "reversed": [
+        "失衡",
+        "误解"
+      ],
+      "meaning": "平等的交流与回应能建立联结，说清各自的期待。",
+      "reversedMeaning": "检视付出与回应是否平衡，不替他人猜测心意。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_02.jpeg",
+      "license": "Public domain",
+      "sha256": "0897f413c067e19073b3e6add61ed22413c88c191f091a20aa4be055cbd26158"
+    },
+    {
+      "cardId": "cups-03",
+      "nameZh": "圣杯三",
+      "nameEn": "Three of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 3,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-03.webp",
+      "upright": [
+        "友谊",
+        "支持"
+      ],
+      "reversed": [
+        "疏离",
+        "社交耗竭"
+      ],
+      "meaning": "留意朋友与群体的支持，也给共同的快乐一点空间。",
+      "reversedMeaning": "社交可能失去滋养，辨认适合自己的关系密度。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_03.jpeg",
+      "license": "Public domain",
+      "sha256": "6d7d060a212a742be6aab9789878b50af34dd646dbdc85d7944382a3c2f0e727"
+    },
+    {
+      "cardId": "cups-04",
+      "nameZh": "圣杯四",
+      "nameEn": "Four of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 4,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-04.webp",
+      "upright": [
+        "内省",
+        "倦怠"
+      ],
+      "reversed": [
+        "重新关注",
+        "错失"
+      ],
+      "meaning": "暂时缺少兴趣时，给自己时间分辨疲惫与真正的不满足。",
+      "reversedMeaning": "可以重新看看身边机会，也不必强迫自己接受每个邀请。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_04.jpeg",
+      "license": "Public domain",
+      "sha256": "d37a12890433de8336f8f9f552c549d802930cba3f5545eeaa0f56cbdb8aecbe"
+    },
+    {
+      "cardId": "cups-05",
+      "nameZh": "圣杯五",
+      "nameEn": "Five of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 5,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-05.webp",
+      "upright": [
+        "失落",
+        "遗憾"
+      ],
+      "reversed": [
+        "接纳",
+        "执着"
+      ],
+      "meaning": "承认失落的分量，同时留意仍可获得的支持。",
+      "reversedMeaning": "接纳需要时间，试着让遗憾与还在的事物同时被看见。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_05.jpeg",
+      "license": "Public domain",
+      "sha256": "fdc5cf0131855aa1b447c915f5f5885d65a3036041b9201d2f63580e7f3de4e5"
+    },
+    {
+      "cardId": "cups-06",
+      "nameZh": "圣杯六",
+      "nameEn": "Six of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 6,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-06.webp",
+      "upright": [
+        "回忆",
+        "熟悉"
+      ],
+      "reversed": [
+        "怀旧过度",
+        "旧模式"
+      ],
+      "meaning": "过去的温暖与经验能提供线索，看看它们如何帮助当下。",
+      "reversedMeaning": "区分值得保留的记忆与已经不适合的旧习惯。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_06.jpeg",
+      "license": "Public domain",
+      "sha256": "d3cefbaee3ea0d3837bf6ea67afb6a4493617ced30a4afab93b96a6e2b7d59dd"
+    },
+    {
+      "cardId": "cups-07",
+      "nameZh": "圣杯七",
+      "nameEn": "Seven of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 7,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-07.webp",
+      "upright": [
+        "想象",
+        "选项"
+      ],
+      "reversed": [
+        "澄清",
+        "逃避"
+      ],
+      "meaning": "很多可能性让人心动，用实际条件逐个确认可行性。",
+      "reversedMeaning": "减少幻想或急于定论，先验证一个最重要的选项。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_07.jpeg",
+      "license": "Public domain",
+      "sha256": "5ccdc990a2dd87c8b651ff010df662663b3c6f0e0edd368ea9363467b5815202"
+    },
+    {
+      "cardId": "cups-08",
+      "nameZh": "圣杯八",
+      "nameEn": "Eight of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 8,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-08.webp",
+      "upright": [
+        "离开",
+        "追寻"
+      ],
+      "reversed": [
+        "徘徊",
+        "回避"
+      ],
+      "meaning": "当已有满足不再契合需要，可以认真思考新的方向。",
+      "reversedMeaning": "留或走都需要理由，辨认是在保护自己还是回避问题。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_08.jpeg",
+      "license": "Public domain",
+      "sha256": "aa079a2040ec10ace4c507376b2ebd69db3b2ca0bb148bb8e3005034a71d8a1a"
+    },
+    {
+      "cardId": "cups-09",
+      "nameZh": "圣杯九",
+      "nameEn": "Nine of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 9,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-09.webp",
+      "upright": [
+        "满足",
+        "享受"
+      ],
+      "reversed": [
+        "空虚",
+        "过度满足"
+      ],
+      "meaning": "承认真实的满足感，也让享受与长远需要保持平衡。",
+      "reversedMeaning": "检视短暂满足是否遮住更深层的需要。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_09.jpeg",
+      "license": "Public domain",
+      "sha256": "02eafdc4d9e1bb92a265172a0d6b3149c910635ca47ff5deaa94e68af0ce62b5"
+    },
+    {
+      "cardId": "cups-10",
+      "nameZh": "圣杯十",
+      "nameEn": "Ten of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 10,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-10.webp",
+      "upright": [
+        "和谐",
+        "共同愿景"
+      ],
+      "reversed": [
+        "期待落差",
+        "表面和谐"
+      ],
+      "meaning": "关系中的共同价值和照顾值得珍惜，持续沟通能支持安稳。",
+      "reversedMeaning": "理想图景与现实可能有距离，坦诚面对不同需求。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_10.jpeg",
+      "license": "Public domain",
+      "sha256": "64dedda1602136c222f3cb3f3ad8ee1f4e04443cb8a1c67e2fb9c8d4c3289b1f"
+    },
+    {
+      "cardId": "cups-11",
+      "nameZh": "圣杯侍从",
+      "nameEn": "Page of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 11,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-11.webp",
+      "upright": [
+        "敏感",
+        "灵感"
+      ],
+      "reversed": [
+        "不安",
+        "表达生涩"
+      ],
+      "meaning": "以好奇与柔软接近感受，允许表达还不熟练。",
+      "reversedMeaning": "敏感需要边界，不把一时反应当成全部事实。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_11.jpeg",
+      "license": "Public domain",
+      "sha256": "8b8c3b65e2b8065cc56a0b740908ef9b5c7d15b50e495adccf0b90f71c0618d3"
+    },
+    {
+      "cardId": "cups-12",
+      "nameZh": "圣杯骑士",
+      "nameEn": "Knight of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 12,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-12.webp",
+      "upright": [
+        "浪漫",
+        "邀请"
+      ],
+      "reversed": [
+        "理想化",
+        "承诺摇摆"
+      ],
+      "meaning": "让感受引导表达，同时确认承诺能够落实。",
+      "reversedMeaning": "核实行动是否与动人的语言一致，也照顾自己的期待。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_12.jpeg",
+      "license": "Public domain",
+      "sha256": "819cc59b4543b10b7d39fb7ea2b11d5391a2a827ba0307d1cd1aa08e344e4ad6"
+    },
+    {
+      "cardId": "cups-13",
+      "nameZh": "圣杯王后",
+      "nameEn": "Queen of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 13,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-13.webp",
+      "upright": [
+        "共情",
+        "照顾"
+      ],
+      "reversed": [
+        "情绪卷入",
+        "界限模糊"
+      ],
+      "meaning": "倾听情绪，用细腻与清楚的边界提供照顾。",
+      "reversedMeaning": "共情不需要承担所有情绪，把他人需要与自己的责任分开。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_13.jpeg",
+      "license": "Public domain",
+      "sha256": "21aba274d5ef974cb854d77a4e078d3481622316cb04bc92b9efbffb731083da"
+    },
+    {
+      "cardId": "cups-14",
+      "nameZh": "圣杯国王",
+      "nameEn": "King of Cups",
+      "arcana": "minor",
+      "suit": "cups",
+      "rank": 14,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/cups-14.webp",
+      "upright": [
+        "稳重",
+        "包容"
+      ],
+      "reversed": [
+        "压抑",
+        "情绪失衡"
+      ],
+      "meaning": "在感受与判断之间保持稳定，让关怀有边界和实际支持。",
+      "reversedMeaning": "情绪稳定不等于压抑，找到可以安全表达的方式。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Cups_14.jpeg",
+      "license": "Public domain",
+      "sha256": "d780152449632114823d13dc2ad2eb81eb65bb2d600dc1fe187276981a1c970c"
+    },
+    {
+      "cardId": "swords-01",
+      "nameZh": "宝剑王牌",
+      "nameEn": "Ace of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 1,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-01.webp",
+      "upright": [
+        "清晰",
+        "辨认"
+      ],
+      "reversed": [
+        "混乱",
+        "锋芒过度"
+      ],
+      "meaning": "用清楚的问题和事实切开混乱，表达时也保留体谅。",
+      "reversedMeaning": "检查信息与措辞，别让急于证明替代真正理解。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_01.jpeg",
+      "license": "Public domain",
+      "sha256": "a4fb353eaae5c8a357f3c4ffc2d53e4a8875c15d6341220e801705413239c17b"
+    },
+    {
+      "cardId": "swords-02",
+      "nameZh": "宝剑二",
+      "nameEn": "Two of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 2,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-02.webp",
+      "upright": [
+        "僵局",
+        "权衡"
+      ],
+      "reversed": [
+        "信息浮现",
+        "犹疑"
+      ],
+      "meaning": "冲突需要被认真看见，先补充信息再作选择。",
+      "reversedMeaning": "回避难以维持时，可以逐步面对最关键的事实。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_02.jpeg",
+      "license": "Public domain",
+      "sha256": "a57d54c8268a7dad599a7960fd099b1c00718afa0427abf5e03b9344b121213c"
+    },
+    {
+      "cardId": "swords-03",
+      "nameZh": "宝剑三",
+      "nameEn": "Three of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 3,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-03.webp",
+      "upright": [
+        "伤心",
+        "承认"
+      ],
+      "reversed": [
+        "修复",
+        "难以释怀"
+      ],
+      "meaning": "为失望和痛苦留出位置，寻求现实中的支持和照顾。",
+      "reversedMeaning": "修复可能反复，允许自己慢慢整理尚未表达的感受。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_03.jpeg",
+      "license": "Public domain",
+      "sha256": "9e513ccbb20f8ad2655f885110568b65faa5ae7b687768c68393769b22698d45"
+    },
+    {
+      "cardId": "swords-04",
+      "nameZh": "宝剑四",
+      "nameEn": "Four of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 4,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-04.webp",
+      "upright": [
+        "休息",
+        "整理"
+      ],
+      "reversed": [
+        "过劳",
+        "恢复受阻"
+      ],
+      "meaning": "暂时退出高压节奏，让休息帮助头脑重新清晰。",
+      "reversedMeaning": "检查是否一直拖延恢复，也观察休息何时变成回避。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_04.jpeg",
+      "license": "Public domain",
+      "sha256": "5780ec93e632e8622c67d74b13244350eba7e648b09a6a91a6879a4fc9dcd491"
+    },
+    {
+      "cardId": "swords-05",
+      "nameZh": "宝剑五",
+      "nameEn": "Five of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 5,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-05.webp",
+      "upright": [
+        "争执",
+        "代价"
+      ],
+      "reversed": [
+        "和解",
+        "余波"
+      ],
+      "meaning": "赢得争论也可能付出关系代价，重新考虑冲突的目标。",
+      "reversedMeaning": "结束争执之后仍需处理影响，明确可以修复的部分。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_05.jpeg",
+      "license": "Public domain",
+      "sha256": "9b90df3efe15f7014b545209b70ec43ecb0a880e1857fb495265774e4f4d0bdd"
+    },
+    {
+      "cardId": "swords-06",
+      "nameZh": "宝剑六",
+      "nameEn": "Six of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 6,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-06.webp",
+      "upright": [
+        "过渡",
+        "远行"
+      ],
+      "reversed": [
+        "滞留",
+        "负担未解"
+      ],
+      "meaning": "从困扰走向较平稳的阶段，带着经验逐步调整环境。",
+      "reversedMeaning": "有些旧负担尚未放下，辨认阻碍过渡的实际条件。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_06.jpeg",
+      "license": "Public domain",
+      "sha256": "76d9b5e9706d480e11f140613bd1b2cc1cb1b424e6ed5c61b5e1fceb39b5cc24"
+    },
+    {
+      "cardId": "swords-07",
+      "nameZh": "宝剑七",
+      "nameEn": "Seven of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 7,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-07.webp",
+      "upright": [
+        "策略",
+        "隐瞒"
+      ],
+      "reversed": [
+        "坦白",
+        "策略失效"
+      ],
+      "meaning": "检视独立行动和信息保留的动机，用诚实与边界保护信任。",
+      "reversedMeaning": "重新确认计划的透明度，避免把猜疑当成已证实的事实。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_07.jpeg",
+      "license": "Public domain",
+      "sha256": "b3ab7b78e7e89d0fde807751e128afc165f3b3ec2d2c84bb8c561514a566fcd5"
+    },
+    {
+      "cardId": "swords-08",
+      "nameZh": "宝剑八",
+      "nameEn": "Eight of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 8,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-08.webp",
+      "upright": [
+        "受限",
+        "自我束缚"
+      ],
+      "reversed": [
+        "松动",
+        "寻找出口"
+      ],
+      "meaning": "困难可能夹杂对自己的限制，区分真实约束与可以验证的想法。",
+      "reversedMeaning": "限制开始松动时，从一个能安全尝试的出口着手。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_08.jpeg",
+      "license": "Public domain",
+      "sha256": "ffce9759e9cc2b5bd39ee7b75bc2ea1b1daf4bf2779d1f156d516b6ded2cf967"
+    },
+    {
+      "cardId": "swords-09",
+      "nameZh": "宝剑九",
+      "nameEn": "Nine of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 9,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-09.webp",
+      "upright": [
+        "担忧",
+        "反刍"
+      ],
+      "reversed": [
+        "求助",
+        "压力内化"
+      ],
+      "meaning": "担忧值得被倾听，但想象不等于事实，给自己现实支持。",
+      "reversedMeaning": "不必独自承受反复担忧，必要时寻求可信赖的帮助。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_09.jpeg",
+      "license": "Public domain",
+      "sha256": "d3f9ec06b683f4477ca3b25cb4365dea21c11bf18232ebf05b9f362d3d641423"
+    },
+    {
+      "cardId": "swords-10",
+      "nameZh": "宝剑十",
+      "nameEn": "Ten of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 10,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-10.webp",
+      "upright": [
+        "终结",
+        "疲惫"
+      ],
+      "reversed": [
+        "恢复",
+        "难以放下"
+      ],
+      "meaning": "一个难以维持的模式可能走到尽头，先休息再安排下一步。",
+      "reversedMeaning": "恢复需要时间，不必马上证明自己已经完全振作。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_10.jpeg",
+      "license": "Public domain",
+      "sha256": "74a28b6769c2911088ced2ee60f4b05601e7201d3303f2b7d3a2fd4187b1dda8"
+    },
+    {
+      "cardId": "swords-11",
+      "nameZh": "宝剑侍从",
+      "nameEn": "Page of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 11,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-11.webp",
+      "upright": [
+        "求知",
+        "警觉"
+      ],
+      "reversed": [
+        "猜疑",
+        "言语急躁"
+      ],
+      "meaning": "带着好奇提问、查证与学习，让敏锐建立在证据上。",
+      "reversedMeaning": "消息和判断可能太快，先核实来源再表达。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_11.jpeg",
+      "license": "Public domain",
+      "sha256": "14e3383c82dc96f4c7f35d43dbc659eaae000c57f50521f0d184197bee8fa424"
+    },
+    {
+      "cardId": "swords-12",
+      "nameZh": "宝剑骑士",
+      "nameEn": "Knight of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 12,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-12.webp",
+      "upright": [
+        "果断",
+        "直进"
+      ],
+      "reversed": [
+        "冲动",
+        "争辩"
+      ],
+      "meaning": "明确目标后积极行动，同时照顾行动对他人的影响。",
+      "reversedMeaning": "速度可能超过理解，暂停争辩，确认真正要解决的问题。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_12.jpeg",
+      "license": "Public domain",
+      "sha256": "daa9252386f24c660a6bd8149b9c27028fa7993b86e6b0d65289b64d5f5182bf"
+    },
+    {
+      "cardId": "swords-13",
+      "nameZh": "宝剑王后",
+      "nameEn": "Queen of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 13,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-13.webp",
+      "upright": [
+        "独立",
+        "清醒"
+      ],
+      "reversed": [
+        "苛刻",
+        "冷淡"
+      ],
+      "meaning": "清楚表达事实与边界，用诚实保护自主判断。",
+      "reversedMeaning": "清晰也可以温柔，留意是否用严厉掩盖受伤。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_13.jpeg",
+      "license": "Public domain",
+      "sha256": "b30d427f618d10467af3b59121b5c6ddadc6208f6d08caa7bb9475d844fdf928"
+    },
+    {
+      "cardId": "swords-14",
+      "nameZh": "宝剑国王",
+      "nameEn": "King of Swords",
+      "arcana": "minor",
+      "suit": "swords",
+      "rank": 14,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/swords-14.webp",
+      "upright": [
+        "理性",
+        "原则"
+      ],
+      "reversed": [
+        "僵化",
+        "权威失衡"
+      ],
+      "meaning": "以一致的标准和可靠信息承担决定的责任。",
+      "reversedMeaning": "检查规则是否公平，给不确定性与不同意见留出位置。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Swords_14.jpeg",
+      "license": "Public domain",
+      "sha256": "45924e814773337b0d9e33e5c7729577403e294f348ad330490de09a371e77ad"
+    },
+    {
+      "cardId": "pentacles-01",
+      "nameZh": "星币王牌",
+      "nameEn": "Ace of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 1,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-01.webp",
+      "upright": [
+        "资源",
+        "种子"
+      ],
+      "reversed": [
+        "错失",
+        "准备不足"
+      ],
+      "meaning": "现实中的机会需要培育，为时间、金钱与身体安排基础。",
+      "reversedMeaning": "检查机会所需的成本与条件，不因稀缺感仓促行动。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_01.jpeg",
+      "license": "Public domain",
+      "sha256": "3fb521440692955905d59e1d4a7af8d16047f6d06c236a14ec5a70e194cd5016"
+    },
+    {
+      "cardId": "pentacles-02",
+      "nameZh": "星币二",
+      "nameEn": "Two of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 2,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-02.webp",
+      "upright": [
+        "调配",
+        "弹性"
+      ],
+      "reversed": [
+        "失衡",
+        "忙乱"
+      ],
+      "meaning": "在多项需求之间灵活分配资源，同时确认可持续的节奏。",
+      "reversedMeaning": "任务可能超过承载量，重新排序并减少切换消耗。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_02.jpeg",
+      "license": "Public domain",
+      "sha256": "6d24bcc2206d75d810ef341ef8c9f97d0bd76c02718638332668484a0e2eae91"
+    },
+    {
+      "cardId": "pentacles-03",
+      "nameZh": "星币三",
+      "nameEn": "Three of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 3,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-03.webp",
+      "upright": [
+        "合作",
+        "技能"
+      ],
+      "reversed": [
+        "协作不畅",
+        "标准不清"
+      ],
+      "meaning": "技能与协作相互支持，说清分工、标准与反馈方式。",
+      "reversedMeaning": "确认各自责任和完成标准，避免只靠默契推进。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_03.jpeg",
+      "license": "Public domain",
+      "sha256": "537020ac6a8882fbfb56202f5af71a0db0542f4307af531c191e757a450e47ae"
+    },
+    {
+      "cardId": "pentacles-04",
+      "nameZh": "星币四",
+      "nameEn": "Four of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 4,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-04.webp",
+      "upright": [
+        "守护",
+        "储备"
+      ],
+      "reversed": [
+        "紧抓",
+        "资源焦虑"
+      ],
+      "meaning": "保留资源能建立安全感，也要看看保护是否变成限制。",
+      "reversedMeaning": "在过度紧抓与轻率放手之间，建立具体可执行的边界。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_04.jpeg",
+      "license": "Public domain",
+      "sha256": "6e0c3cd9570539f951c382d55ea2c9bad32b73ddc1b2167be3c7a53e3179488f"
+    },
+    {
+      "cardId": "pentacles-05",
+      "nameZh": "星币五",
+      "nameEn": "Five of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 5,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-05.webp",
+      "upright": [
+        "匮乏",
+        "困难"
+      ],
+      "reversed": [
+        "求援",
+        "恢复缓慢"
+      ],
+      "meaning": "现实困难需要实际帮助，留意身边能获得的资源与支持。",
+      "reversedMeaning": "接受支持可以成为恢复的一部分，不必因困难否定自身价值。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_05.jpeg",
+      "license": "Public domain",
+      "sha256": "4b293acdec3df994bac7eae229c41c698164d1a18c1cd773442e61b95b114c71"
+    },
+    {
+      "cardId": "pentacles-06",
+      "nameZh": "星币六",
+      "nameEn": "Six of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 6,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-06.webp",
+      "upright": [
+        "给予",
+        "互助"
+      ],
+      "reversed": [
+        "不对等",
+        "附带条件"
+      ],
+      "meaning": "关注资源交换与支持是否公平，让给予与接受都有尊严。",
+      "reversedMeaning": "检查帮助是否附带过多条件，明确双方的边界。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_06.jpeg",
+      "license": "Public domain",
+      "sha256": "f5c147caeaa95259760c6684f45d10a43964c31f9510feed165bf0b1b0d2fdf9"
+    },
+    {
+      "cardId": "pentacles-07",
+      "nameZh": "星币七",
+      "nameEn": "Seven of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 7,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-07.webp",
+      "upright": [
+        "耕耘",
+        "评估"
+      ],
+      "reversed": [
+        "急于回报",
+        "投入失衡"
+      ],
+      "meaning": "停下来评估长期投入，区分值得等待的成长与需要调整的方向。",
+      "reversedMeaning": "回报慢不一定意味着失败，也不代表应该无限投入。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_07.jpeg",
+      "license": "Public domain",
+      "sha256": "015d2dc54975358168948771f5aae4268a3739c4c427d045137c197027da9c45"
+    },
+    {
+      "cardId": "pentacles-08",
+      "nameZh": "星币八",
+      "nameEn": "Eight of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 8,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-08.webp",
+      "upright": [
+        "练习",
+        "专注"
+      ],
+      "reversed": [
+        "倦怠",
+        "敷衍"
+      ],
+      "meaning": "重复练习让能力扎根，用可见的小进步支持持续投入。",
+      "reversedMeaning": "调整练习方法和负荷，不让完美要求耗尽兴趣。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_08.jpeg",
+      "license": "Public domain",
+      "sha256": "9a3505fb7f7f1cbe06b5713bebc0135ccfdd0f38210db864ef0ba1072942933d"
+    },
+    {
+      "cardId": "pentacles-09",
+      "nameZh": "星币九",
+      "nameEn": "Nine of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 9,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-09.webp",
+      "upright": [
+        "自足",
+        "成果"
+      ],
+      "reversed": [
+        "依赖",
+        "过度工作"
+      ],
+      "meaning": "珍惜通过投入获得的独立与舒适，也留时间享受成果。",
+      "reversedMeaning": "检视安全感是否过度依赖外部条件，重新安排生活的余地。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_09.jpeg",
+      "license": "Public domain",
+      "sha256": "aee8807e1c6ea563f741c04578292cc2b3f5632becf6630bc2c292c715f99882"
+    },
+    {
+      "cardId": "pentacles-10",
+      "nameZh": "星币十",
+      "nameEn": "Ten of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 10,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-10.webp",
+      "upright": [
+        "积累",
+        "传承"
+      ],
+      "reversed": [
+        "基础波动",
+        "价值分歧"
+      ],
+      "meaning": "长期积累与共同资源需要规则，也需要对未来目标达成理解。",
+      "reversedMeaning": "检查共同资源的安排是否公平，区分传统期待与个人需要。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_10.jpeg",
+      "license": "Public domain",
+      "sha256": "fc34df38cf3281b48fe9b23b28b245a8332488dc48a57a2abd59b193ba3cff83"
+    },
+    {
+      "cardId": "pentacles-11",
+      "nameZh": "星币侍从",
+      "nameEn": "Page of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 11,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-11.webp",
+      "upright": [
+        "学习",
+        "落实"
+      ],
+      "reversed": [
+        "拖延",
+        "目标模糊"
+      ],
+      "meaning": "以耐心的学习者姿态接近现实目标，从基础技能开始。",
+      "reversedMeaning": "让目标更具体，用一次小实践代替无止境的准备。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_11.jpeg",
+      "license": "Public domain",
+      "sha256": "2c1fc2f04e6ef8384710fdeabe564564d797169230319a3e783e38ed7ed051c3"
+    },
+    {
+      "cardId": "pentacles-12",
+      "nameZh": "星币骑士",
+      "nameEn": "Knight of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 12,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-12.webp",
+      "upright": [
+        "耐心",
+        "可靠"
+      ],
+      "reversed": [
+        "僵滞",
+        "过度谨慎"
+      ],
+      "meaning": "稳定与可靠来自持续的小步行动，给计划足够时间。",
+      "reversedMeaning": "惯例可能失去弹性，看看哪里可以安全地做一点调整。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_12.jpeg",
+      "license": "Public domain",
+      "sha256": "a653a8e721c944818c11d399cfd70b80b126b0a28db6dfc4ffc6cd439a4f223a"
+    },
+    {
+      "cardId": "pentacles-13",
+      "nameZh": "星币王后",
+      "nameEn": "Queen of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 13,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-13.webp",
+      "upright": [
+        "照顾",
+        "务实"
+      ],
+      "reversed": [
+        "透支",
+        "忽略自身"
+      ],
+      "meaning": "用实际安排照顾生活，把温暖落实为时间、空间和资源。",
+      "reversedMeaning": "照顾需要包含自己，重新分配家务、责任与休息。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_13.jpeg",
+      "license": "Public domain",
+      "sha256": "87355100c092e44f8b0993fa9dcfd805036681370c2c72ce2e9975aa4dba21df"
+    },
+    {
+      "cardId": "pentacles-14",
+      "nameZh": "星币国王",
+      "nameEn": "King of Pentacles",
+      "arcana": "minor",
+      "suit": "pentacles",
+      "rank": 14,
+      "imagePath": "/tarot/decks/rws-1909/1.0.0/pentacles-14.webp",
+      "upright": [
+        "稳定",
+        "管理"
+      ],
+      "reversed": [
+        "执着物质",
+        "管理失衡"
+      ],
+      "meaning": "成熟地管理资源，让稳定支持生活而不是成为唯一目标。",
+      "reversedMeaning": "检查控制资源的方式是否造成压力，重新衡量真正的富足。",
+      "source": "https://commons.wikimedia.org/wiki/File:RWS1909_-_Pentacles_14.jpeg",
+      "license": "Public domain",
+      "sha256": "13339f6a890c55f6e385b1241c0871ea76238abaf615d05bda91326bf816401d"
+    }
+  ]
+}

@@ -1,4 +1,3 @@
-import { CapacitorSQLite, SQLiteConnection } from '@capacitor-community/sqlite'
 import type { SQLiteDBConnection } from '@capacitor-community/sqlite'
 import { diaryAssetStorage, type StoredDiaryAsset } from '../services/diaryAssetStorage'
 import { validateDiaryImageInputs } from '../services/diaryImageValidation'
@@ -47,7 +46,7 @@ import type {
   SaveDiaryImageInput,
 } from '../types/diary'
 import type { DiaryRepository, DiaryShareReadNotice, DiaryShareReceiptSync, SaveDiaryInput } from './diaryRepository'
-import { DATABASE_NAME, DATABASE_SCHEMA, DATABASE_UPGRADES, DATABASE_VERSION } from './sqliteSchema'
+import { getSQLiteDatabase, withSQLiteTransaction } from './sqliteDatabase'
 
 type Row = Record<string, unknown>
 
@@ -58,7 +57,6 @@ const MAX_SHARE_RETRY_DELAY_MS = 30 * 60_000
 let diaryShareAuthorizationCache: { recipient: Awaited<ReturnType<typeof ensureDiaryShareAuthorization>>; expiresAt: number } | undefined
 
 export class SQLiteDiaryRepository implements DiaryRepository {
-  private readonly sqlite = new SQLiteConnection(CapacitorSQLite)
   private connectionPromise?: Promise<SQLiteDBConnection>
   private nextShareRetryAt = 0
   private shareRetryDelay = SHARE_RETRY_DELAY_MS
@@ -95,10 +93,8 @@ export class SQLiteDiaryRepository implements DiaryRepository {
     const removed = (existing?.assets ?? []).filter(
       (asset) => !resolved.assets.some((next) => next.id === asset.id),
     )
-    let transactionStarted = false
     try {
-      await db.beginTransaction()
-      transactionStarted = true
+      await withSQLiteTransaction(db,async db => {
       await db.run(
         `INSERT INTO diaries (
           id, title, summary, created_at, updated_at, mood, theme_id, theme_version,
@@ -170,10 +166,8 @@ export class SQLiteDiaryRepository implements DiaryRepository {
         [layoutId, id, JSON.stringify(layout), createdAt, now],
         false,
       )
-      await db.commitTransaction()
-      transactionStarted = false
+      })
     } catch (error) {
-      if (transactionStarted) await db.rollbackTransaction().catch(() => undefined)
       await Promise.all(resolved.created.map((asset) => diaryAssetStorage.remove(asset)))
       throw error
     }
@@ -445,7 +439,7 @@ export class SQLiteDiaryRepository implements DiaryRepository {
   }
 
   private async connection(): Promise<SQLiteDBConnection> {
-    this.connectionPromise ??= this.openConnection()
+    this.connectionPromise ??= this.openConnection().catch(error => { this.connectionPromise=undefined;throw error })
     return this.connectionPromise
   }
 
@@ -456,14 +450,7 @@ export class SQLiteDiaryRepository implements DiaryRepository {
   }
 
   private async openConnection(): Promise<SQLiteDBConnection> {
-    await this.sqlite.addUpgradeStatement(DATABASE_NAME, DATABASE_UPGRADES)
-    const existing = await this.sqlite.isConnection(DATABASE_NAME, false)
-    const db = existing.result
-      ? await this.sqlite.retrieveConnection(DATABASE_NAME, false)
-      : await this.sqlite.createConnection(DATABASE_NAME, false, 'no-encryption', DATABASE_VERSION, false)
-
-    if (!(await db.isDBOpen()).result) await db.open()
-    await db.execute(DATABASE_SCHEMA, true)
+    const db = await getSQLiteDatabase()
     await this.seedWelcome(db)
     return db
   }
@@ -483,8 +470,7 @@ export class SQLiteDiaryRepository implements DiaryRepository {
     }
     const layout = createFixedLayout([block])
 
-    await db.beginTransaction()
-    try {
+    await withSQLiteTransaction(db,async db => {
       await db.run(
         `INSERT INTO diaries (
           id, title, summary, created_at, updated_at, mood, theme_id, theme_version,
@@ -514,11 +500,7 @@ export class SQLiteDiaryRepository implements DiaryRepository {
         [JSON.stringify(layout), now, now],
         false,
       )
-      await db.commitTransaction()
-    } catch (error) {
-      await db.rollbackTransaction()
-      throw error
-    }
+    })
   }
 
   private async hydrate(db: SQLiteDBConnection, row: Row): Promise<Diary> {

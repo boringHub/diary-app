@@ -1,0 +1,26 @@
+RWS 1909 - Roses & Lilies
+
+Artwork: Pamela Colman Smith (1878-1951), first published in 1909.
+Scans of the original Roses & Lilies edition: Saskia Jansen.
+Source: Wikimedia Commons, Category:Rider-Waite tarot deck (Roses & Lilies)
+https://commons.wikimedia.org/wiki/Category:Rider-Waite_tarot_deck_(Roses_%26_Lilies)
+Retrieved: 2026-10-23.
+
+Commons labels each of the 78 imported RWS1909 files "Public domain"
+(PD-old-70-expired / Public Domain Mark). These are the 1909 artwork scans,
+not a modern recoloring or a third-party app's copyrighted deck.
+
+Card-level file description URLs, original image URLs and license metadata
+are preserved in images.json and sources.json. manifest.json additionally
+records the application card identifiers, Chinese text, and SHA-256 hashes.
+
+Changes: resized to at most 480 x 850 pixels and encoded as WebP.
+No attribution is required by the Commons Public Domain Mark; the artist,
+scanner and original file pages are credited here for provenance.
+https://creativecommons.org/publicdomain/mark/1.0/
+
+The Chinese reference meanings, UI and astronomical card-back motif are
+original Shiguangjian project content, licensed under the repository's
+Apache License 2.0. They are not a translation copied from a commercial book.
+The Chinese meanings are editorial draft reference text and require content
+review before public release; they do not claim to predict actual events.

@@ -134,6 +134,13 @@ export function getThemeManifest(id: string, version = '1.0.0') {
 
 export function getThemePresentation(id: string, version = '1.0.0'): ThemePresentation {
   const manifest = getThemeManifest(id, version)
+  const tarot = manifest.id === 'default'
+    ? { bg: '#131f29', surface: '#1b2b35', ink: '#eee9de', muted: '#a3b1b5', gold: '#d2bb8e', button: '#1c2a32', error: '#f2b2a7' }
+    : manifest.id === 'mist-paper'
+      ? { bg: '#e7eee8', surface: '#f5f7f0', ink: '#27332c', muted: '#566b60', gold: '#75603a', button: '#fffaf0', error: '#9b3f36' }
+      : manifest.id === 'sunset-post'
+        ? { bg: '#241d2a', surface: '#382b38', ink: '#fff0e9', muted: '#c3aaa9', gold: '#deb299', button: '#2d242d', error: '#f5b3ab' }
+        : { bg: manifest.colors.background, surface: manifest.colors.surface, ink: manifest.colors.text, muted: manifest.colors.text, gold: manifest.colors.primary, button: manifest.colors.background, error: manifest.colors.text }
   return {
     manifest,
     cssVariables: {
@@ -141,6 +148,14 @@ export function getThemePresentation(id: string, version = '1.0.0'): ThemePresen
       '--app-theme-surface': manifest.colors.surface,
       '--app-theme-primary': manifest.colors.primary,
       '--app-theme-text': manifest.colors.text,
+      '--tarot-bg': tarot.bg,
+      '--tarot-surface': tarot.surface,
+      '--tarot-ink': tarot.ink,
+      '--tarot-muted': tarot.muted,
+      '--tarot-gold': tarot.gold,
+      '--tarot-line': `color-mix(in srgb, ${tarot.gold} 24%, transparent)`,
+      '--tarot-button-ink': tarot.button,
+      '--tarot-error': tarot.error,
     },
   }
 }

@@ -15,5 +15,11 @@ export default createRouter({
     { path: '/diary/:id/edit', component: EditorPage },
     { path: '/themes', component: ThemesPage },
     { path: '/settings', component: SettingsPage },
+    { path: '/tarot', component: () => import('./features/tarot/pages/HomePage.vue'), meta: { hideBottomNav: true } },
+    { path: '/tarot/new', component: () => import('./features/tarot/pages/QuestionPage.vue'), meta: { hideBottomNav: true } },
+    { path: '/tarot/history', component: () => import('./features/tarot/pages/HistoryPage.vue'), meta: { hideBottomNav: true } },
+    { path: '/tarot/settings', component: () => import('./features/tarot/pages/SettingsPage.vue'), meta: { hideBottomNav: true } },
+    { path: '/tarot/:id/ritual', component: () => import('./features/tarot/pages/RitualPage.vue'), meta: { hideBottomNav: true } },
+    { path: '/tarot/:id/chat', component: () => import('./features/tarot/pages/ChatPage.vue'), meta: { hideBottomNav: true } },
   ],
 })

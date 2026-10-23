@@ -412,6 +412,21 @@ async function verifyUpgrade() {
           </div>
         </div>
         <div class="settings-group">
+          <p class="section-label">换个角度</p>
+          <div class="settings-card">
+            <button class="setting-row setting-button" @click="ionRouter.navigate('/tarot', 'forward', 'push')">
+              <span class="setting-icon"><IonIcon :icon="sparklesOutline" /></span>
+              <div><strong>星语塔罗</strong><p>把一个问题放在星光里</p></div>
+              <IonIcon class="row-chevron" :icon="chevronForward" />
+            </button>
+            <button class="setting-row setting-button" @click="ionRouter.navigate('/tarot/settings', 'forward', 'push')">
+              <span class="setting-icon"><IonIcon :icon="shieldCheckmarkOutline" /></span>
+              <div><strong>AI 解读与数据</strong><p>数据说明、同意与历史管理</p></div>
+              <IonIcon class="row-chevron" :icon="chevronForward" />
+            </button>
+          </div>
+        </div>
+        <div class="settings-group">
           <p class="section-label">小提醒</p>
           <div class="settings-card">
             <div class="setting-row">

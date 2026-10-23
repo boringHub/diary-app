@@ -1,24 +1,10 @@
-import { CapacitorSQLite, SQLiteConnection } from '@capacitor-community/sqlite'
 import type { ThemeManifest } from '../services/themeService'
-import { DATABASE_NAME, DATABASE_SCHEMA, DATABASE_UPGRADES, DATABASE_VERSION } from './sqliteSchema'
+import { getSQLiteDatabase,withSQLiteTransaction } from './sqliteDatabase'
 import { upsertThemeManifest } from './sqliteThemeIndex'
 
 export async function indexImportedTheme(manifest: ThemeManifest) {
-  const sqlite = new SQLiteConnection(CapacitorSQLite)
-  await sqlite.addUpgradeStatement(DATABASE_NAME, DATABASE_UPGRADES)
-  const existing = await sqlite.isConnection(DATABASE_NAME, false)
-  const db = existing.result
-    ? await sqlite.retrieveConnection(DATABASE_NAME, false)
-    : await sqlite.createConnection(DATABASE_NAME, false, 'no-encryption', DATABASE_VERSION, false)
-
-  if (!(await db.isDBOpen()).result) await db.open()
-  await db.execute(DATABASE_SCHEMA, true)
-  await db.beginTransaction()
-  try {
+  const db=await getSQLiteDatabase()
+  await withSQLiteTransaction(db,async db=>{
     await upsertThemeManifest(db, manifest, { imported: true, virtual: false })
-    await db.commitTransaction()
-  } catch (error) {
-    await db.rollbackTransaction().catch(() => undefined)
-    throw error
-  }
+  })
 }

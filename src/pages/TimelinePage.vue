@@ -545,6 +545,7 @@ onBeforeUnmount(() => {
         <div class="starfield-noise" aria-hidden="true"></div>
         <header class="starfield-header">
           <div class="starfield-tools">
+            <button class="starfield-tool tarot-entry" aria-label="星语塔罗" title="星语塔罗" @click="ionRouter.navigate('/tarot', 'forward', 'push')"><span aria-hidden="true">✧</span><span>星语</span></button>
             <div v-if="searchOpen" class="starfield-search" role="search">
               <IonIcon :icon="searchOutline" aria-hidden="true" />
               <input ref="searchInput" v-model="searchDate" type="date" aria-label="按日期找日记" @keydown.enter="searchByDate" @change="searchByDate" />

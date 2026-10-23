@@ -2,6 +2,8 @@
 
 设计版本：1.0　日期：2026-10-22。配套 [产品设计](README.md)。本文所有新增接口、表和配置均为待实现契约，不是当前线上能力。
 
+2026-10-23：客户端本地部分已有实现，具体差异见 [实现记录](IMPLEMENTATION.md)；服务端仍未接入，参见 [修补交接](SERVER_REPAIR_HANDOFF.md)。请求示例牌组现采用已导入的 `rws-1909`，不再使用原型占位牌组。
+
 ## 1. 系统拓扑与隔离
 
 ~~~text
@@ -252,7 +254,7 @@ Android 先验证 WebView fetch + ReadableStream 的真实行为；不用假设 
     "scenarioId": "shopping",
     "spreadId": "purchase-4",
     "spreadVersion": 1,
-    "deckId": "sgj-symbolic-rws",
+    "deckId": "rws-1909",
     "deckVersion": "1.0.0",
     "catalogVersion": "rws-zh-v1",
     "question": "这台相机适合现在买下吗？",

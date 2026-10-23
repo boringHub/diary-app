@@ -24,7 +24,7 @@ const nav = [
 ]
 
 const isNewDiaryRoute = computed(() => route.path === '/diary/new')
-const showTabBar = computed(() => !route.path.startsWith('/diary/') || isNewDiaryRoute.value)
+const showTabBar = computed(() => !route.meta.hideBottomNav && (!route.path.startsWith('/diary/') || isNewDiaryRoute.value))
 
 function refreshSharedDiaries() {
   void store.refresh().catch(() => undefined)

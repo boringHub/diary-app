@@ -1,5 +1,7 @@
+import { TAROT_MIGRATION } from '../features/tarot/repositories/tarotSchema'
+
 export const DATABASE_NAME = 'shiguangjian'
-export const DATABASE_VERSION = 4
+export const DATABASE_VERSION = 5
 
 export const DATABASE_SCHEMA = `
 PRAGMA foreign_keys = ON;
@@ -123,6 +125,7 @@ CREATE INDEX IF NOT EXISTS idx_diary_assets_diary ON diary_assets(diary_id);
 CREATE INDEX IF NOT EXISTS idx_event_queue_status ON event_queue(status, created_at);
 CREATE INDEX IF NOT EXISTS idx_event_queue_retry ON event_queue(status, last_attempt_at, created_at);
 CREATE INDEX IF NOT EXISTS idx_diary_share_states_status ON diary_share_states(status, updated_at);
+${TAROT_MIGRATION.join('\n')}
 `
 
 export const MIGRATION_V1 = [
@@ -253,4 +256,5 @@ export const DATABASE_UPGRADES = [
   { toVersion: 2, statements: MIGRATION_V2 },
   { toVersion: 3, statements: MIGRATION_V3 },
   { toVersion: 4, statements: MIGRATION_V4 },
+  { toVersion: 5, statements: TAROT_MIGRATION },
 ]

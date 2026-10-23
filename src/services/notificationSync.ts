@@ -71,6 +71,8 @@ async function syncWhenOnline() {
     await diaryRepository.syncPendingNotificationSettings().catch(() => undefined)
     await diaryRepository.syncPendingNotificationEvents().catch(() => undefined)
     await diaryRepository.syncPendingDiaryShares().catch(() => undefined)
+    // Reuse existing resume/network sync; empty tarot outboxes make no requests.
+    void import('../features/tarot/services/tarotAiClient').then(m => m.flushTarotCleanup()).catch(() => undefined)
     try {
       const result = await diaryRepository.syncDiaryShareReceipts()
       diaryShareSyncState.nextCheckAt = result.nextCheckAt

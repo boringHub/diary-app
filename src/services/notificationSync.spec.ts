@@ -20,6 +20,7 @@ vi.mock('@capacitor/core', async (importOriginal) => ({
 vi.mock('@capacitor/app', () => ({ App: { addListener: mocks.appListener } }))
 vi.mock('@capacitor/network', () => ({ Network: { addListener: mocks.networkListener, getStatus: mocks.getStatus } }))
 vi.mock('./appToast', () => ({ showAppToast: mocks.toast }))
+vi.mock('../features/tarot/services/tarotAiClient', () => ({ flushTarotCleanup: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('./notifyApiClient', async (importOriginal) => ({
   ...await importOriginal<typeof import('./notifyApiClient')>(),
   isNotificationServiceConfigured: mocks.configured,
